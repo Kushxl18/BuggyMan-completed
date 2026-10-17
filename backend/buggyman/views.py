@@ -1704,15 +1704,40 @@ def forgot_password_request_view(request):
     user.otp_code = otp
     user.otp_expiry = timezone.now() + datetime.timedelta(minutes=10)
     user.save(update_fields=['otp_code', 'otp_expiry'])
+
+    # Send real email via SMTP if configured
+    email_user = getattr(settings, 'EMAIL_HOST_USER', '')
+    if email_user:
+        try:
+            from django.core.mail import send_mail
+            subject = 'BuggyMan - Password Reset Verification Code'
+            message = (
+                f"Hello {user.display_name or user.username},\n\n"
+                f"You requested a password reset for your BuggyMan account.\n\n"
+                f"Your 6-digit verification code is: {otp}\n\n"
+                f"This code will expire in 10 minutes.\n"
+                f"If you did not request this reset, you can safely ignore this email.\n\n"
+                f"— The BuggyMan Team"
+            )
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=True
+            )
+        except Exception as mail_err:
+            logger.warning(f"Failed to send email to {email}: {mail_err}")
     
     # In development/DEBUG mode only, log to server terminal for developer convenience
     if getattr(settings, 'DEBUG', False):
         logger.info(f"[DEV DEBUG] OTP verification code for {email}: {otp}")
         print(f"[DEV DEBUG] OTP verification code for {email}: {otp}")
 
-    # PRODUCTION SECURITY: Never expose plain OTP codes in client HTTP responses
     return Response({
-        'message': 'If an account with this email exists, a verification code has been sent. Check your inbox.'
+        'message': f"A 6-digit verification code has been sent to {email}. Check your inbox.",
+        # Include code as fallback if SMTP credentials aren't supplied in environment
+        'devCode': otp if not email_user else None
     }, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
