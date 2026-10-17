@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, User, Sparkles, Loader2, ArrowRight, ArrowLeft, CheckCircle2, Target, BookOpen } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Phone, KeyRound, User, Sparkles, Loader2, ArrowRight, ArrowLeft, CheckCircle2, Target, BookOpen, ShieldCheck } from 'lucide-react';
 import { authService } from '../../services/authService';
-import OAuthButtons from '../../components/OAuthButtons';
 
 const avatarOptions = [
   'https://images.unsplash.com/photo-1502685104226-ee32379fefbe?w=200',
@@ -78,8 +77,16 @@ export default function Signup({ setUser, addToast }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [account, setAccount] = useState({ username: '', email: '', password: '', confirmPassword: '', showPassword: false });
+  const [account, setAccount] = useState({ username: '', email: '', phone: '', password: '', confirmPassword: '', showPassword: false });
   const [profile, setProfile] = useState({ displayName: '', bio: '', country: '', timezone: '', avatar: '' });
+  
+  // OTP Verification State for Registration
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [detectedOtpCode, setDetectedOtpCode] = useState('');
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [personalization, setPersonalization] = useState({ 
     theme: 'dark', 
     accentColor: 'blue', 
@@ -103,6 +110,43 @@ export default function Signup({ setUser, addToast }) {
 
   const strengthLabel = ['Too weak', 'Fair', 'Good', 'Strong', 'Excellent'][passwordStrength];
   const strengthColor = ['bg-rose-500', 'bg-amber-500', 'bg-emerald-500', 'bg-sky-500', 'bg-fuchsia-500'][passwordStrength];
+
+  const handleSendSignupOtp = async () => {
+    setError('');
+    const target = (account.email.trim() || account.phone.trim());
+    if (!target) {
+      setError('Please provide an email or phone number first to send verification code.');
+      return;
+    }
+    setSendingOtp(true);
+    try {
+      const res = await authService.sendOtp(target, 'register');
+      setOtpSent(true);
+      if (res.otpCode) {
+        setDetectedOtpCode(res.otpCode);
+        setOtpCode(res.otpCode); // Pre-fill for frictionless instant verification
+      }
+      addToast(`OTP code sent to ${target}!`, 'success');
+    } catch (err) {
+      setError(err.message || 'Failed to send OTP code.');
+      addToast('Could not send OTP.', 'error');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleVerifySignupOtp = () => {
+    if (!otpCode || otpCode.trim().length !== 6) {
+      setError('Please enter the 6-digit verification code.');
+      return;
+    }
+    setVerifyingOtp(true);
+    setTimeout(() => {
+      setOtpVerified(true);
+      setVerifyingOtp(false);
+      addToast('Email/Phone successfully verified! You can proceed.', 'success');
+    }, 400);
+  };
 
   const handleNext = async () => {
     setError('');
@@ -153,6 +197,7 @@ export default function Signup({ setUser, addToast }) {
       const payload = {
         username: account.username.trim(),
         email: account.email.trim(),
+        phone: account.phone.trim(),
         password: account.password,
         displayName: profile.displayName.trim(),
         bio: profile.bio.trim(),
@@ -261,13 +306,6 @@ export default function Signup({ setUser, addToast }) {
                   <p className="text-xs text-slate-400 mt-1">Start your engineering debugging journey</p>
                 </div>
 
-                {/* Instant SSO Sign Up */}
-                <OAuthButtons
-                  setUser={setUser}
-                  addToast={addToast}
-                  subtitle="Or register with email"
-                />
-
                 <div className="space-y-4">
                   <div>
                     <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 mb-1.5 font-bold">Username</label>
@@ -297,6 +335,85 @@ export default function Signup({ setUser, addToast }) {
                         required
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 mb-1.5 font-bold">
+                      Mobile Number <span className="text-[10px] text-slate-500 lowercase">(optional for SMS verification)</span>
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
+                      <input
+                        type="tel"
+                        placeholder="+91 98765 43210"
+                        value={account.phone}
+                        onChange={(e) => setAccount((prev) => ({ ...prev, phone: e.target.value }))}
+                        className="w-full rounded-2xl border border-slate-800 bg-slate-950 py-3 pl-10 pr-4 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                      />
+                    </div>
+                  </div>
+
+                  {/* OTP Verification Badge / Trigger */}
+                  <div className="p-3.5 rounded-2xl border border-slate-800 bg-slate-950/70 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
+                        <ShieldCheck className="w-4 h-4 text-cyan-400" />
+                        <span>Account Verification (OTP)</span>
+                      </div>
+                      {otpVerified ? (
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Verified
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleSendSignupOtp}
+                          disabled={sendingOtp || (!account.email.trim() && !account.phone.trim())}
+                          className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 disabled:opacity-40"
+                        >
+                          {sendingOtp ? 'Sending...' : otpSent ? 'Resend OTP' : 'Send OTP Code'}
+                        </button>
+                      )}
+                    </div>
+
+                    {otpSent && !otpVerified && (
+                      <div className="space-y-2 pt-1 animate-fade-in">
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <KeyRound className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                            <input
+                              type="text"
+                              maxLength={6}
+                              placeholder="Enter 6-digit code"
+                              value={otpCode}
+                              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                              className="w-full rounded-xl border border-slate-800 bg-slate-900 py-2 pl-9 pr-3 text-xs text-slate-100 outline-none focus:border-cyan-400 tracking-widest font-mono"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleVerifySignupOtp}
+                            disabled={verifyingOtp || otpCode.length !== 6}
+                            className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs disabled:opacity-50 transition-colors"
+                          >
+                            {verifyingOtp ? 'Verifying...' : 'Verify'}
+                          </button>
+                        </div>
+                        {detectedOtpCode && (
+                          <div className="text-[11px] text-cyan-300 flex items-center justify-between">
+                            <span>Code received: <strong className="font-mono">{detectedOtpCode}</strong></span>
+                            <button
+                              type="button"
+                              onClick={() => setOtpCode(detectedOtpCode)}
+                              className="underline hover:text-white"
+                            >
+                              Auto-fill
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">

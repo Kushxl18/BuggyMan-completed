@@ -23,6 +23,7 @@ class User(AbstractUser):
     strengths = models.JSONField(default=list, blank=True)
     weaknesses = models.JSONField(default=list, blank=True)
     notifications_config = models.JSONField(default=dict, blank=True)
+    phone = models.CharField(max_length=30, blank=True, default='')
     otp_code = models.CharField(max_length=10, blank=True, default='')
     otp_expiry = models.DateTimeField(null=True, blank=True)
     last_active_date = models.DateField(null=True, blank=True)
@@ -83,6 +84,7 @@ class User(AbstractUser):
             'display_name': display_name,
             'username': self.username,
             'email': self.email,
+            'phone': self.phone,
             'role': 'admin' if is_admin else 'user',
             'isAdmin': is_admin,
             'college': self.college or 'State Technical University',

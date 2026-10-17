@@ -72,6 +72,11 @@ urlpatterns = [
     path('auth/oauth', views.oauth_login_view, name='oauth_login'),
     path('auth/oauth/disconnect', views.oauth_disconnect_view, name='oauth_disconnect'),
 
+    # OTP Verification & Authentication
+    path('auth/otp/send', views.send_otp_view, name='otp_send'),
+    path('auth/otp/verify-login', views.verify_otp_login_view, name='otp_verify_login'),
+    path('auth/otp/register', views.register_with_otp_view, name='otp_register'),
+
     path('health', views.health_check_view, name='health_check'),
 ]
 

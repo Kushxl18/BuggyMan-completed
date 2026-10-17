@@ -113,5 +113,34 @@ export const authService = {
     return await request('/auth/oauth/disconnect', {
       method: 'POST'
     });
+  },
+
+  sendOtp: async (identifier, purpose = 'login') => {
+    return await request('/auth/otp/send', {
+      method: 'POST',
+      body: JSON.stringify({ identifier, purpose })
+    });
+  },
+
+  verifyOtpLogin: async (identifier, otp, rememberMe = true) => {
+    const response = await request('/auth/otp/verify-login', {
+      method: 'POST',
+      body: JSON.stringify({ identifier, otp })
+    });
+    if (response.token) {
+      setToken(response.token, rememberMe);
+    }
+    return response;
+  },
+
+  registerWithOtp: async (payload, rememberMe = true) => {
+    const response = await request('/auth/otp/register', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    if (response.token) {
+      setToken(response.token, rememberMe);
+    }
+    return response;
   }
 };
