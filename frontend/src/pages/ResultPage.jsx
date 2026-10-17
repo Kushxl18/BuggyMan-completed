@@ -19,6 +19,7 @@ import {
   AlertOctagon
 } from 'lucide-react';
 import { challengeService } from '../services/challengeService';
+import TestCasesSection from '../components/TestCasesSection';
 
 const getStoredSubmission = () => {
   if (typeof window === 'undefined') return null;
@@ -276,77 +277,12 @@ export default function ResultPage() {
           
           {/* TAB 1: Test Cases Breakdown */}
           {activeTab === 'tests' && (
-            <div className="space-y-3">
-              {normalizedTestCases.length > 0 ? (
-                normalizedTestCases.map((tc, idx) => {
-                  const isExpanded = expandedTestId === (tc.id || idx);
-                  return (
-                    <div 
-                      key={tc.id || idx}
-                      className={`rounded-xl border transition-all overflow-hidden ${
-                        tc.passed 
-                          ? 'border-emerald-500/20 bg-slate-950/40' 
-                          : 'border-rose-500/20 bg-rose-950/10'
-                      }`}
-                    >
-                      <div 
-                        onClick={() => toggleExpandTest(tc.id || idx)}
-                        className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-900/50 transition-colors select-none"
-                      >
-                        <div className="flex items-center gap-3">
-                          {tc.passed ? (
-                            <CheckCircle2 className="w-5 h-5 text-brand-emerald shrink-0" />
-                          ) : (
-                            <XCircle className="w-5 h-5 text-brand-rose shrink-0" />
-                          )}
-                          <div>
-                            <h4 className="text-xs font-bold text-slate-200">{tc.name || `Test Case ${idx + 1}`}</h4>
-                            {tc.input && (
-                              <p className="text-[10px] text-slate-500 font-mono mt-0.5">Input: {tc.input}</p>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
-                            tc.passed ? 'bg-emerald-950 text-brand-emerald border border-emerald-500/30' : 'bg-rose-950 text-brand-rose border border-rose-500/30'
-                          }`}>
-                            {tc.passed ? 'PASSED' : 'FAILED'}
-                          </span>
-                          {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
-                        </div>
-                      </div>
-
-                      {/* Expanded Details */}
-                      {isExpanded && (
-                        <div className="px-4 pb-4 border-t border-slate-900 bg-slate-950/80 pt-3 space-y-2 text-xs font-mono">
-                          {tc.expected && (
-                            <div>
-                              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Expected Output:</span>
-                              <pre className="text-emerald-400 bg-slate-900 p-2 rounded-lg mt-1 whitespace-pre-wrap">{tc.expected}</pre>
-                            </div>
-                          )}
-                          {tc.actual && (
-                            <div>
-                              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Actual Output:</span>
-                              <pre className={`p-2 rounded-lg mt-1 whitespace-pre-wrap ${tc.passed ? 'text-slate-300 bg-slate-900' : 'text-rose-400 bg-rose-950/30'}`}>{tc.actual}</pre>
-                            </div>
-                          )}
-                          {tc.error && (
-                            <div>
-                              <span className="text-[10px] text-rose-400 font-bold uppercase tracking-wider block">Traceback Error:</span>
-                              <pre className="text-rose-400 bg-rose-950/50 p-2 rounded-lg mt-1 whitespace-pre-wrap border border-rose-500/20">{tc.error}</pre>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-xs text-slate-500 italic text-center py-4">No individual test cases recorded.</p>
-              )}
-            </div>
+            <TestCasesSection 
+              testCases={normalizedTestCases} 
+              challengeTitle={challengeInfo?.title} 
+              technology={challengeInfo?.technology} 
+              showHeader={false} 
+            />
           )}
 
           {/* TAB 2: Terminal Execution Logs */}

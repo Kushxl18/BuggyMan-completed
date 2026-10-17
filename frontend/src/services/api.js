@@ -1,6 +1,9 @@
 // Custom Fetch API Client with Mock Fallback for local testing when backend is not running
 
-const BASE_URL = '/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const ENABLE_MOCK_FALLBACK = import.meta.env.VITE_ENABLE_MOCK_FALLBACK !== undefined
+  ? import.meta.env.VITE_ENABLE_MOCK_FALLBACK === 'true'
+  : import.meta.env.DEV;
 
 const DJANGO_MOCK_CHALLENGES = [
   {
@@ -1533,8 +1536,12 @@ export async function request(endpoint, options = {}) {
   try {
     res = await fetch(`${BASE_URL}${endpoint}`, fetchOptions);
   } catch (error) {
-    console.warn(`Real API connection failed for ${endpoint}. Falling back to simulated mock DB.`, error);
-    return simulateMockApi(endpoint, options);
+    if (ENABLE_MOCK_FALLBACK) {
+      console.warn(`Real API connection failed for ${endpoint}. Falling back to simulated mock DB.`, error);
+      return simulateMockApi(endpoint, options);
+    }
+    console.error(`Network error connecting to ${BASE_URL}${endpoint}:`, error);
+    throw new Error(`Unable to connect to server. Please check your network connection or verify the backend service is running.`);
   }
 
   const contentType = res.headers.get('Content-Type') || '';
@@ -1546,7 +1553,12 @@ export async function request(endpoint, options = {}) {
   }
 
   if (!res.ok) {
-    const message = data?.error || data?.message || (typeof data === 'string' ? data : `HTTP Error: ${res.status}`);
+    if (res.status === 404 && endpoint.startsWith('/pvp') && ENABLE_MOCK_FALLBACK) {
+      console.warn(`Backend 404 for ${endpoint}. Falling back to simulated mock DB.`);
+      return simulateMockApi(endpoint, options);
+    }
+    const isHtml = typeof data === 'string' && data.trim().startsWith('<');
+    const message = data?.error || data?.message || (!isHtml && typeof data === 'string' ? data : `Server error (${res.status}: ${res.statusText || 'Request failed'})`);
     throw new Error(message);
   }
 
@@ -1588,6 +1600,75 @@ function simulateMockApi(endpoint, options) {
         return;
       }
 
+      if (endpoint === '/auth/oauth/config' && method === 'GET') {
+        resolve({
+          providers: {
+            google: { id: 'google', name: 'Google', enabled: true },
+            github: { id: 'github', name: 'GitHub', enabled: true }
+          }
+        });
+        return;
+      }
+
+      if (endpoint === '/auth/oauth' && method === 'POST') {
+        const { provider, email, name, displayName, avatar } = body;
+        if (!email) {
+          reject(new Error('Email is required for SSO authentication'));
+          return;
+        }
+        localStorage.setItem('token', `mock_oauth_jwt_${provider}`);
+        const userObj = {
+          ...db.user,
+          name: name || displayName || email.split('@')[0],
+          display_name: name || displayName || email.split('@')[0],
+          email: email,
+          avatar: avatar || db.user.avatar,
+          authProvider: provider,
+          auth_provider: provider
+        };
+        db.user = userObj;
+        updateMockDb(db);
+        resolve({
+          token: `mock_oauth_jwt_${provider}`,
+          user: userObj,
+          isNewUser: false,
+          provider: provider
+        });
+        return;
+      }
+
+      if (endpoint === '/auth/oauth/callback' && method === 'POST') {
+        const { provider = 'google', code } = body;
+        const mockEmail = `${provider}_user@buggyman.dev`;
+        localStorage.setItem('token', `mock_oauth_jwt_${provider}`);
+        const userObj = {
+          ...db.user,
+          name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Developer`,
+          display_name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Developer`,
+          email: mockEmail,
+          authProvider: provider,
+          auth_provider: provider
+        };
+        db.user = userObj;
+        updateMockDb(db);
+        resolve({
+          token: `mock_oauth_jwt_${provider}`,
+          user: userObj,
+          isNewUser: false,
+          provider: provider,
+          message: `Authenticated with ${provider}`
+        });
+        return;
+      }
+
+      if (endpoint === '/auth/oauth/disconnect' && method === 'POST') {
+        db.user.authProvider = 'local';
+        db.user.auth_provider = 'local';
+        updateMockDb(db);
+        resolve({ success: true, user: db.user });
+        return;
+      }
+
       // 2. Profile API
       if (endpoint === '/profile' && method === 'GET') {
         resolve(db.user);
@@ -1606,9 +1687,159 @@ function simulateMockApi(endpoint, options) {
         return;
       }
 
+      // 2.1 Career Insights API
+      if (endpoint.startsWith('/career-insights') && method === 'GET') {
+        const u = db.user || {};
+        const strengths = u.strengths || ['Backend', 'SQL'];
+        const weaknesses = u.weaknesses || ['Frontend'];
+        const interests = u.interests || ['Backend Systems & Microservices'];
+
+        const mockRoles = [
+          {
+            id: 'backend-developer',
+            title: 'Backend Developer',
+            matchScore: strengths.includes('Backend') ? 88 : 70,
+            opportunityScore: 89,
+            matchLabel: 'Strong Match',
+            explanation: `Matches your declared profile strength in ${strengths.join(', ')} and target career interest. Focus on database optimization to maximize your career readiness.`,
+            marketDemand: 'High',
+            demandScore: 88,
+            marketTrend: 'Growing',
+            lastUpdated: '2026-09-01',
+            source: 'Global Software Engineering Hiring Index 2026',
+            demonstratedStrengths: strengths,
+            skillGaps: [{ skill: 'Database Optimization', proficiency: 45, isDeclaredWeakness: false }],
+            recommendedArena: 'code',
+            arenaName: 'Code Challenges',
+            isInterestMatch: interests.some(i => i.toLowerCase().includes('backend')),
+            matchedInterests: interests.filter(i => i.toLowerCase().includes('backend')),
+            profileStrengths: strengths.filter(s => ['Backend', 'SQL', 'APIs'].includes(s)),
+            profileWeaknesses: weaknesses.filter(w => ['Backend', 'SQL', 'APIs'].includes(w)),
+            recommendedChallenges: [
+              { id: '1', title: 'Fix Django Session Authentication', difficulty: 'Easy', technology: 'Django', category: 'Backend', reason: 'Improves Backend proficiency.' }
+            ]
+          },
+          {
+            id: 'frontend-developer',
+            title: 'Frontend Developer',
+            matchScore: strengths.includes('Frontend') ? 85 : weaknesses.includes('Frontend') ? 45 : 62,
+            opportunityScore: 68,
+            matchLabel: strengths.includes('Frontend') ? 'Strong Match' : 'Developing Match',
+            explanation: weaknesses.includes('Frontend')
+              ? "Marked as an area to improve in your profile. Solving frontend challenges will help bridge this gap."
+              : "Aligns with web and client-side engineering fundamentals.",
+            marketDemand: 'High',
+            demandScore: 82,
+            marketTrend: 'Stable',
+            lastUpdated: '2026-09-01',
+            source: 'Global Software Engineering Hiring Index 2026',
+            demonstratedStrengths: strengths.filter(s => ['Frontend', 'React', 'CSS'].includes(s)),
+            skillGaps: [{ skill: 'Frontend', proficiency: weaknesses.includes('Frontend') ? 35 : 60, isDeclaredWeakness: weaknesses.includes('Frontend') }],
+            recommendedArena: 'frontend',
+            arenaName: 'Frontend Studio',
+            isInterestMatch: interests.some(i => i.toLowerCase().includes('frontend')),
+            matchedInterests: interests.filter(i => i.toLowerCase().includes('frontend')),
+            profileStrengths: strengths.filter(s => ['Frontend', 'React', 'CSS'].includes(s)),
+            profileWeaknesses: weaknesses.filter(w => ['Frontend', 'React', 'CSS'].includes(w)),
+            recommendedChallenges: [
+              { id: 'FE-E01', title: 'Responsive Navbar Flexbox Bug', difficulty: 'Easy', technology: 'React', category: 'Frontend', reason: 'Strengthens Frontend skills.' }
+            ]
+          },
+          {
+            id: 'fullstack-developer',
+            title: 'Full-Stack Developer',
+            matchScore: 80,
+            opportunityScore: 86,
+            matchLabel: 'Strong Match',
+            explanation: `Combines your strengths in ${strengths[0] || 'core engineering'} with full lifecycle application delivery.`,
+            marketDemand: 'Very High',
+            demandScore: 94,
+            marketTrend: 'Growing',
+            lastUpdated: '2026-09-01',
+            source: 'Global Software Engineering Hiring Index 2026',
+            demonstratedStrengths: strengths,
+            skillGaps: [{ skill: weaknesses[0] || 'Testing', proficiency: 40, isDeclaredWeakness: true }],
+            recommendedArena: 'code',
+            arenaName: 'Code Challenges',
+            isInterestMatch: interests.some(i => i.toLowerCase().includes('full stack')),
+            matchedInterests: interests.filter(i => i.toLowerCase().includes('full stack')),
+            profileStrengths: strengths,
+            profileWeaknesses: weaknesses,
+            recommendedChallenges: [
+              { id: '2', title: 'Full-Stack JWT Token Refresh Bug', difficulty: 'Medium', technology: 'Node.js', category: 'Full Stack', reason: 'Deepens Full-Stack integration.' }
+            ]
+          }
+        ];
+
+        mockRoles.sort((a, b) => (b.isInterestMatch ? 1 : 0) - (a.isInterestMatch ? 1 : 0) || b.matchScore - a.matchScore);
+
+        resolve({
+          isInsufficientData: false,
+          dataMessage: `Personalized for ${u.name || 'Developer'} based on declared profile preferences and performance.`,
+          userProfile: {
+            name: u.name || 'Developer',
+            username: u.username || 'developer',
+            avatar: u.avatar || '',
+            college: u.college || 'State Technical University',
+            bio: u.bio || '',
+            strengths: strengths,
+            weaknesses: weaknesses,
+            interests: interests,
+            challengesSolved: u.challenges_solved || u.challengesSolved || 0,
+            totalScore: u.total_score || u.totalScore || 0,
+            streak: u.streak || 0
+          },
+          topMatch: mockRoles[0],
+          roles: mockRoles,
+          disclaimer: 'Market insights reflect current software engineering hiring benchmarks and update periodically.'
+        });
+        return;
+      }
+
       // 3. Challenges APIs
-      if (endpoint === '/challenges' && method === 'GET') {
-        resolve(DJANGO_MOCK_CHALLENGES.map(challenge => ({ ...challenge })));
+      if ((endpoint === '/challenges' || endpoint.startsWith('/challenges?')) && method === 'GET') {
+        const queryStr = endpoint.includes('?') ? endpoint.split('?')[1] : '';
+        const params = new URLSearchParams(queryStr);
+        const arena = params.get('arena') || 'code';
+        const u = db.user || {};
+        const strengths = (u.strengths || []).map(s => s.toLowerCase());
+        const weaknesses = (u.weaknesses || []).map(w => w.toLowerCase());
+
+        let list = DJANGO_MOCK_CHALLENGES;
+        if (arena === 'sql') {
+          list = SQL_MOCK_CHALLENGES || DJANGO_MOCK_CHALLENGES;
+        } else if (arena === 'frontend') {
+          list = FRONTEND_MOCK_CHALLENGES || DJANGO_MOCK_CHALLENGES;
+        }
+
+        const personalizedList = list.map(c => {
+          const cat = (c.category || '').toLowerCase();
+          const tech = (c.technology || '').toLowerCase();
+          const isWeakness = weaknesses.some(w => cat.includes(w) || tech.includes(w));
+          const isStrength = strengths.some(s => cat.includes(s) || tech.includes(s));
+          let score = 65;
+          let reason = `Recommended practice in ${c.category || c.technology}.`;
+
+          if (isWeakness) {
+            score = 85;
+            reason = `Recommended for your ${c.category || c.technology} skill gap (35% mastery).`;
+          } else if (isStrength) {
+            score = 75;
+            reason = `Recommended based on your strength in ${c.technology} to build advanced mastery.`;
+          }
+
+          return {
+            ...c,
+            recommendationScore: score,
+            reason: reason,
+            recommendationReason: reason,
+            isPersonalized: true,
+            isSolved: false
+          };
+        });
+
+        personalizedList.sort((a, b) => b.recommendationScore - a.recommendationScore);
+        resolve(personalizedList);
         return;
       }
 
@@ -1770,6 +2001,573 @@ function simulateMockApi(endpoint, options) {
         db.adminStats.totalChallenges += 1;
         updateMockDb(db);
         resolve(newChallenge);
+        return;
+      }
+
+      // 8. PvP Mock APIs
+      if (endpoint === '/pvp/history' && method === 'GET') {
+        const storedHistory = JSON.parse(localStorage.getItem('buggyman_pvp_history') || 'null');
+        if (storedHistory) {
+          resolve(storedHistory);
+          return;
+        }
+        const defaultHistory = [
+          {
+            id: 'pvp-hist-1',
+            battleId: 'b-9021',
+            opponentName: 'CodeViper',
+            opponentAvatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150',
+            opponentRating: 1480,
+            challengeTitle: 'Counter state doesn\'t update',
+            technology: 'React',
+            difficulty: 'Easy',
+            result: 'Won',
+            solveTime: '2m 14s',
+            testsPassed: '3/3',
+            opponentTestsPassed: '2/3',
+            xpEarned: 150,
+            date: '2 hours ago'
+          },
+          {
+            id: 'pvp-hist-2',
+            battleId: 'b-8742',
+            opponentName: 'Sarah Jenkins',
+            opponentAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+            opponentRating: 1620,
+            challengeTitle: 'Missing CSRF token on form submission',
+            technology: 'Django',
+            difficulty: 'Medium',
+            result: 'Lost',
+            solveTime: '4m 32s',
+            testsPassed: '2/4',
+            opponentTestsPassed: '4/4',
+            xpEarned: 40,
+            date: 'Yesterday'
+          },
+          {
+            id: 'pvp-hist-3',
+            battleId: 'b-7619',
+            opponentName: 'NullPointer',
+            opponentAvatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150',
+            opponentRating: 1390,
+            challengeTitle: 'Dark/Light Theme',
+            technology: 'CSS',
+            difficulty: 'Easy',
+            result: 'Won',
+            solveTime: '1m 45s',
+            testsPassed: '3/3',
+            opponentTestsPassed: '1/3',
+            xpEarned: 120,
+            date: '3 days ago'
+          },
+          {
+            id: 'pvp-hist-4',
+            battleId: 'b-6531',
+            opponentName: 'CyberSamurai',
+            opponentAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+            opponentRating: 1540,
+            challengeTitle: 'Search Bugs',
+            technology: 'React',
+            difficulty: 'Easy',
+            result: 'Draw',
+            solveTime: '10m 00s',
+            testsPassed: '2/3',
+            opponentTestsPassed: '2/3',
+            xpEarned: 60,
+            date: '5 days ago'
+          }
+        ];
+        localStorage.setItem('buggyman_pvp_history', JSON.stringify(defaultHistory));
+        resolve(defaultHistory);
+        return;
+      }
+
+      const getPvPStore = () => JSON.parse(sessionStorage.getItem('buggyman_pvp_battles') || '{}');
+      const savePvPStore = (store) => sessionStorage.setItem('buggyman_pvp_battles', JSON.stringify(store));
+
+      const opponentsPool = [
+        { name: 'CyberSamurai', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150', rating: 1420 },
+        { name: 'HexHacker', avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150', rating: 1380 },
+        { name: 'BugBuster_X', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', rating: 1490 },
+        { name: 'NullPointer', avatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150', rating: 1350 },
+        { name: 'CodeNinja_99', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', rating: 1510 }
+      ];
+
+      const getRandomOpponent = () => opponentsPool[Math.floor(Math.random() * opponentsPool.length)];
+
+      const selectChallengeForPvP = (diff) => {
+        const pool = (db.challenges || []).concat(FRONTEND_MOCK_CHALLENGES);
+        const filtered = pool.filter(c => !diff || diff === 'All' || c.difficulty === diff);
+        const picked = filtered.length > 0 ? filtered[Math.floor(Math.random() * filtered.length)] : pool[0];
+        return JSON.parse(JSON.stringify(picked));
+      };
+
+      if (endpoint === '/pvp/quick-match' && method === 'POST') {
+        const difficulty = body?.difficulty || 'All';
+        const challenge = selectChallengeForPvP(difficulty);
+        const totalTests = challenge.testCases?.length || 3;
+        const opp = getRandomOpponent();
+        const battleId = 'battle_' + Math.random().toString(36).substring(2, 9);
+        const roomCode = 'ROOM-' + Math.floor(1000 + Math.random() * 9000);
+
+        const battle = {
+          battleId,
+          roomCode,
+          status: 'MATCHED',
+          difficulty: challenge.difficulty || 'Easy',
+          timeLimit: body?.timeLimit || 600,
+          timeRemaining: body?.timeLimit || 600,
+          startedAt: null,
+          challenge,
+          player1: {
+            id: db.user?.id || 'usr-current',
+            name: db.user?.name || 'You',
+            avatar: db.user?.avatar || '',
+            rating: 1450,
+            testsPassed: 0,
+            totalTests,
+            hasSubmitted: false
+          },
+          player2: {
+            id: 'opp_' + Math.random().toString(36).substring(2, 6),
+            name: opp.name,
+            avatar: opp.avatar,
+            rating: opp.rating,
+            testsPassed: 0,
+            totalTests,
+            hasSubmitted: false
+          },
+          winner: null
+        };
+
+        const store = getPvPStore();
+        store[battleId] = battle;
+        store[roomCode] = battle;
+        savePvPStore(store);
+
+        resolve(battle);
+        return;
+      }
+
+      if (endpoint === '/pvp/create' && method === 'POST') {
+        const difficulty = body?.difficulty || 'All';
+        const timeLimit = body?.timeLimit || 600;
+        const challenge = selectChallengeForPvP(difficulty);
+        const totalTests = challenge.testCases?.length || 3;
+        const battleId = 'battle_' + Math.random().toString(36).substring(2, 9);
+        const roomCode = 'ROOM-' + Math.floor(1000 + Math.random() * 9000);
+
+        const battle = {
+          battleId,
+          roomCode,
+          status: 'WAITING',
+          difficulty: challenge.difficulty || 'Easy',
+          timeLimit,
+          timeRemaining: timeLimit,
+          startedAt: null,
+          createdAt: Date.now(),
+          challenge,
+          player1: {
+            id: db.user?.id || 'usr-current',
+            name: db.user?.name || 'You',
+            avatar: db.user?.avatar || '',
+            rating: 1450,
+            testsPassed: 0,
+            totalTests,
+            hasSubmitted: false
+          },
+          player2: null,
+          winner: null
+        };
+
+        const store = getPvPStore();
+        store[battleId] = battle;
+        store[roomCode] = battle;
+        savePvPStore(store);
+
+        resolve(battle);
+        return;
+      }
+
+      if (endpoint === '/pvp/join' && method === 'POST') {
+        const roomCode = (body?.roomCode || '').trim().toUpperCase();
+        const store = getPvPStore();
+        let battle = store[roomCode];
+
+        if (!battle) {
+          // If room doesn't exist yet, auto-create a match for convenience
+          const challenge = selectChallengeForPvP('Easy');
+          const totalTests = challenge.testCases?.length || 3;
+          const opp = getRandomOpponent();
+          const battleId = 'battle_' + Math.random().toString(36).substring(2, 9);
+          battle = {
+            battleId,
+            roomCode,
+            status: 'MATCHED',
+            difficulty: challenge.difficulty || 'Easy',
+            timeLimit: 600,
+            timeRemaining: 600,
+            startedAt: null,
+            challenge,
+            player1: {
+              id: 'host_' + Math.random().toString(36).substring(2, 6),
+              name: opp.name,
+              avatar: opp.avatar,
+              rating: opp.rating,
+              testsPassed: 0,
+              totalTests,
+              hasSubmitted: false
+            },
+            player2: {
+              id: db.user?.id || 'usr-current',
+              name: db.user?.name || 'You',
+              avatar: db.user?.avatar || '',
+              rating: 1450,
+              testsPassed: 0,
+              totalTests,
+              hasSubmitted: false
+            },
+            winner: null
+          };
+          store[battleId] = battle;
+          store[roomCode] = battle;
+          savePvPStore(store);
+          resolve(battle);
+          return;
+        }
+
+        if (battle.status === 'WAITING') {
+          const opp = getRandomOpponent();
+          battle.player2 = {
+            id: db.user?.id || 'usr-current',
+            name: db.user?.name || 'You',
+            avatar: db.user?.avatar || '',
+            rating: 1450,
+            testsPassed: 0,
+            totalTests: battle.player1.totalTests,
+            hasSubmitted: false
+          };
+          battle.status = 'MATCHED';
+          store[battle.battleId] = battle;
+          store[roomCode] = battle;
+          savePvPStore(store);
+        }
+
+        resolve(battle);
+        return;
+      }
+
+      if (endpoint.startsWith('/pvp/') && endpoint.endsWith('/status') && method === 'GET') {
+        const battleId = endpoint.split('/')[2];
+        const store = getPvPStore();
+        let battle = store[battleId];
+
+        if (!battle) {
+          // Provide default ongoing mock battle
+          const challenge = selectChallengeForPvP('Easy');
+          const opp = getRandomOpponent();
+          battle = {
+            battleId,
+            roomCode: 'BUG-4892',
+            status: 'IN_PROGRESS',
+            difficulty: 'Easy',
+            timeLimit: 600,
+            timeRemaining: 550,
+            startedAt: Date.now() - 50000,
+            challenge,
+            player1: {
+              id: db.user?.id || 'usr-current',
+              name: db.user?.name || 'You',
+              avatar: db.user?.avatar || '',
+              rating: 1450,
+              testsPassed: 1,
+              totalTests: challenge.testCases?.length || 3,
+              hasSubmitted: false
+            },
+            player2: {
+              id: 'opp-1',
+              name: opp.name,
+              avatar: opp.avatar,
+              rating: opp.rating,
+              testsPassed: 1,
+              totalTests: challenge.testCases?.length || 3,
+              hasSubmitted: false
+            },
+            winner: null
+          };
+          store[battleId] = battle;
+          savePvPStore(store);
+        }
+
+        // If waiting for over 4 seconds, auto-match with simulated opponent
+        if (battle.status === 'WAITING' && battle.createdAt && Date.now() - battle.createdAt > 4000) {
+          const opp = getRandomOpponent();
+          battle.player2 = {
+            id: 'opp_' + Math.random().toString(36).substring(2, 6),
+            name: opp.name,
+            avatar: opp.avatar,
+            rating: opp.rating,
+            testsPassed: 0,
+            totalTests: battle.player1.totalTests,
+            hasSubmitted: false
+          };
+          battle.status = 'MATCHED';
+          store[battleId] = battle;
+          savePvPStore(store);
+        }
+
+        // Simulate opponent test progression during IN_PROGRESS
+        if (battle.status === 'IN_PROGRESS' && battle.player2 && !battle.player2.hasSubmitted) {
+          const total = battle.player2.totalTests || 3;
+          const elapsed = battle.startedAt ? Math.floor((Date.now() - battle.startedAt) / 1000) : 0;
+          // Progress opponent every 20-30 seconds
+          const simulatedPassed = Math.min(total - 1, Math.floor(elapsed / 25));
+          if (simulatedPassed > (battle.player2.testsPassed || 0)) {
+            battle.player2.testsPassed = simulatedPassed;
+            store[battleId] = battle;
+            savePvPStore(store);
+          }
+        }
+
+        resolve(battle);
+        return;
+      }
+
+      if (endpoint.startsWith('/pvp/') && endpoint.endsWith('/start') && method === 'POST') {
+        const battleId = endpoint.split('/')[2];
+        const store = getPvPStore();
+        let battle = store[battleId];
+        if (battle) {
+          battle.status = 'IN_PROGRESS';
+          if (!battle.startedAt) battle.startedAt = Date.now();
+          store[battleId] = battle;
+          savePvPStore(store);
+          resolve(battle);
+        } else {
+          resolve({ success: true, status: 'IN_PROGRESS', startedAt: Date.now() });
+        }
+        return;
+      }
+
+      if (endpoint.startsWith('/pvp/') && endpoint.endsWith('/progress') && method === 'POST') {
+        const battleId = endpoint.split('/')[2];
+        const store = getPvPStore();
+        let battle = store[battleId];
+        if (battle && battle.player1) {
+          battle.player1.testsPassed = body.testsPassed ?? battle.player1.testsPassed;
+          store[battleId] = battle;
+          savePvPStore(store);
+          resolve({ success: true, player1: battle.player1, player2: battle.player2 });
+        } else {
+          resolve({ success: true });
+        }
+        return;
+      }
+
+      if (endpoint.startsWith('/pvp/') && endpoint.endsWith('/submit') && method === 'POST') {
+        const battleId = endpoint.split('/')[2];
+        const store = getPvPStore();
+        let battle = store[battleId] || {};
+        
+        const totalTests = battle.challenge?.testCases?.length || 3;
+        const testsPassed = totalTests; // Successful submission
+        const solveTimeSeconds = battle.startedAt ? Math.floor((Date.now() - battle.startedAt) / 1000) : 124;
+        const minutes = Math.floor(solveTimeSeconds / 60);
+        const seconds = solveTimeSeconds % 60;
+        const formattedTime = `${minutes}m ${seconds < 10 ? '0' : ''}${seconds}s`;
+
+        battle.status = 'COMPLETED';
+        battle.winner = battle.player1?.id || 'usr-current';
+        if (battle.player1) {
+          battle.player1.testsPassed = testsPassed;
+          battle.player1.hasSubmitted = true;
+        }
+
+        store[battleId] = battle;
+        savePvPStore(store);
+
+        // Record in history
+        const history = JSON.parse(localStorage.getItem('buggyman_pvp_history') || '[]');
+        const historyEntry = {
+          id: 'pvp-hist-' + Date.now(),
+          battleId,
+          opponentName: battle.player2?.name || 'CyberSamurai',
+          opponentAvatar: battle.player2?.avatar || '',
+          opponentRating: battle.player2?.rating || 1400,
+          challengeTitle: battle.challenge?.title || 'PvP Challenge',
+          technology: battle.challenge?.technology || 'React',
+          difficulty: battle.challenge?.difficulty || 'Easy',
+          result: 'Won',
+          solveTime: formattedTime,
+          testsPassed: `${testsPassed}/${totalTests}`,
+          opponentTestsPassed: `${battle.player2?.testsPassed || 1}/${totalTests}`,
+          xpEarned: 150,
+          date: 'Just now'
+        };
+        history.unshift(historyEntry);
+        localStorage.setItem('buggyman_pvp_history', JSON.stringify(history.slice(0, 20)));
+
+        resolve({
+          success: true,
+          status: 'COMPLETED',
+          winner: battle.player1?.id || 'usr-current',
+          isWinner: true,
+          solveTime: solveTimeSeconds,
+          formattedTime,
+          testsPassed,
+          totalTests,
+          xpEarned: 150,
+          player1: battle.player1,
+          player2: battle.player2,
+          message: 'Victory! You squashed the bug before your opponent.'
+        });
+        return;
+      }
+
+      if (endpoint.startsWith('/pvp/') && endpoint.endsWith('/cancel') && method === 'POST') {
+        const battleId = endpoint.split('/')[2];
+        const store = getPvPStore();
+        if (store[battleId]) {
+          store[battleId].status = 'CANCELLED';
+          savePvPStore(store);
+        }
+        resolve({ success: true, message: 'Battle cancelled.' });
+        return;
+      }
+
+      // 9. BugBytes Store & Payment Simulation Mock APIs
+      if (endpoint === '/store/packages' && method === 'GET') {
+        const defaultPackages = [
+          { id: 1, name: 'Starter Pack', bugbytes: 50, price_inr: 49, is_popular: false, tag: 'Beginner', mission_days: 7, challenges_required: 2 },
+          { id: 2, name: 'Pro Debugger', bugbytes: 150, price_inr: 129, is_popular: true, tag: 'Most Popular', mission_days: 10, challenges_required: 4 },
+          { id: 3, name: 'Master Hacker', bugbytes: 400, price_inr: 299, is_popular: false, tag: 'Best Value', mission_days: 14, challenges_required: 8 }
+        ];
+        resolve({ packages: defaultPackages, userBalance: db.user.bugbytes_balance || db.user.bugbytesBalance || 0 });
+        return;
+      }
+
+      if (endpoint === '/store/checkout' && method === 'POST') {
+        const pkgId = body?.packageId;
+        const defaultPackages = [
+          { id: 1, name: 'Starter Pack', bugbytes: 50, price_inr: 49 },
+          { id: 2, name: 'Pro Debugger', bugbytes: 150, price_inr: 129 },
+          { id: 3, name: 'Master Hacker', bugbytes: 400, price_inr: 299 }
+        ];
+        const pkg = defaultPackages.find(p => p.id === pkgId) || defaultPackages[0];
+        const mockPurchase = {
+          id: Date.now(),
+          transactionReference: 'BB-ORD-' + Math.floor(100000 + Math.random() * 900000),
+          packageName: pkg.name,
+          packageId: pkg.id,
+          bugbytesAmount: pkg.bugbytes,
+          priceInr: pkg.price_inr,
+          status: 'PENDING',
+          canRefund: false,
+          createdAt: new Date().toISOString()
+        };
+        const purchases = JSON.parse(localStorage.getItem('buggyman_purchases') || '[]');
+        purchases.unshift(mockPurchase);
+        localStorage.setItem('buggyman_purchases', JSON.stringify(purchases));
+        resolve({ purchase: mockPurchase });
+        return;
+      }
+
+      if (endpoint === '/store/confirm-payment' && method === 'POST') {
+        const { transactionReference, simulateOutcome = 'SUCCESS' } = body || {};
+        const purchases = JSON.parse(localStorage.getItem('buggyman_purchases') || '[]');
+        const idx = purchases.findIndex(p => p.transactionReference === transactionReference);
+        const purchase = idx >= 0 ? purchases[idx] : {
+          id: Date.now(),
+          transactionReference: transactionReference || 'BB-ORD-999',
+          packageName: 'Pro Debugger',
+          bugbytesAmount: 150,
+          priceInr: 129,
+          status: 'PENDING',
+          createdAt: new Date().toISOString()
+        };
+
+        if (simulateOutcome === 'SUCCESS') {
+          purchase.status = 'COMPLETED';
+          purchase.canRefund = true;
+          const currentBal = db.user.bugbytes_balance || db.user.bugbytesBalance || 0;
+          const newBal = currentBal + purchase.bugbytesAmount;
+          db.user.bugbytes_balance = newBal;
+          db.user.bugbytesBalance = newBal;
+          updateMockDb(db);
+          if (idx >= 0) purchases[idx] = purchase;
+          else purchases.unshift(purchase);
+          localStorage.setItem('buggyman_purchases', JSON.stringify(purchases));
+
+          resolve({
+            success: true,
+            message: `Simulated payment successful! +${purchase.bugbytesAmount} BugBytes credited.`,
+            purchase,
+            newBalance: newBal
+          });
+        } else {
+          purchase.status = 'FAILED';
+          purchase.canRefund = false;
+          if (idx >= 0) purchases[idx] = purchase;
+          else purchases.unshift(purchase);
+          localStorage.setItem('buggyman_purchases', JSON.stringify(purchases));
+
+          resolve({
+            success: false,
+            message: 'Simulated payment failed. No BugBytes were credited.',
+            purchase,
+            failureReason: body?.failureReason || 'Simulated card/UPI decline test.'
+          });
+        }
+        return;
+      }
+
+      if (endpoint === '/store/purchases' && method === 'GET') {
+        const purchases = JSON.parse(localStorage.getItem('buggyman_purchases') || '[]');
+        resolve({ purchases, totalCount: purchases.length });
+        return;
+      }
+
+      if (endpoint.startsWith('/store/purchases/') && endpoint.endsWith('/refund') && method === 'POST') {
+        const purchaseId = parseInt(endpoint.split('/')[3]);
+        const purchases = JSON.parse(localStorage.getItem('buggyman_purchases') || '[]');
+        const idx = purchases.findIndex(p => p.id === purchaseId);
+        if (idx < 0) {
+          reject(new Error('Purchase record not found.'));
+          return;
+        }
+        const purchase = purchases[idx];
+        if (purchase.status !== 'COMPLETED' || purchase.refundedAt) {
+          reject(new Error('Only completed, unrefunded purchases can be refunded.'));
+          return;
+        }
+
+        purchase.status = 'REFUNDED';
+        purchase.refundAmountInr = purchase.priceInr;
+        purchase.refundReason = body?.reason || '100% Money-Back Guarantee: Completed required challenges on time';
+        purchase.refundedAt = new Date().toISOString();
+        purchase.canRefund = false;
+        purchases[idx] = purchase;
+        localStorage.setItem('buggyman_purchases', JSON.stringify(purchases));
+
+        // Note: BugBytes are NOT deducted! User keeps all their BugBytes as their learning reward.
+        const userBalance = db.user.bugbytes_balance || db.user.bugbytesBalance || 0;
+
+        resolve({
+          success: true,
+          message: `Successfully refunded ₹${purchase.priceInr}! You keep all your BugBytes for completing the challenges on time.`,
+          purchase,
+          newBalance: userBalance
+        });
+        return;
+      }
+
+      if (endpoint === '/store/missions' && method === 'GET') {
+        resolve({ missions: [], activeMissions: [], completedMissions: [], claimedMissions: [], expiredMissions: [] });
+        return;
+      }
+
+      if (endpoint === '/store/rewards' && method === 'GET') {
+        resolve({ totalPurchasedInr: 0, totalRewardedInr: 0, netSimulatedCostInr: 0, rewards: [] });
         return;
       }
 

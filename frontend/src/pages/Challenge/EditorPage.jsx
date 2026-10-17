@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Play, 
@@ -8,7 +8,8 @@ import {
   Timer as TimerIcon, 
   ArrowLeft,
   Sun,
-  Moon
+  Moon,
+  Loader2
 } from 'lucide-react';
 import ProblemStatementPanel from './ProblemStatementPanel';
 import CodeEditor from './CodeEditor';
@@ -18,7 +19,9 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import { challengeService } from '../../services/challengeService';
 
 const normalizeFiles = (rawFiles = []) => {
-  if (!Array.isArray(rawFiles)) return [];
+  if (!Array.isArray(rawFiles) || rawFiles.length === 0) {
+    return [{ name: 'index.js', content: '// Write your solution here\n' }];
+  }
 
   return rawFiles.map((file, index) => {
     if (typeof file === 'string') {
@@ -36,7 +39,9 @@ const normalizeFiles = (rawFiles = []) => {
 const getWorkspaceStorageKey = (challengeId) => `buggyman-workspace-${challengeId}`;
 
 const readPersistedWorkspace = (challengeId, defaultFiles) => {
-  if (!challengeId) return { files: defaultFiles, activeFile: defaultFiles[0] || null };
+  if (!challengeId || !Array.isArray(defaultFiles) || defaultFiles.length === 0) {
+    return { files: defaultFiles || [], activeFile: (defaultFiles && defaultFiles[0]) || null };
+  }
 
   try {
     const raw = sessionStorage.getItem(getWorkspaceStorageKey(challengeId));
@@ -44,14 +49,15 @@ const readPersistedWorkspace = (challengeId, defaultFiles) => {
 
     const parsed = JSON.parse(raw);
     const persistedFiles = normalizeFiles(parsed.files || defaultFiles);
-    const activeFile = persistedFiles.find((file) => file.name === parsed.activeFileName) || persistedFiles[0] || null;
-    return { files: persistedFiles, activeFile };
+    const validFiles = (persistedFiles && persistedFiles.length > 0) ? persistedFiles : defaultFiles;
+    const activeFile = validFiles.find((file) => file.name === parsed.activeFileName) || validFiles[0] || null;
+    return { files: validFiles, activeFile };
   } catch (error) {
     return { files: defaultFiles, activeFile: defaultFiles[0] || null };
   }
 };
 
-export default function EditorPage({ addToast, theme, toggleTheme, setUser }) {
+export default function EditorPage({ user, setUser, addToast, theme, toggleTheme, settings }) {
   const { id } = useParams();
   const navigate = useNavigate();
   
@@ -66,6 +72,17 @@ export default function EditorPage({ addToast, theme, toggleTheme, setUser }) {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+
+  const filesRef = useRef([]);
+  const activeFileRef = useRef(null);
+
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
+
+  useEffect(() => {
+    activeFileRef.current = activeFile;
+  }, [activeFile]);
 
   // Timer counting up in seconds
   useEffect(() => {
@@ -89,18 +106,20 @@ export default function EditorPage({ addToast, theme, toggleTheme, setUser }) {
 
         setChallenge(data);
         setFiles(persisted.files);
+        filesRef.current = persisted.files;
         setActiveFile(persisted.activeFile);
+        activeFileRef.current = persisted.activeFile;
         setActiveTab('problem');
       } catch (err) {
         setErrorMessage(err?.message || 'Unable to load this challenge right now.');
-        addToast('Error loading challenge files.', 'error');
+        if (addToast) addToast('Error loading challenge files.', 'error');
       } finally {
         setLoading(false);
       }
     }
 
     fetchChallenge();
-  }, [id, addToast]);
+  }, [id]);
 
   useEffect(() => {
     if (!challenge?.id || files.length === 0) return;
@@ -113,28 +132,40 @@ export default function EditorPage({ addToast, theme, toggleTheme, setUser }) {
   }, [challenge?.id, files, activeFile]);
 
   const handleSelectFile = (file) => {
-    setFiles((prev) => prev.map((f) => (f.name === activeFile?.name ? { ...f, content: activeFile.content } : f)));
+    const currentActive = activeFileRef.current || activeFile;
+    const updatedFiles = (filesRef.current || files).map((f) => (f.name === currentActive?.name ? { ...f, content: currentActive.content } : f));
+    filesRef.current = updatedFiles;
+    setFiles(updatedFiles);
+    activeFileRef.current = file;
     setActiveFile(file);
   };
 
   const handleCodeChange = (val) => {
-    if (activeFile) {
-      setActiveFile((prev) => ({ ...(prev || {}), content: val }));
-      setFiles((prev) => prev.map((f) => (f.name === activeFile.name ? { ...f, content: val } : f)));
+    const currentActive = activeFileRef.current || activeFile;
+    if (currentActive) {
+      const updatedActive = { ...currentActive, content: val };
+      activeFileRef.current = updatedActive;
+      setActiveFile(updatedActive);
+
+      const updatedFiles = (filesRef.current || files).map((f) => (f.name === currentActive.name ? { ...f, content: val } : f));
+      filesRef.current = updatedFiles;
+      setFiles(updatedFiles);
     }
   };
 
   const handleResetProject = () => {
     if (window.confirm('Are you sure you want to reset the current challenge code back to default?')) {
       const defaultFiles = normalizeFiles(challenge?.files || []);
+      filesRef.current = defaultFiles;
       setFiles(defaultFiles);
+      activeFileRef.current = defaultFiles[0] || null;
       setActiveFile(defaultFiles[0] || null);
       setRunOutput('');
       setCompileError('');
       if (challenge?.id) {
         sessionStorage.removeItem(getWorkspaceStorageKey(challenge.id));
       }
-      addToast('Workspace files reverted.', 'info');
+      if (addToast) addToast('Workspace files reverted.', 'info');
     }
   };
 
@@ -145,27 +176,37 @@ export default function EditorPage({ addToast, theme, toggleTheme, setUser }) {
     setCompileError('');
 
     try {
-      const primaryFile = files.find((f) => f.name === activeFile?.name) || activeFile || files[0];
-      const res = await challengeService.runChallenge(challenge.id, primaryFile?.content || '', files);
+      const currentActive = activeFileRef.current || activeFile;
+      const currentFiles = filesRef.current && filesRef.current.length > 0 ? filesRef.current : files;
 
-      if (res.testCases) {
-        setChallenge((prev) => ({ ...prev, testCases: res.testCases }));
+      const syncedFiles = currentFiles.map((f) =>
+        f.name === currentActive?.name ? { ...f, content: currentActive.content } : f
+      );
+      filesRef.current = syncedFiles;
+      setFiles(syncedFiles);
+      const primaryFile = syncedFiles.find((f) => f.name === currentActive?.name) || currentActive || syncedFiles[0];
+
+      const res = await challengeService.runChallenge(challenge.id, primaryFile?.content || '', syncedFiles);
+
+      const returnedCases = res?.testCases || res?.test_cases || [];
+      if (returnedCases.length > 0) {
+        setChallenge((prev) => (prev ? { ...prev, testCases: returnedCases } : prev));
       }
 
-      let consoleLogs = res.stdout || '';
-      if (res.aiSummary) {
+      let consoleLogs = res?.stdout || '';
+      if (res?.aiSummary) {
         consoleLogs = `[EVALUATOR SUMMARY]\n${res.aiSummary}\n\n` + consoleLogs;
       }
-      setRunOutput(consoleLogs || 'Execution completed.');
+      setRunOutput(consoleLogs || 'Execution completed successfully.');
       
-      if (res.stderr || res.error) {
+      if (res?.stderr || res?.error) {
         setCompileError(res.stderr || res.error);
       }
 
-      addToast(res.success ? 'Run completed: all tests passed!' : 'Run finished with test/execution failures.', res.success ? 'success' : 'warning');
+      if (addToast) addToast(res?.success ? 'Run completed: all tests passed!' : 'Run finished with test/execution failures.', res?.success ? 'success' : 'warning');
     } catch (err) {
       setCompileError(err?.message || 'Execution error');
-      addToast('Run failed to connect to evaluator.', 'error');
+      if (addToast) addToast('Run failed to connect to evaluator.', 'error');
     } finally {
       setIsRunning(false);
     }
@@ -173,50 +214,59 @@ export default function EditorPage({ addToast, theme, toggleTheme, setUser }) {
 
   const handleSubmit = async () => {
     if (!challenge?.id) {
-      addToast('This challenge is not ready to submit yet.', 'error');
+      if (addToast) addToast('This challenge is not ready to submit yet.', 'error');
       return;
     }
 
     setIsRunning(true);
     try {
-      const primaryFile = files.find((f) => f.name === activeFile?.name) || activeFile || files[0];
-      const res = await challengeService.submitChallenge(challenge.id, primaryFile?.content || '', files);
+      const currentActive = activeFileRef.current || activeFile;
+      const currentFiles = filesRef.current && filesRef.current.length > 0 ? filesRef.current : files;
+
+      const syncedFiles = currentFiles.map((f) =>
+        f.name === currentActive?.name ? { ...f, content: currentActive.content } : f
+      );
+      filesRef.current = syncedFiles;
+      setFiles(syncedFiles);
+      const primaryFile = syncedFiles.find((f) => f.name === currentActive?.name) || currentActive || syncedFiles[0];
+
+      const res = await challengeService.submitChallenge(challenge.id, primaryFile?.content || '', syncedFiles);
       
       const submissionState = {
-        success: res.success,
-        score: res.score,
+        success: Boolean(res?.success),
+        score: res?.score || 0,
         timeTaken: formatTime(timeElapsed),
-        bugsFixed: res.bugsFixed,
-        remainingIssues: res.remainingIssues,
-        testCases: res.testCases,
-        aiSummary: res.aiSummary,
-        stdout: res.stdout,
-        stderr: res.stderr,
+        bugsFixed: res?.bugsFixed || (res?.success ? 1 : 0),
+        remainingIssues: res?.remainingIssues || (res?.success ? 0 : 1),
+        testCases: res?.testCases || res?.test_cases || [],
+        aiSummary: res?.aiSummary || (res?.success ? 'All test cases passed successfully!' : 'Some test cases failed.'),
+        stdout: res?.stdout || '',
+        stderr: res?.stderr || '',
         challengeId: challenge.id
       };
 
       sessionStorage.setItem('buggyman-last-submission', JSON.stringify(submissionState));
 
-      if (typeof setUser === 'function' && res.success && !String(res.aiSummary || '').toLowerCase().includes('already solved')) {
+      if (typeof setUser === 'function' && res?.success && !String(res?.aiSummary || '').toLowerCase().includes('already solved')) {
         setUser((prev) => {
           if (!prev) return prev;
           const currentScore = prev.totalScore ?? prev.total_score ?? 0;
           const currentSolved = prev.challengesSolved ?? prev.challenges_solved ?? 0;
           return {
             ...prev,
-            totalScore: currentScore + (res.score || 0),
+            totalScore: currentScore + (res?.score || 0),
             challengesSolved: currentSolved + 1
           };
         });
       }
 
-      addToast(res.success ? 'Challenge solved successfully!' : 'Some test cases failed.', res.success ? 'success' : 'warning');
+      if (addToast) addToast(res?.success ? 'Challenge solved successfully!' : 'Some test cases failed.', res?.success ? 'success' : 'warning');
       
       navigate('/result', {
         state: submissionState
       });
     } catch (err) {
-      addToast(err?.message || 'Failed to submit solution.', 'error');
+      if (addToast) addToast(err?.message || 'Failed to submit solution.', 'error');
     } finally {
       setIsRunning(false);
     }
@@ -340,9 +390,9 @@ export default function EditorPage({ addToast, theme, toggleTheme, setUser }) {
         />
 
         {/* Core Editor & output panel container */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
           {/* File Tabs selector */}
-          <div className="h-9 bg-slate-950/90 border-b border-slate-800/80 flex items-center px-2 select-none gap-1 overflow-x-auto">
+          <div className="h-9 bg-slate-950/90 border-b border-slate-800/80 flex items-center px-2 select-none gap-1 overflow-x-auto shrink-0">
             {files.map(f => (
               <button
                 key={f.name}
@@ -359,7 +409,7 @@ export default function EditorPage({ addToast, theme, toggleTheme, setUser }) {
           </div>
 
           {/* Monaco Frame */}
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-[350px] relative flex flex-col w-full overflow-hidden">
             <CodeEditor 
               file={activeFile} 
               onChange={handleCodeChange}
@@ -382,7 +432,11 @@ export default function EditorPage({ addToast, theme, toggleTheme, setUser }) {
         {showHintPanel && (
           <AIHintPanel 
             challenge={challenge} 
+            userCode={activeFile?.content || ''}
+            testResults={challenge?.testCases || []}
             addToast={addToast}
+            user={user}
+            setUser={setUser}
           />
         )}
       </div>

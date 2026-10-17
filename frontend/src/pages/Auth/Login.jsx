@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Mail, Loader2, Bug } from 'lucide-react';
 import { authService } from '../../services/authService';
+import OAuthButtons from '../../components/OAuthButtons';
 
 export default function Login({ setUser, addToast }) {
   const navigate = useNavigate();
@@ -35,7 +36,12 @@ export default function Login({ setUser, addToast }) {
       const response = await authService.login(email, password, rememberMe);
       setUser(response.user);
       addToast('Login successful! Welcome back.', 'success');
-      navigate('/dashboard');
+      const isNew = Boolean(response.isNewUser || !response.user?.onboarding_completed);
+      if (isNew) {
+        navigate('/onboarding');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.message || 'Invalid credentials. Please try again.');
       addToast('Authentication failed.', 'error');
@@ -60,8 +66,16 @@ export default function Login({ setUser, addToast }) {
         </div>
 
         {/* Login Card */}
-        <div className="glass-panel rounded-2xl p-8 border border-slate-800 shadow-2xl">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="glass-panel rounded-2xl p-8 border border-slate-800 shadow-2xl space-y-6">
+          {/* SSO OAuth Buttons (Google, GitHub) */}
+          <OAuthButtons
+            setUser={setUser}
+            addToast={addToast}
+            rememberMe={rememberMe}
+            subtitle="Or sign in with email"
+          />
+
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className="p-3.5 bg-rose-500/10 border border-brand-rose/25 text-brand-rose text-xs font-semibold rounded-xl animate-fade-in">
                 {error}

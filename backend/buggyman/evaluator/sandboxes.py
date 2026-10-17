@@ -53,6 +53,14 @@ class SubprocessSandboxRunner(SandboxRunner):
         "LANG", "LC_ALL", "HOME", "USER"
     ]
 
+    MAX_OUTPUT_CHARS = 65536  # 64 KB maximum output buffer to prevent RAM exhaustion
+
+    @staticmethod
+    def _truncate_output(text):
+        if text and len(text) > SubprocessSandboxRunner.MAX_OUTPUT_CHARS:
+            return text[:SubprocessSandboxRunner.MAX_OUTPUT_CHARS] + "\n... [Output truncated after 64KB]"
+        return text
+
     def run(self, files, command, timeout=5.0, stdin_data=None):
         start_time = time.time()
         
@@ -83,7 +91,24 @@ class SubprocessSandboxRunner(SandboxRunner):
             sanitized_env["PYTHONUNBUFFERED"] = "1"
             sanitized_env["PYTHONDONTWRITEBYTECODE"] = "1"
 
-            # 3. Execute subprocess
+            # 3. Configure platform-specific execution sandbox constraints
+            preexec = None
+            if sys.platform != "win32":
+                def _linux_limits():
+                    try:
+                        import resource
+                        # Cap process memory to 512MB
+                        mem = 512 * 1024 * 1024
+                        resource.setrlimit(resource.RLIMIT_AS, (mem, mem))
+                    except Exception:
+                        pass
+                    try:
+                        os.setsid()
+                    except Exception:
+                        pass
+                preexec = _linux_limits
+
+            # 4. Execute subprocess
             timed_out = False
             error_msg = None
             stdout_text = ""
@@ -100,24 +125,32 @@ class SubprocessSandboxRunner(SandboxRunner):
                     env=sanitized_env,
                     text=True,
                     encoding="utf-8",
-                    errors="replace"
+                    errors="replace",
+                    preexec_fn=preexec
                 )
 
                 input_bytes = stdin_data if stdin_data else None
                 out, err = proc.communicate(input=input_bytes, timeout=timeout)
-                stdout_text = out or ""
-                stderr_text = err or ""
+                stdout_text = self._truncate_output(out or "")
+                stderr_text = self._truncate_output(err or "")
                 exit_code = proc.returncode
 
             except subprocess.TimeoutExpired:
                 timed_out = True
                 error_msg = f"Execution timed out after {timeout} seconds."
                 exit_code = 124
-                proc.kill()
+                try:
+                    if sys.platform != "win32" and hasattr(os, 'killpg'):
+                        import signal
+                        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                    else:
+                        proc.kill()
+                except Exception:
+                    proc.kill()
                 try:
                     out, err = proc.communicate(timeout=1.0)
-                    stdout_text = out or ""
-                    stderr_text = (err or "") + f"\n[TIMEOUT] Killed process after {timeout}s limit."
+                    stdout_text = self._truncate_output(out or "")
+                    stderr_text = self._truncate_output((err or "") + f"\n[TIMEOUT] Killed process after {timeout}s limit.")
                 except Exception:
                     stderr_text = f"[TIMEOUT] Killed process after {timeout}s limit."
 

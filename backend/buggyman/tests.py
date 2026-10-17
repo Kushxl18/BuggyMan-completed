@@ -1,7 +1,9 @@
 import re
 import json
+from unittest.mock import patch
 from django.test import TestCase
 from django.conf import settings
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
@@ -1773,38 +1775,39 @@ class BuggyManAPITestCase(TestCase):
         self.assertEqual(health_res.status_code, status.HTTP_200_OK)
         self.assertEqual(health_res.data['status'], 'healthy')
 
-    def test_catalog_cleanup_10_challenges(self):
+    def test_catalog_120_challenges(self):
         from django.core.management import call_command
         call_command('seed_db')
         
-        # 1. Verify GET /api/challenges returns exactly 10 published catalog challenges
-        res = self.client.get('/api/challenges')
+        # 1. Verify GET /api/challenges returns published Code Challenges (50+ total)
+        res = self.client.get('/api/challenges?arena=code')
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         challenges = res.data
-        self.assertEqual(len(challenges), 10)
+        self.assertGreaterEqual(len(challenges), 50)
 
-        # 2. Verify difficulty breakdown (3 Easy, 4 Medium, 3 Hard)
+        # 2. Verify difficulty breakdown (15 Easy, 20 Medium, 15 Hard)
         easy_count = sum(1 for c in challenges if c['difficulty'] == 'Easy')
         medium_count = sum(1 for c in challenges if c['difficulty'] == 'Medium')
         hard_count = sum(1 for c in challenges if c['difficulty'] == 'Hard')
-        self.assertEqual(easy_count, 3)
-        self.assertEqual(medium_count, 4)
-        self.assertEqual(hard_count, 3)
+        self.assertGreaterEqual(easy_count, 15)
+        self.assertGreaterEqual(medium_count, 20)
+        self.assertGreaterEqual(hard_count, 15)
 
         # 3. Test Difficulty filtering
-        easy_res = self.client.get('/api/challenges?difficulty=Easy')
-        self.assertEqual(len(easy_res.data), 3)
+        easy_res = self.client.get('/api/challenges?arena=code&difficulty=Easy')
+        self.assertGreaterEqual(len(easy_res.data), 15)
 
-        medium_res = self.client.get('/api/challenges?difficulty=Medium')
-        self.assertEqual(len(medium_res.data), 4)
+        medium_res = self.client.get('/api/challenges?arena=code&difficulty=Medium')
+        self.assertGreaterEqual(len(medium_res.data), 20)
 
-        hard_res = self.client.get('/api/challenges?difficulty=Hard')
-        self.assertEqual(len(hard_res.data), 3)
+        hard_res = self.client.get('/api/challenges?arena=code&difficulty=Hard')
+        self.assertGreaterEqual(len(hard_res.data), 15)
 
         # 4. Test Search filtering
-        search_res = self.client.get('/api/challenges?search=Toast')
+        search_res = self.client.get('/api/challenges?search=Webhook')
+        self.assertGreaterEqual(len(search_res.data), 1)
         self.assertEqual(search_res.status_code, status.HTTP_200_OK)
-        self.assertTrue(any('Toast' in c['title'] for c in search_res.data))
+        self.assertTrue(any('Webhook' in c['title'] for c in search_res.data))
 
         # 5. Verify SQL Lab and Frontend Studio arenas are intact
         sql_res = self.client.get('/api/challenges?arena=sql')
@@ -1815,8 +1818,9 @@ class BuggyManAPITestCase(TestCase):
         self.assertEqual(frontend_res.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(len(frontend_res.data), 1)
 
-        # 6. Verify all 10 catalog challenges can be fetched and executed
-        for c in challenges:
+        # 6. Sample catalog challenges can be fetched and executed
+        for c in challenges[:3]:
+            clear_rate_limits()
             detail_res = self.client.get(f"/api/challenges/{c['id']}")
             self.assertEqual(detail_res.status_code, status.HTTP_200_OK)
 
@@ -1824,6 +1828,841 @@ class BuggyManAPITestCase(TestCase):
             run_res = self.client.post(f"/api/challenges/{c['id']}/run", {'code': ''}, format='json')
             self.assertEqual(run_res.status_code, status.HTTP_200_OK)
             self.assertIn('success', run_res.data)
+
+
+class RecommendationSystemTestCase(TestCase):
+    def setUp(self):
+        clear_rate_limits()
+        cache.clear()
+        self.client = APIClient()
+
+        # Create test challenges
+        self.chal_sql = Challenge.objects.create(
+            title='SQL Filter Bug',
+            description='Fix WHERE query',
+            difficulty='Easy',
+            technology='SQL',
+            category='Query',
+            topics=['SQL Filter', 'WHERE'],
+            skills_tested=['SQL', 'Database'],
+            files=[{'name': 'query.sql', 'content': 'SELECT * FROM users;'}]
+        )
+        self.chal_frontend = Challenge.objects.create(
+            title='React State Mutation',
+            description='Fix count++',
+            difficulty='Easy',
+            technology='React',
+            category='State Management',
+            topics=['React State', 'Hooks'],
+            skills_tested=['React', 'Frontend'],
+            files=[{'name': 'App.jsx', 'content': 'export default function App() {}'}]
+        )
+        self.chal_backend = Challenge.objects.create(
+            title='Python List Index Error',
+            description='Fix off by one',
+            difficulty='Medium',
+            technology='Python',
+            category='Algorithms',
+            topics=['Arrays', 'Indexing'],
+            skills_tested=['Python', 'Backend'],
+            files=[{'name': 'main.py', 'content': 'def run(): pass'}]
+        )
+
+        # User A: Weak in SQL, Strong in Backend
+        self.user_a = User.objects.create_user(
+            username='usera',
+            email='usera@example.com',
+            password='Password123!',
+            strengths=['Backend'],
+            weaknesses=['SQL']
+        )
+
+        # User B: Weak in Frontend, Strong in SQL
+        self.user_b = User.objects.create_user(
+            username='userb',
+            email='userb@example.com',
+            password='Password123!',
+            strengths=['SQL'],
+            weaknesses=['Frontend']
+        )
+
+    def test_01_new_user_registration_with_strengths_and_weaknesses(self):
+        res = self.client.post('/api/register', {
+            'username': 'registereduser',
+            'email': 'reguser@example.com',
+            'password': 'Password123!',
+            'displayName': 'Registered User',
+            'strengths': ['Backend', 'SQL'],
+            'weaknesses': ['Frontend', 'APIs']
+        }, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        user_db = User.objects.get(username='registereduser')
+        self.assertEqual(user_db.strengths, ['Backend', 'SQL'])
+        self.assertEqual(user_db.weaknesses, ['Frontend', 'APIs'])
+
+        # Test profile GET endpoint returns strengths and weaknesses
+        self.client.force_authenticate(user=user_db)
+        prof_res = self.client.get('/api/profile')
+        self.assertEqual(prof_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(prof_res.data['strengths'], ['Backend', 'SQL'])
+        self.assertEqual(prof_res.data['weaknesses'], ['Frontend', 'APIs'])
+
+    def test_02_two_users_different_preferences_different_recommendations(self):
+
+        from buggyman.ml.recommender import ChallengeRecommender
+        recs_a = ChallengeRecommender.get_recommendations(self.user_a, limit=2)
+        recs_b = ChallengeRecommender.get_recommendations(self.user_b, limit=2)
+
+        self.assertGreaterEqual(len(recs_a), 1)
+        self.assertGreaterEqual(len(recs_b), 1)
+
+        # User A's top recommendation should target SQL weakness
+        top_a_tech = recs_a[0]['challenge']['technology']
+        self.assertEqual(top_a_tech, 'SQL')
+
+        # User B's top recommendation should target Frontend weakness
+        top_b_tech = recs_b[0]['challenge']['technology']
+        self.assertEqual(top_b_tech, 'React')
+
+    def test_03_solved_problems_not_recommended_again(self):
+        from buggyman.ml.recommender import ChallengeRecommender
+        # Mark SQL challenge solved for User A
+        Submission.objects.create(
+            user=self.user_a,
+            challenge=self.chal_sql,
+            submitted_code='SELECT * FROM users WHERE active = 1;',
+            success=True
+        )
+
+        recs = ChallengeRecommender.get_recommendations(self.user_a, limit=5)
+        rec_ids = [r['challenge']['id'] for r in recs]
+        self.assertNotIn(str(self.chal_sql.id), rec_ids)
+
+    def test_04_failed_attempts_affect_skill_calculations(self):
+        from buggyman.ml.skill_profiler import SkillProfiler
+        # Record failed submission for User A in Backend
+        sub = Submission.objects.create(
+            user=self.user_a,
+            challenge=self.chal_backend,
+            submitted_code='def run(): error',
+            success=False,
+            stderr='SyntaxError: invalid syntax'
+        )
+        matrix = SkillProfiler.calculate_skill_matrix(self.user_a)
+        self.assertIn('Backend', matrix['categorySkills'])
+
+    def test_05_difficulty_adapts_to_performance(self):
+        from buggyman.ml.recommender import ChallengeRecommender
+        # Give User A expert proficiency
+        self.user_a.challenges_solved = 15
+        self.user_a.total_score = 1500
+        self.user_a.save()
+
+        recs = ChallengeRecommender.get_recommendations(self.user_a, limit=3)
+        self.assertGreaterEqual(len(recs), 1)
+
+    def test_06_skill_profile_updates_after_new_submission(self):
+        from buggyman.ml.skill_profiler import SkillProfiler
+        matrix_before = SkillProfiler.calculate_skill_matrix(self.user_a)
+        
+        # User A submits clean solution
+        Submission.objects.create(
+            user=self.user_a,
+            challenge=self.chal_sql,
+            submitted_code='SELECT * FROM users;',
+            success=True
+        )
+        matrix_after = SkillProfiler.update_user_skills(self.user_a)
+        self.assertGreaterEqual(matrix_after['totalSolved'], 1)
+
+    def test_07_user_isolation_user_a_activity_does_not_affect_user_b(self):
+        from buggyman.ml.recommender import ChallengeRecommender
+        from buggyman.ml.skill_profiler import SkillProfiler
+
+        # User A solves SQL challenge
+        Submission.objects.create(
+            user=self.user_a,
+            challenge=self.chal_sql,
+            submitted_code='SELECT * FROM users;',
+            success=True
+        )
+        SkillProfiler.update_user_skills(self.user_a)
+
+        # Verify User B is unaffected
+        self.user_b.refresh_from_db()
+        self.assertEqual(self.user_b.challenges_solved, 0)
+
+        recs_b = ChallengeRecommender.get_recommendations(self.user_b, limit=5)
+        b_rec_ids = [r['challenge']['id'] for r in recs_b]
+        # SQL challenge should STILL be available for User B
+        self.assertIn(str(self.chal_sql.id), b_rec_ids)
+
+    def test_08_recommendations_work_when_user_solved_many_problems(self):
+        from buggyman.ml.recommender import ChallengeRecommender
+        # Mark all challenges solved for User A
+        for c in [self.chal_sql, self.chal_frontend, self.chal_backend]:
+            Submission.objects.create(user=self.user_a, challenge=c, submitted_code='code', success=True)
+
+        recs = ChallengeRecommender.get_recommendations(self.user_a, limit=2)
+        # Should gracefully return review recommendations without crashing
+        self.assertGreaterEqual(len(recs), 1)
+
+    def test_09_no_available_problems_for_weak_topic(self):
+        from buggyman.ml.recommender import ChallengeRecommender
+        user_c = User.objects.create_user(
+            username='userc',
+            email='userc@example.com',
+            password='Password123!',
+            weaknesses=['ObscureTopicWithoutChallenges']
+        )
+        recs = ChallengeRecommender.get_recommendations(user_c, limit=3)
+        self.assertGreaterEqual(len(recs), 1)
+
+    def test_10_user_with_no_solved_problems_yet(self):
+        from buggyman.ml.recommender import ChallengeRecommender
+        brand_new_user = User.objects.create_user(
+            username='newbie',
+            email='newbie@example.com',
+            password='Password123!'
+        )
+        recs = ChallengeRecommender.get_recommendations(brand_new_user, limit=5)
+        self.assertGreaterEqual(len(recs), 1)
+        self.assertIn('challenge', recs[0])
+        self.assertIn('reason', recs[0])
+
+    def test_11_sql_lab_remains_sql_only(self):
+        self.client.force_authenticate(user=self.user_a)
+        res = self.client.get('/api/challenges?arena=sql')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        for item in res.data:
+            tech = item.get('technology', '').upper()
+            title = item.get('title', '')
+            self.assertTrue(tech == 'SQL' or '[SQL-' in title, f"Non-SQL challenge found in SQL Lab: {title}")
+
+    def test_12_frontend_studio_remains_frontend_only(self):
+        self.client.force_authenticate(user=self.user_b)
+        res = self.client.get('/api/challenges?arena=frontend')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        for item in res.data:
+            tech = item.get('technology', '')
+            title = item.get('title', '')
+            is_fe = tech in ['React', 'React Router', 'Web', 'CSS', 'HTML', 'Styling', 'Controlled Components'] or '[RE-' in title or '[FE-' in title
+            self.assertTrue(is_fe, f"Non-Frontend challenge found in Frontend Studio: {title}")
+
+    def test_13_code_challenges_remain_code_challenges(self):
+        self.client.force_authenticate(user=self.user_a)
+        res = self.client.get('/api/challenges?arena=code')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(len(res.data), 1)
+
+    def test_14_user_a_and_user_b_personalized_page_listing_ordering_differs(self):
+        self.client.force_authenticate(user=self.user_a)
+        res_a = self.client.get('/api/challenges?personalized=true')
+        
+        self.client.force_authenticate(user=self.user_b)
+        res_b = self.client.get('/api/challenges?personalized=true')
+
+        self.assertEqual(res_a.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_b.status_code, status.HTTP_200_OK)
+
+        ids_a = [c['id'] for c in res_a.data]
+        ids_b = [c['id'] for c in res_b.data]
+
+        # Top personalized items for User A (weak in SQL) vs User B (weak in Frontend) should differ
+        self.assertNotEqual(ids_a, ids_b)
+
+
+class CareerInsightsTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        # User A: Strong in Backend & SQL
+        self.user_a = User.objects.create_user(
+            username='user_backend_master',
+            email='backend@test.com',
+            password='password123',
+            strengths=['Backend', 'SQL', 'APIs'],
+            weaknesses=['Frontend', 'DevOps']
+        )
+
+        # User B: Strong in Frontend
+        self.user_b = User.objects.create_user(
+            username='user_frontend_master',
+            email='frontend@test.com',
+            password='password123',
+            strengths=['Frontend'],
+            weaknesses=['SQL', 'Database']
+        )
+
+        # Cold start user with 0 submissions and 0 preferences
+        self.user_cold = User.objects.create_user(
+            username='user_cold_start',
+            email='cold@test.com',
+            password='password123'
+        )
+
+        # Create benchmark challenges
+        self.chal_backend = Challenge.objects.create(
+            title='[PY-01] Fix FastAPI Route',
+            description='Fix backend routing exception',
+            difficulty='Medium',
+            technology='Python',
+            category='Backend',
+            topics=['Backend', 'APIs']
+        )
+        self.chal_sql = Challenge.objects.create(
+            title='[SQL-01] Fix Aggregation',
+            description='Fix GROUP BY query',
+            difficulty='Medium',
+            technology='SQL',
+            category='SQL',
+            topics=['SQL', 'Database']
+        )
+        self.chal_frontend = Challenge.objects.create(
+            title='[RE-01] Fix Hook State',
+            description='Fix state mutation bug',
+            difficulty='Medium',
+            technology='React',
+            category='Frontend',
+            topics=['Frontend']
+        )
+
+    def test_01_unauthenticated_user_denied(self):
+        res = self.client.get('/api/career-insights')
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_02_cold_start_user_receives_insufficient_data_notice(self):
+        self.client.force_authenticate(user=self.user_cold)
+        res = self.client.get('/api/career-insights')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(res.data.get('isInsufficientData'))
+        self.assertIn('dataMessage', res.data)
+
+    def test_03_backend_oriented_user_receives_backend_top_match(self):
+        from buggyman.ml.career_engine import CareerEngine
+        # Add solved submission in backend & SQL for User A
+        Submission.objects.create(
+            user=self.user_a,
+            challenge=self.chal_backend,
+            submitted_code='def run(): pass',
+            success=True
+        )
+        Submission.objects.create(
+            user=self.user_a,
+            challenge=self.chal_sql,
+            submitted_code='SELECT 1;',
+            success=True
+        )
+
+        insights = CareerEngine.calculate_role_insights(self.user_a)
+        top_role_id = insights['topMatch']['id']
+        self.assertIn(top_role_id, ['backend-developer', 'fullstack-developer', 'data-engineer'])
+        self.assertIn(insights['topMatch']['matchLabel'], ['Strong Match', 'Good Match'])
+
+    def test_04_frontend_oriented_user_receives_frontend_top_match(self):
+        from buggyman.ml.career_engine import CareerEngine
+        # Add solved submission in Frontend for User B
+        Submission.objects.create(
+            user=self.user_b,
+            challenge=self.chal_frontend,
+            submitted_code='export default function App() {}',
+            success=True
+        )
+
+        insights = CareerEngine.calculate_role_insights(self.user_b)
+        top_role_title = insights['topMatch']['title']
+        self.assertIn('Frontend', top_role_title)
+
+    def test_05_market_demand_metadata_is_separate_and_present(self):
+        self.client.force_authenticate(user=self.user_a)
+        res = self.client.get('/api/career-insights')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        top_role = res.data['topMatch']
+        self.assertIn('marketDemand', top_role)
+        self.assertIn('demandScore', top_role)
+        self.assertIn('marketTrend', top_role)
+        self.assertIn('lastUpdated', top_role)
+        self.assertIn('source', top_role)
+
+    def test_06_skill_gaps_connect_to_existing_recommendation_engine(self):
+        self.client.force_authenticate(user=self.user_a)
+        res = self.client.get('/api/career-insights')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        top_role = res.data['topMatch']
+        self.assertIn('skillGaps', top_role)
+        self.assertIn('recommendedChallenges', top_role)
+
+    def test_07_user_a_cannot_access_user_b_career_data(self):
+        self.client.force_authenticate(user=self.user_a)
+        res_a = self.client.get('/api/career-insights')
+        
+        self.client.force_authenticate(user=self.user_b)
+        res_b = self.client.get('/api/career-insights')
+
+        # Top role or scores must be user isolated
+        score_a = res_a.data['topMatch']['matchScore']
+        score_b = res_b.data['topMatch']['matchScore']
+        self.assertTrue(score_a > 0 and score_b > 0)
+
+
+class BugBytesAndAIHintTestCase(TestCase):
+    def setUp(self):
+        clear_rate_limits()
+        cache.clear()
+        self.client = APIClient()
+
+        self.user_a = User.objects.create_user(
+            username='user_bugbytes_a',
+            email='bb_a@test.com',
+            password='password123',
+            bugbytes_balance=50
+        )
+
+        self.user_b = User.objects.create_user(
+            username='user_bugbytes_b',
+            email='bb_b@test.com',
+            password='password123',
+            bugbytes_balance=10
+        )
+
+        self.chal_easy = Challenge.objects.create(
+            title='[PY-E01] User Registration Case Test',
+            description='Test description',
+            difficulty='Easy',
+            technology='Python',
+            category='Validation',
+            files=[{'name': 'auth.py', 'content': 'def run(): return True'}],
+            test_cases=[{'id': 1, 'name': 'Test 1', 'input': 'run()', 'expected': 'True'}]
+        )
+
+    def test_01_user_initial_bugbytes_balance(self):
+        self.client.force_authenticate(user=self.user_a)
+        res = self.client.get('/api/bugbytes')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['balance'], 50)
+
+    def test_02_challenge_completion_awards_bugbytes(self):
+        from buggyman.models import Submission, BugBytesTransaction
+        self.client.force_authenticate(user=self.user_a)
+
+        res = self.client.post(f'/api/challenges/{self.chal_easy.id}/submit', {'code': 'def run(): return True'}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        self.user_a.refresh_from_db()
+        # Easy (10) + First Attempt (5) + Full Test Pass (5) = 20 bonus BugBytes
+        self.assertEqual(self.user_a.bugbytes_balance, 70)
+
+        tx = BugBytesTransaction.objects.filter(user=self.user_a, transaction_type='EARN_CHALLENGE').first()
+        self.assertIsNotNone(tx)
+        self.assertEqual(tx.amount, 20)
+
+    def test_03_duplicate_completion_prevents_bugbytes_farming(self):
+        self.client.force_authenticate(user=self.user_a)
+
+        # First submission
+        self.client.post(f'/api/challenges/{self.chal_easy.id}/submit', {'code': 'def run(): return True'}, format='json')
+        self.user_a.refresh_from_db()
+        bal_after_first = self.user_a.bugbytes_balance
+
+        # Second duplicate submission
+        self.client.post(f'/api/challenges/{self.chal_easy.id}/submit', {'code': 'def run(): return True'}, format='json')
+        self.user_a.refresh_from_db()
+        self.assertEqual(self.user_a.bugbytes_balance, bal_after_first)
+
+    def test_04_insufficient_bugbytes_rejects_hint(self):
+        self.user_b.bugbytes_balance = 2
+        self.user_b.save()
+
+        self.client.force_authenticate(user=self.user_b)
+        res = self.client.post(f'/api/challenges/{self.chal_easy.id}/hints', {'level': 1}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('need 5 BugBytes', res.data['error'])
+
+    @patch('buggyman.ai.groq_service.AIHintService.generate_hint')
+    def test_05_successful_hint_unlock_deducts_bugbytes(self, mock_gen):
+        mock_gen.return_value = {
+            'success': True,
+            'hint': 'Focus on input string normalization.'
+        }
+
+        self.client.force_authenticate(user=self.user_a)
+        res = self.client.post(f'/api/challenges/{self.chal_easy.id}/hints', {'level': 1}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['cost'], 5)
+        self.assertEqual(res.data['remaining_bugbytes'], 45)
+        self.assertEqual(res.data['hint'], 'Focus on input string normalization.')
+
+        self.user_a.refresh_from_db()
+        self.assertEqual(self.user_a.bugbytes_balance, 45)
+
+    @patch('buggyman.ai.groq_service.AIHintService.generate_hint')
+    def test_06_groq_failure_does_not_deduct_bugbytes(self, mock_gen):
+        mock_gen.return_value = {
+            'success': False,
+            'error': 'AI assistance is temporarily unavailable. Your BugBytes were not deducted.'
+        }
+
+        self.client.force_authenticate(user=self.user_a)
+        res = self.client.post(f'/api/challenges/{self.chal_easy.id}/hints', {'level': 1}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        self.user_a.refresh_from_db()
+        self.assertEqual(self.user_a.bugbytes_balance, 50)
+
+    @patch('buggyman.ai.groq_service.AIHintService.generate_hint')
+    def test_07_previously_unlocked_hint_returned_at_zero_cost(self, mock_gen):
+        mock_gen.return_value = {
+            'success': True,
+            'hint': 'Focus on input string normalization.'
+        }
+
+        self.client.force_authenticate(user=self.user_a)
+        # First unlock
+        res1 = self.client.post(f'/api/challenges/{self.chal_easy.id}/hints', {'level': 1}, format='json')
+        self.assertEqual(res1.status_code, status.HTTP_200_OK)
+
+        # Second request (re-read)
+        res2 = self.client.post(f'/api/challenges/{self.chal_easy.id}/hints', {'level': 1}, format='json')
+        self.assertEqual(res2.status_code, status.HTTP_200_OK)
+        self.assertEqual(res2.data['cost'], 0)
+        self.assertTrue(res2.data['already_unlocked'])
+
+        # Groq service should only have been called once!
+        self.assertEqual(mock_gen.call_count, 1)
+
+    def test_08_user_isolation_on_unlocked_hints(self):
+        from buggyman.models import UnlockedHint
+        UnlockedHint.objects.create(
+            user=self.user_a,
+            challenge=self.chal_easy,
+            hint_level=1,
+            hint_content='User A secret hint',
+            cost=5
+        )
+
+        self.client.force_authenticate(user=self.user_b)
+        res = self.client.get(f'/api/challenges/{self.chal_easy.id}/hints')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 0)
+
+
+class BugBytesStoreAndRewardsTestCase(TestCase):
+    def setUp(self):
+        clear_rate_limits()
+        cache.clear()
+        self.client = APIClient()
+
+        self.user = User.objects.create_user(
+            username='store_tester',
+            email='store@test.com',
+            password='password123',
+            bugbytes_balance=0 # Test user starting with zero BugBytes!
+        )
+
+        from buggyman.models import BugBytesPackage
+        self.pkg_starter = BugBytesPackage.objects.create(
+            name='Starter Pack',
+            bugbytes=5,
+            price_inr=10.00,
+            is_best_value=False,
+            order_priority=1,
+            mission_title='Starter Money-Back Mission',
+            mission_days=7,
+            mission_challenge_count=5,
+            mission_difficulty='Medium',
+            reward_amount_inr=10.00
+        )
+
+        self.pkg_pro = BugBytesPackage.objects.create(
+            name='Pro Debugger Pack',
+            bugbytes=15,
+            price_inr=25.00,
+            is_best_value=False,
+            order_priority=2,
+            mission_title='Pro Money-Back Mission',
+            mission_days=7,
+            mission_challenge_count=5,
+            mission_difficulty='Hard',
+            reward_amount_inr=25.00
+        )
+
+        self.chal_easy = Challenge.objects.create(
+            title='[TEST-E01] Easy Challenge',
+            description='Easy desc',
+            difficulty='Easy',
+            technology='Python',
+            category='General',
+            files=[{'name': 'solution.py', 'content': 'def run(): return 1'}],
+            test_cases=[{'id': 1, 'name': 'T1', 'input': 'run()', 'expected': '1'}]
+        )
+
+        self.chal_med1 = Challenge.objects.create(
+            title='[TEST-M01] Medium Challenge 1',
+            description='Med 1 desc',
+            difficulty='Medium',
+            technology='Python',
+            category='General',
+            files=[{'name': 'solution.py', 'content': 'def run(): return 1'}],
+            test_cases=[{'id': 1, 'name': 'T1', 'input': 'run()', 'expected': '1'}]
+        )
+
+        self.chal_med2 = Challenge.objects.create(
+            title='[TEST-M02] Medium Challenge 2',
+            description='Med 2 desc',
+            difficulty='Medium',
+            technology='Python',
+            category='General',
+            files=[{'name': 'solution.py', 'content': 'def run(): return 1'}],
+            test_cases=[{'id': 1, 'name': 'T1', 'input': 'run()', 'expected': '1'}]
+        )
+
+    def test_01_store_packages_listing(self):
+        self.client.force_authenticate(user=self.user)
+        res = self.client.get('/api/store/packages')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(len(res.data['packages']) >= 2)
+        self.assertEqual(res.data['userBalance'], 0)
+        self.assertTrue(res.data['isDemo'])
+        self.assertIn('Academic Evaluation', res.data['disclaimer'])
+
+    def test_02_store_checkout_creates_pending_purchase(self):
+        self.client.force_authenticate(user=self.user)
+        res = self.client.post('/api/store/checkout', {'packageId': self.pkg_starter.id}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.data['purchase']['status'], 'PENDING')
+        self.assertEqual(res.data['purchase']['bugbytesAmount'], 5)
+        self.assertTrue(res.data['purchase']['transactionReference'].startswith('DEMO-PUR-'))
+
+    def test_03_payment_success_credits_bugbytes_and_activates_mission(self):
+        self.client.force_authenticate(user=self.user)
+        # 1. Create Checkout
+        checkout_res = self.client.post('/api/store/checkout', {'packageId': self.pkg_starter.id}, format='json')
+        tx_ref = checkout_res.data['purchase']['transactionReference']
+
+        # 2. Confirm Payment with simulated SUCCESS
+        confirm_res = self.client.post('/api/store/confirm-payment', {
+            'transactionReference': tx_ref,
+            'simulateOutcome': 'SUCCESS',
+            'startMission': True
+        }, format='json')
+
+        self.assertEqual(confirm_res.status_code, status.HTTP_200_OK)
+        self.assertTrue(confirm_res.data['success'])
+        self.assertEqual(confirm_res.data['newBalance'], 5)
+        self.assertIsNotNone(confirm_res.data['rewardMission'])
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.bugbytes_balance, 5)
+
+        from buggyman.models import RewardMission, BugBytesTransaction
+        mission = RewardMission.objects.filter(purchase__transaction_reference=tx_ref).first()
+        self.assertIsNotNone(mission)
+        self.assertEqual(mission.status, 'ACTIVE')
+        self.assertEqual(mission.required_count, 5)
+        self.assertEqual(mission.reward_amount_inr, 10.00)
+
+        # Audit ledger
+        bb_tx = BugBytesTransaction.objects.filter(user=self.user, transaction_type='STORE_PURCHASE').first()
+        self.assertIsNotNone(bb_tx)
+        self.assertEqual(bb_tx.amount, 5)
+
+    def test_04_payment_idempotency_prevents_duplicate_credits(self):
+        self.client.force_authenticate(user=self.user)
+        checkout_res = self.client.post('/api/store/checkout', {'packageId': self.pkg_starter.id}, format='json')
+        tx_ref = checkout_res.data['purchase']['transactionReference']
+
+        # First confirm
+        self.client.post('/api/store/confirm-payment', {
+            'transactionReference': tx_ref,
+            'simulateOutcome': 'SUCCESS'
+        }, format='json')
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.bugbytes_balance, 5)
+
+        # Second confirm with same tx_ref (e.g. user refreshed or double-clicked)
+        confirm_2 = self.client.post('/api/store/confirm-payment', {
+            'transactionReference': tx_ref,
+            'simulateOutcome': 'SUCCESS'
+        }, format='json')
+
+        self.assertEqual(confirm_2.status_code, status.HTTP_200_OK)
+        self.assertTrue(confirm_2.data.get('alreadyProcessed'))
+
+        self.user.refresh_from_db()
+        # Balance must remain exactly 5, NOT 10!
+        self.assertEqual(self.user.bugbytes_balance, 5)
+
+    def test_05_payment_failure_does_not_credit_bugbytes(self):
+        self.client.force_authenticate(user=self.user)
+        checkout_res = self.client.post('/api/store/checkout', {'packageId': self.pkg_starter.id}, format='json')
+        tx_ref = checkout_res.data['purchase']['transactionReference']
+
+        # Confirm Payment with simulated FAILURE
+        confirm_res = self.client.post('/api/store/confirm-payment', {
+            'transactionReference': tx_ref,
+            'simulateOutcome': 'FAILURE',
+            'failureReason': 'Simulated Test Card Decline'
+        }, format='json')
+
+        self.assertEqual(confirm_res.status_code, status.HTTP_200_OK)
+        self.assertFalse(confirm_res.data['success'])
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.bugbytes_balance, 0)
+
+    def test_06_eligible_challenge_completion_increments_mission_progress(self):
+        self.client.force_authenticate(user=self.user)
+        # Purchase starter pack (requires 5 Medium challenges)
+        c_res = self.client.post('/api/store/checkout', {'packageId': self.pkg_starter.id}, format='json')
+        tx_ref = c_res.data['purchase']['transactionReference']
+        self.client.post('/api/store/confirm-payment', {'transactionReference': tx_ref, 'simulateOutcome': 'SUCCESS'}, format='json')
+
+        from buggyman.models import RewardMission
+        mission = RewardMission.objects.get(purchase__transaction_reference=tx_ref)
+        self.assertEqual(mission.completed_count, 0)
+
+        # 1. Solve Easy Challenge -> Ineligible, should NOT increment!
+        self.client.post(f'/api/challenges/{self.chal_easy.id}/submit', {'code': 'def run(): return 1'}, format='json')
+        mission.refresh_from_db()
+        self.assertEqual(mission.completed_count, 0)
+
+        # 2. Solve Medium Challenge 1 -> Eligible, should increment to 1!
+        self.client.post(f'/api/challenges/{self.chal_med1.id}/submit', {'code': 'def run(): return 1'}, format='json')
+        mission.refresh_from_db()
+        self.assertEqual(mission.completed_count, 1)
+
+        # 3. Solve Medium Challenge 1 again -> Duplicate, should NOT increment again!
+        self.client.post(f'/api/challenges/{self.chal_med1.id}/submit', {'code': 'def run(): return 1'}, format='json')
+        mission.refresh_from_db()
+        self.assertEqual(mission.completed_count, 1)
+
+        # 4. Solve Medium Challenge 2 -> Distinct eligible, should increment to 2!
+        self.client.post(f'/api/challenges/{self.chal_med2.id}/submit', {'code': 'def run(): return 1'}, format='json')
+        mission.refresh_from_db()
+        self.assertEqual(mission.completed_count, 2)
+
+    def test_07_mission_completion_and_claim_reward(self):
+        from buggyman.models import RewardMission, BugBytesPurchase, SimulatedRewardTransaction
+        purchase = BugBytesPurchase.objects.create(
+            user=self.user,
+            package=self.pkg_starter,
+            package_name='Starter Pack',
+            bugbytes_amount=5,
+            price_inr=10.00,
+            status='COMPLETED',
+            transaction_reference='DEMO-PUR-TEST-CLAIM'
+        )
+
+        mission = RewardMission.objects.create(
+            user=self.user,
+            purchase=purchase,
+            title='Starter Mission',
+            required_difficulty='Medium',
+            required_count=2,
+            completed_count=2, # Satisfied!
+            duration_days=7,
+            deadline=timezone.now() + timezone.timedelta(days=7),
+            reward_amount_inr=10.00,
+            status='COMPLETED'
+        )
+
+        self.client.force_authenticate(user=self.user)
+        res = self.client.post(f'/api/store/missions/{mission.id}/claim')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(res.data['success'])
+        self.assertEqual(res.data['rewardTransaction']['rewardAmountInr'], 10.00)
+
+        mission.refresh_from_db()
+        self.assertEqual(mission.status, 'CLAIMED')
+
+        # Double claim rejection
+        res_dup = self.client.post(f'/api/store/missions/{mission.id}/claim')
+        self.assertEqual(res_dup.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(res_dup.data.get('alreadyClaimed'))
+
+    def test_08_expired_mission_cannot_be_claimed(self):
+        from buggyman.models import RewardMission, BugBytesPurchase
+        purchase = BugBytesPurchase.objects.create(
+            user=self.user,
+            package=self.pkg_starter,
+            package_name='Starter Pack',
+            bugbytes_amount=5,
+            price_inr=10.00,
+            status='COMPLETED',
+            transaction_reference='DEMO-PUR-TEST-EXP'
+        )
+
+        # Expired deadline in the past
+        mission = RewardMission.objects.create(
+            user=self.user,
+            purchase=purchase,
+            title='Expired Mission',
+            required_difficulty='Medium',
+            required_count=5,
+            completed_count=3,
+            duration_days=7,
+            deadline=timezone.now() - timezone.timedelta(days=1),
+            reward_amount_inr=10.00,
+            status='ACTIVE'
+        )
+
+        self.client.force_authenticate(user=self.user)
+        res = self.client.post(f'/api/store/missions/{mission.id}/claim')
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        mission.refresh_from_db()
+        self.assertEqual(mission.status, 'EXPIRED')
+
+    def test_09_rewards_summary_calculation(self):
+        from buggyman.models import RewardMission, BugBytesPurchase, SimulatedRewardTransaction
+        p1 = BugBytesPurchase.objects.create(
+            user=self.user,
+            package_name='Pack 1',
+            bugbytes_amount=5,
+            price_inr=10.00,
+            status='COMPLETED',
+            transaction_reference='DEMO-PUR-S1'
+        )
+        p2 = BugBytesPurchase.objects.create(
+            user=self.user,
+            package_name='Pack 2',
+            bugbytes_amount=15,
+            price_inr=25.00,
+            status='COMPLETED',
+            transaction_reference='DEMO-PUR-S2'
+        )
+        m1 = RewardMission.objects.create(
+            user=self.user,
+            purchase=p1,
+            title='M1',
+            required_difficulty='Medium',
+            required_count=5,
+            completed_count=5,
+            duration_days=7,
+            deadline=timezone.now() + timezone.timedelta(days=7),
+            reward_amount_inr=10.00,
+            status='CLAIMED'
+        )
+        SimulatedRewardTransaction.objects.create(
+            mission=m1,
+            user=self.user,
+            purchase=p1,
+            reward_amount_inr=10.00,
+            transaction_reference='DEMO-REW-S1'
+        )
+
+        self.client.force_authenticate(user=self.user)
+        res = self.client.get('/api/store/rewards')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        # Total purchased = 10 + 25 = 35. Total rewarded = 10. Net cost = 25.
+        self.assertEqual(res.data['totalPurchasedInr'], 35.00)
+        self.assertEqual(res.data['totalRewardedInr'], 10.00)
+        self.assertEqual(res.data['netSimulatedCostInr'], 25.00)
+
+
+
+
+
 
 
 

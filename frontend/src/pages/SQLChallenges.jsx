@@ -10,7 +10,8 @@ import {
   Terminal, 
   Table, 
   Cpu, 
-  Layers 
+  Layers,
+  CheckCircle2
 } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -129,29 +130,48 @@ const INITIAL_SQL_CHALLENGES = [
 
 export default function SQLChallenges({ addToast }) {
   const [challenges, setChallenges] = useState(INITIAL_SQL_CHALLENGES);
+  const [loading, setLoading] = useState(true);
   const [searchVal, setSearchVal] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState('All');
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const [generating, setGenerating] = useState(false);
   const [genDifficulty, setGenDifficulty] = useState('Medium');
+
+  useEffect(() => {
+    async function loadBackendSQLChallenges() {
+      try {
+        setLoading(true);
+        const data = await challengeService.getChallenges({ arena: 'sql', personalized: true });
+        if (Array.isArray(data) && data.length > 0) {
+          const apiFormatted = data.map(c => ({
+            ...c,
+            id: String(c.id),
+            tables: c.tables || ['orders', 'customers', 'analytics']
+          }));
+          setChallenges(apiFormatted);
+        }
+      } catch (err) {
+        console.error('Failed to sync backend SQL challenges:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadBackendSQLChallenges();
+  }, []);
 
   const handleGenerateSQLChallenge = async () => {
     try {
       setGenerating(true);
-      await new Promise(r => setTimeout(r, 1000));
-      const newChal = {
-        id: `sql-ai-${Date.now()}`,
-        title: `AI SQL: ${genDifficulty} Multi-Table Query #${Math.floor(Math.random() * 900 + 100)}`,
-        description: `Dynamically generated ${genDifficulty} SQL query challenge involving data aggregation, join optimization, and indexed constraints.`,
+      const newChal = await challengeService.generateChallenge({
         difficulty: genDifficulty,
         technology: 'SQL',
-        category: 'AI Generated Query',
-        timeEstimate: genDifficulty === 'Easy' ? '10 mins' : genDifficulty === 'Medium' ? '15 mins' : '25 mins',
-        points: genDifficulty === 'Easy' ? 100 : genDifficulty === 'Medium' ? 150 : 300,
-        tables: ['analytics_events', 'session_data'],
-        expectedOutput: 'Optimized SQL query returning expected schema columns without table scans.'
+        category: 'AI Generated Query'
+      });
+      const formattedChal = {
+        ...newChal,
+        id: String(newChal.id),
+        tables: ['analytics_events', 'session_data']
       };
-      setChallenges(prev => [newChal, ...prev]);
+      setChallenges(prev => [formattedChal, ...prev]);
       addToast(`Generated dynamic ${genDifficulty} SQL challenge!`, 'success');
     } catch (err) {
       addToast('Failed to generate SQL challenge.', 'error');
@@ -161,11 +181,10 @@ export default function SQLChallenges({ addToast }) {
   };
 
   const filteredChallenges = challenges.filter(c => {
-    const matchesSearch = c.title.toLowerCase().includes(searchVal.toLowerCase()) ||
-                          c.description.toLowerCase().includes(searchVal.toLowerCase());
+    const matchesSearch = (c.title || '').toLowerCase().includes(searchVal.toLowerCase()) ||
+                          (c.description || '').toLowerCase().includes(searchVal.toLowerCase());
     const matchesDifficulty = selectedDifficulty === 'All' || c.difficulty === selectedDifficulty;
-    const matchesCategory = selectedCategory === 'All' || c.category === selectedCategory;
-    return matchesSearch && matchesDifficulty && matchesCategory;
+    return matchesSearch && matchesDifficulty;
   });
 
   return (
@@ -175,13 +194,16 @@ export default function SQLChallenges({ addToast }) {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="badge badge-cyan">DATABASE LAB</span>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">PostgreSQL • MySQL • SQLite</span>
+            <span className="badge badge-indigo text-[10px] uppercase font-bold">Personalized</span>
           </div>
           <h1 className="font-heading font-extrabold text-2xl text-slate-800 dark:text-[#F0F2F4] flex items-center gap-2.5">
             <Database className="w-7 h-7 text-cyan-500" />
             <span>SQL Debugging & Query Optimization</span>
           </h1>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Master database indexing, JOIN optimization, CTEs, and query performance debugging.</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <span>SQL challenges adapted to your query & schema proficiency</span>
+          </p>
         </div>
 
         <SearchBar 
@@ -190,63 +212,6 @@ export default function SQLChallenges({ addToast }) {
           onClear={() => setSearchVal('')}
           placeholder="Search SQL challenges..."
         />
-      </div>
-
-      {/* AI SQL Challenge Generator Banner */}
-      <div className="glass-panel p-6 rounded-xl border border-cyan-500/30 bg-white dark:bg-[#15181B] relative overflow-hidden">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 dark:text-cyan-400">
-              <Cpu className="w-7 h-7" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="badge badge-emerald">AI SQL ENGINE</span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Auto-generate relational schema & query bugs</span>
-              </div>
-              <h2 className="font-heading font-bold text-lg text-slate-800 dark:text-[#F0F2F4]">Generate Custom SQL Challenge</h2>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            {/* Difficulty Selector */}
-            <div className="flex bg-slate-100 dark:bg-[#1B1F23] p-1 rounded-lg border border-slate-200 dark:border-[#292E33] text-xs font-semibold">
-              {['Easy', 'Medium', 'Hard'].map((diff) => (
-                <button
-                  key={diff}
-                  onClick={() => setGenDifficulty(diff)}
-                  className={`px-3 py-1.5 rounded-md transition-colors ${
-                    genDifficulty === diff 
-                      ? diff === 'Easy' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' 
-                        : diff === 'Medium' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                        : 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`}
-                >
-                  {diff}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={handleGenerateSQLChallenge}
-              disabled={generating}
-              className="button-primary px-5 py-2 text-xs font-bold whitespace-nowrap"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Generating SQL Task...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-3.5 h-3.5 text-white" />
-                  <span>Generate SQL Challenge</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Difficulty Filter Bar */}
@@ -271,17 +236,29 @@ export default function SQLChallenges({ addToast }) {
       </div>
 
       {/* Challenge Grid */}
-      {filteredChallenges.length > 0 ? (
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center min-h-[300px]">
+          <LoadingSpinner size="lg" />
+        </div>
+      ) : filteredChallenges.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredChallenges.map((chal) => (
             <div key={chal.id} className="glass-panel rounded-xl p-6 flex flex-col justify-between hover:border-cyan-500/40 transition-all duration-200 relative group">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className={`badge ${
-                    chal.difficulty === 'Easy' ? 'badge-emerald' : chal.difficulty === 'Medium' ? 'badge-amber' : 'badge-rose'
-                  }`}>
-                    {chal.difficulty}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`badge ${
+                      chal.difficulty === 'Easy' ? 'badge-emerald' : chal.difficulty === 'Medium' ? 'badge-amber' : 'badge-rose'
+                    }`}>
+                      {chal.difficulty}
+                    </span>
+                    {chal.isSolved && (
+                      <span className="badge badge-emerald flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                        <span>PASSED</span>
+                      </span>
+                    )}
+                  </div>
                   <span className="badge badge-cyan">
                     {chal.category}
                   </span>
@@ -296,19 +273,26 @@ export default function SQLChallenges({ addToast }) {
                   </p>
                 </div>
 
+                {chal.reason && (
+                  <p className="text-[11px] text-cyan-400/90 font-medium flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-cyan-400 shrink-0" />
+                    <span>{chal.reason}</span>
+                  </p>
+                )}
+
                 {/* Schema Tables Involved */}
                 <div className="flex items-center gap-2 pt-1">
                   <Table className="w-3.5 h-3.5 text-slate-500" />
                   <span className="text-[11px] text-slate-600 dark:text-slate-400 font-mono">
-                    Tables: {chal.tables.join(', ')}
+                    Tables: {(chal.tables || ['orders', 'customers']).join(', ')}
                   </span>
                 </div>
               </div>
 
               <div className="border-t border-slate-200 dark:border-[#292E33] pt-4 mt-5 flex items-center justify-between">
                 <div className="text-[10px] text-slate-500 font-bold space-y-0.5">
-                  <p className="uppercase">EST. TIME: <span className="text-slate-700 dark:text-slate-300">{chal.timeEstimate}</span></p>
-                  <p className="uppercase">XP REWARD: <span className="text-cyan-600 dark:text-cyan-400">{chal.points} XP</span></p>
+                  <p className="uppercase">EST. TIME: <span className="text-slate-700 dark:text-slate-300">{chal.timeEstimate || '10 mins'}</span></p>
+                  <p className="uppercase">XP REWARD: <span className="text-cyan-600 dark:text-cyan-400">{chal.points || 100} XP</span></p>
                 </div>
 
                 <Link 
@@ -316,9 +300,8 @@ export default function SQLChallenges({ addToast }) {
                   className="button-primary px-4 py-2 text-xs"
                 >
                   <Terminal className="w-3.5 h-3.5" />
-                  <span>Launch SQL Lab</span>
+                  <span>{chal.isSolved ? 'Review SQL Lab' : 'Launch SQL Lab'}</span>
                 </Link>
-
               </div>
             </div>
           ))}

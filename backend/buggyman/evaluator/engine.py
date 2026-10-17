@@ -33,7 +33,7 @@ class EvaluationEngine:
         if tech_lower in ['python', 'django', 'backend', 'fastapi', 'flask']:
             return self.python_adapter
         
-        if tech_lower in ['javascript', 'nodejs', 'node', 'express', 'react']:
+        if tech_lower in ['javascript', 'js', 'typescript', 'ts', 'nodejs', 'node', 'express', 'react', 'react router', 'react-router']:
             return self.node_adapter
         
         if tech_lower in ['css', 'html', 'styling', 'frontend design']:
@@ -141,16 +141,15 @@ class EvaluationEngine:
         exit_code = res.get('exit_code', -1)
         error = res.get('error')
 
-        if tests_total > 0:
-            success = (tests_passed == tests_total) and not timed_out and (exit_code == 0 or adapter == self.static_adapter)
-            score = int(round((tests_passed / tests_total) * points)) if success else 0
-        else:
-            success = (exit_code == 0) and not timed_out and not error
-            score = points if success else 0
-
-        # Check secondary bug signature detection for metadata/analytics
         primary_code = "\n".join([f.get('content', '') for f in norm_files])
         bug_signature_detected = (bug_signature.strip() in primary_code) if bug_signature.strip() else False
+
+        if tests_total > 0:
+            success = (tests_passed == tests_total) and not timed_out and (exit_code == 0) and not bug_signature_detected and not error
+            score = int(round((tests_passed / tests_total) * points)) if success else 0
+        else:
+            success = (exit_code == 0) and not timed_out and not error and not bug_signature_detected
+            score = points if success else 0
 
         # Generate summary message
         if timed_out:

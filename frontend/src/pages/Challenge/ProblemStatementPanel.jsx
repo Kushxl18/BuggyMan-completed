@@ -13,6 +13,8 @@ import {
   X
 } from 'lucide-react';
 import { challengeService } from '../../services/challengeService';
+import TestCasesSection from '../../components/TestCasesSection';
+import ProblemStatementFormatter from '../../components/ProblemStatementFormatter';
 
 export default function ProblemStatementPanel({ 
   challenge, 
@@ -110,12 +112,13 @@ export default function ProblemStatementPanel({
 
           {/* Detailed Problem Statement */}
           <div className="space-y-2">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <Target className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Problem Statement</span>
-            </h3>
-            <div className="text-xs text-slate-300 leading-relaxed bg-slate-950/50 border border-slate-800 p-3.5 rounded-xl space-y-2 font-sans">
-              <p>{challenge.description || 'No description provided for this challenge yet.'}</p>
+            <div className="bg-slate-950/50 border border-slate-800 p-3.5 rounded-xl">
+              <ProblemStatementFormatter 
+                description={challenge.description} 
+                title={challenge.title} 
+                technology={challenge.technology} 
+                category={challenge.category} 
+              />
             </div>
           </div>
 
@@ -133,28 +136,11 @@ export default function ProblemStatementPanel({
           )}
 
           {/* Test Cases Requirements */}
-          {Array.isArray(challenge.testCases) && challenge.testCases.length > 0 && (
-            <div className="space-y-2.5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Test Cases ({challenge.testCases.length})</span>
-              </h3>
-              <div className="space-y-2">
-                {challenge.testCases.map((tc, idx) => (
-                  <div key={tc.id || idx} className="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800 text-xs space-y-1">
-                    <div className="flex items-center justify-between font-medium text-slate-200">
-                      <span>{tc.name}</span>
-                    </div>
-                    {tc.expected && (
-                      <p className="text-[10px] text-slate-400 font-mono">
-                        Expected: <span className="text-emerald-400">{tc.expected}</span>
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <TestCasesSection 
+            testCases={challenge.testCases || challenge.test_cases || []} 
+            challengeTitle={challenge.title} 
+            technology={challenge.technology} 
+          />
 
           {/* Report Challenge Button */}
           <div className="pt-3 border-t border-slate-800">

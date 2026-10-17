@@ -44,6 +44,13 @@ export const authService = {
     });
   },
 
+  checkAvailability: async (username, email) => {
+    return await request('/check-availability', {
+      method: 'POST',
+      body: JSON.stringify({ username, email })
+    });
+  },
+
   updateProfile: async (profileData) => {
     return await request('/profile', {
       method: 'PUT',
@@ -72,5 +79,39 @@ export const authService = {
       // ignore logout endpoint failures; clear client session regardless
     }
     clearToken();
+  },
+
+  oauthLogin: async (payload, rememberMe = true) => {
+    const response = await request('/auth/oauth', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    if (response.token) {
+      setToken(response.token, rememberMe);
+    }
+    return response;
+  },
+
+  getOAuthConfig: async () => {
+    return await request('/auth/oauth/config', {
+      method: 'GET'
+    });
+  },
+
+  handleOAuthCallback: async (payload, rememberMe = true) => {
+    const response = await request('/auth/oauth/callback', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    if (response.token) {
+      setToken(response.token, rememberMe);
+    }
+    return response;
+  },
+
+  disconnectOAuth: async () => {
+    return await request('/auth/oauth/disconnect', {
+      method: 'POST'
+    });
   }
 };

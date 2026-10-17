@@ -54,6 +54,13 @@ export default function Analytics({ addToast }) {
   // Color mappings for Pie/Bar charts
   const COLORS = ['#009CC2', '#1A9C55', '#C98200', '#D1242F', '#8b5cf6'];
 
+  const solvedCount = data?.solvedCount ?? data?.totalSolved ?? data?.total_solved ?? 0;
+  const accuracyRate = data?.accuracyRate ?? data?.accuracy ?? data?.accuracy_rate ?? 0;
+  const avgTime = data?.avgTime ?? data?.avg_time ?? '0m 00s';
+  const streakDays = data?.streakDays ?? data?.streak ?? data?.streak_days ?? 0;
+  const weeklyProgress = data?.weeklyProgress ?? data?.timeTrend ?? [];
+  const bugStats = data?.bugStats ?? [];
+
   return (
     <div className="max-w-6xl mx-auto py-8 space-y-8 animate-fade-in px-4">
       {/* Page Title */}
@@ -71,7 +78,7 @@ export default function Analytics({ addToast }) {
             <span className="text-xs font-medium">Challenges Solved</span>
             <CheckCircle className="w-4 h-4 text-emerald-500" />
           </div>
-          <p className="text-2xl font-extrabold font-heading text-slate-800 dark:text-[#F0F2F4]">{data?.solvedCount || 0}</p>
+          <p className="text-2xl font-extrabold font-heading text-slate-800 dark:text-[#F0F2F4]">{solvedCount}</p>
         </div>
 
         <div className="glass-card p-5 rounded-xl space-y-1">
@@ -79,7 +86,7 @@ export default function Analytics({ addToast }) {
             <span className="text-xs font-medium">Accuracy Rate</span>
             <Percent className="w-4 h-4 text-cyan-500" />
           </div>
-          <p className="text-2xl font-extrabold font-heading text-slate-800 dark:text-[#F0F2F4]">{data?.accuracyRate || 0}%</p>
+          <p className="text-2xl font-extrabold font-heading text-slate-800 dark:text-[#F0F2F4]">{accuracyRate}%</p>
         </div>
 
         <div className="glass-card p-5 rounded-xl space-y-1">
@@ -87,7 +94,7 @@ export default function Analytics({ addToast }) {
             <span className="text-xs font-medium">Avg Solve Time</span>
             <ArrowUpRight className="w-4 h-4 text-cyan-500" />
           </div>
-          <p className="text-2xl font-extrabold font-heading text-slate-800 dark:text-[#F0F2F4]">{data?.avgTime || '0m 00s'}</p>
+          <p className="text-2xl font-extrabold font-heading text-slate-800 dark:text-[#F0F2F4]">{avgTime}</p>
         </div>
 
         <div className="glass-card p-5 rounded-xl space-y-1">
@@ -95,7 +102,7 @@ export default function Analytics({ addToast }) {
             <span className="text-xs font-medium">Active Streak</span>
             <Flame className="w-4 h-4 text-amber-500" />
           </div>
-          <p className="text-2xl font-extrabold font-heading text-slate-800 dark:text-[#F0F2F4]">{data?.streakDays || 1} Days</p>
+          <p className="text-2xl font-extrabold font-heading text-slate-800 dark:text-[#F0F2F4]">{streakDays} Days</p>
         </div>
       </div>
 
@@ -107,7 +114,7 @@ export default function Analytics({ addToast }) {
           <h3 className="font-heading font-bold text-sm text-slate-800 dark:text-[#F0F2F4]">Solve Velocity (Last 7 Days)</h3>
           <div className="h-64 w-full text-xs">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data?.weeklyProgress || []}>
+              <LineChart data={weeklyProgress}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#D8DEE4" />
                 <XAxis dataKey="day" stroke="#59636E" />
                 <YAxis stroke="#59636E" />
@@ -125,7 +132,7 @@ export default function Analytics({ addToast }) {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={data?.bugStats || []}
+                  data={bugStats}
                   cx="50%"
                   cy="50%"
                   innerRadius={50}
@@ -133,7 +140,7 @@ export default function Analytics({ addToast }) {
                   paddingAngle={4}
                   dataKey="count"
                 >
-                  {(data?.bugStats || []).map((entry, index) => (
+                  {bugStats.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -142,7 +149,7 @@ export default function Analytics({ addToast }) {
             </ResponsiveContainer>
           </div>
           <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-[10px] font-semibold text-slate-600 dark:text-slate-400">
-            {(data?.bugStats || []).map((entry, index) => (
+            {bugStats.map((entry, index) => (
               <div key={entry.name} className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
                 <span>{entry.name} ({entry.count})</span>

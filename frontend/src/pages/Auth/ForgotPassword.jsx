@@ -13,7 +13,6 @@ export default function ForgotPassword({ addToast }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [sentOtp, setSentOtp] = useState('');
   const [error, setError] = useState('');
 
   const handleRequestCode = async (e) => {
@@ -26,9 +25,8 @@ export default function ForgotPassword({ addToast }) {
     setLoading(true);
     try {
       const resp = await authService.forgotPasswordRequest(email.trim());
-      setSentOtp(resp.otp || '');
       setStep(2);
-      addToast('Verification code sent. Check your inbox.', 'success');
+      addToast(resp.message || 'Verification code sent. Check your inbox.', 'success');
     } catch (err) {
       setError(err.message || 'Failed to send verification code.');
       addToast('Request failed.', 'error');
@@ -150,12 +148,6 @@ export default function ForgotPassword({ addToast }) {
                   className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl outline-none text-slate-100 placeholder:text-slate-600"
                 />
               </div>
-              {sentOtp && (
-                <div className="rounded-2xl bg-slate-800/80 p-4 border border-slate-700 text-slate-300 text-sm">
-                  <p>Sandbox OTP (visible for local testing):</p>
-                  <p className="font-semibold text-slate-100">{sentOtp}</p>
-                </div>
-              )}
               <button
                 type="submit"
                 disabled={loading}

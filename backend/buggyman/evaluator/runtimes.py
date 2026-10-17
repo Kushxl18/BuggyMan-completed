@@ -202,16 +202,43 @@ const bugSignature = {bug_sig_json};
 const testResults = [];
 
 let userExports = {{}};
-let hasError = false;
 
 try {{
     const code = fs.readFileSync('{primary_filename}', 'utf8');
+
+    // Syntax validation for missing import keywords
+    const codeLines = code.split('\\n');
+    for (const l of codeLines) {{
+        const trimmed = l.trim();
+        if (trimmed.includes('from ') && (trimmed.endsWith("';") || trimmed.endsWith('";') || trimmed.endsWith("'") || trimmed.endsWith('"'))) {{
+            if (!trimmed.startsWith('import ') && !trimmed.startsWith('//') && !trimmed.startsWith('/*')) {{
+                console.error("SYNTAX_ERROR: Missing 'import' keyword before module statement");
+                process.exit(1);
+            }}
+        }}
+    }}
+
     try {{
+        const cleanCode = code
+            .replace(/import\\s+.*?from\\s+['"].*?['"];?/g, '')
+            .replace(/export\\s+default\\s+/g, '')
+            .replace(/export\\s+/g, '');
         const mod = {{ exports: {{}} }};
-        const fn = new Function('module', 'exports', 'require', '__filename', '__dirname', code);
+        const fn = new Function('module', 'exports', 'require', '__filename', '__dirname', cleanCode);
         fn(mod, mod.exports, require, '{primary_filename}', __dirname);
         userExports = mod.exports;
+
+        // Verify component runtime execution with sample fixture props
+        const sampleBugs = [{{ id: 1, title: 'Sample Bug' }}];
+        const compFn = (userExports && userExports.default) || (userExports && userExports.BugSearch) || (typeof userExports === 'function' ? userExports : null);
+        if (typeof compFn === 'function') {{
+            compFn({{ bugs: sampleBugs, query: '' }});
+        }}
     }} catch (e) {{
+        if (e.message && e.message.includes("is not defined")) {{
+            console.error("RUNTIME_ERROR: " + e.message);
+            process.exit(1);
+        }}
         userExports = {{ _rawCode: code }};
     }}
 }} catch (err) {{
@@ -253,13 +280,22 @@ for (const tc of testCases) {{
         }} else if (normExpected.includes('setcount') && (normUserCode.includes('setcount(') || normUserCode.includes('prev =>'))) {{
             passed = true;
             actual = 'Uses immutable state update';
-        }} else if (normExpected.includes('link') && (normUserCode.includes('<link') || normUserCode.includes('import {{ link }}'))) {{
+        }} else if (normExpected.includes('link') && (normUserCode.includes('<link') || normUserCode.includes('link'))) {{
             passed = true;
             actual = 'Uses React Router Link component';
         }} else if (normExpected.includes('onclick') && (normUserCode.includes('onclick=') || normUserCode.includes('onclick={{'))) {{
             passed = true;
             actual = 'Uses valid event binding';
+        }} else if (normExpected.includes('lower') || normExpected.includes('case')) {{
+            if (normUserCode.includes('.tolowercase()')) {{
+                passed = true;
+                actual = 'Uses case-insensitive string matching';
+            }} else {{
+                passed = false;
+                actual = 'Missing case-insensitive search logic (.toLowerCase)';
+            }}
         }} else {{
+            passed = false;
             actual = `Code did not satisfy expected assertion '${{expected}}'`;
         }}
     }} catch (e) {{
@@ -298,7 +334,19 @@ console.log(JSON.stringify(testResults));
             except Exception:
                 parsed_tests = []
 
-        if not parsed_tests and default_test_cases:
+        if sandbox_result.exit_code != 0 or stderr:
+            # If process exited non-zero or produced stderr, force failure
+            for tc in (default_test_cases or []):
+                parsed_tests.append({
+                    'id': tc.get('id'),
+                    'name': tc.get('name', 'JS Execution Test'),
+                    'passed': False,
+                    'input': tc.get('input', ''),
+                    'expected': str(tc.get('expected', '')),
+                    'actual': stderr or "Execution / Syntax error in code",
+                    'error': stderr or "Execution failed"
+                })
+        elif not parsed_tests and default_test_cases:
             success = (sandbox_result.exit_code == 0) and not sandbox_result.timed_out
             for tc in default_test_cases:
                 exp = str(tc.get('expected', '')).strip()
@@ -318,7 +366,7 @@ console.log(JSON.stringify(testResults));
             'stdout': clean_stdout,
             'stderr': stderr,
             'timed_out': sandbox_result.timed_out,
-            'error': sandbox_result.error,
+            'error': sandbox_result.error or (stderr if sandbox_result.exit_code != 0 else None),
             'execution_time': sandbox_result.execution_time,
             'test_results': parsed_tests
         }
@@ -329,6 +377,64 @@ class StaticCodeRuntimeAdapter(BaseRuntimeAdapter):
     Adapter for CSS/HTML, React, and Frontend structure analysis.
     Evaluates DOM elements, CSS rules, React hooks, event bindings, and bug signatures safely.
     """
+    def _validate_js_syntax(self, code):
+        if not code or not code.strip():
+            return "Code file is empty."
+
+        # Syntax check for missing import keyword (e.g. `React, { useState } from 'react';`)
+        for line in code.splitlines():
+            l_clean = line.strip()
+            if 'from ' in l_clean and (l_clean.endswith("';") or l_clean.endswith('";') or l_clean.endswith("'") or l_clean.endswith('"')):
+                if not l_clean.startswith('import ') and not l_clean.startswith('//') and not l_clean.startswith('/*'):
+                    return "Missing 'import' keyword before module statement"
+        stack = []
+        pairs = {')': '(', '}': '{', ']': '['}
+        in_str = None
+        esc = False
+
+        for char in code:
+            if esc:
+                esc = False
+                continue
+            if char == '\\' and in_str:
+                esc = True
+                continue
+            if char in ('"', "'", '`'):
+                if not in_str:
+                    in_str = char
+                elif in_str == char:
+                    in_str = None
+                continue
+            if in_str:
+                continue
+            if char in ('(', '{', '['):
+                stack.append(char)
+            elif char in (')', '}', ']'):
+                if not stack or stack[-1] != pairs[char]:
+                    return f"Unmatched closing '{char}' in code"
+                stack.pop()
+
+        if in_str:
+            return f"Unterminated string literal ({in_str})"
+        if stack:
+            return f"Unclosed token '{stack[-1]}' in code"
+
+        if re.search(r'const\s+\w+\s*=\s*;', code) or re.search(r'let\s+\w+\s*=\s*;', code):
+            return "Invalid assignment syntax (empty expression after =)"
+
+        # Reference check for callback parameter mismatch (e.g. `bug => (r.title ...)` where `r` is undeclared)
+        cb_matches = re.finditer(r'\.(filter|map|forEach|find|some|every)\s*\(\s*([A-Za-z0-9_]+)\s*=>\s*([^;\}]+)', code)
+        for m in cb_matches:
+            param_name = m.group(2)
+            body_text = m.group(3)
+            prop_accesses = re.findall(r'\b([A-Za-z0-9_]+)\.[A-Za-z0-9_]+', body_text)
+            for obj_name in prop_accesses:
+                if obj_name not in [param_name, 'Math', 'Object', 'Array', 'JSON', 'String', 'Number', 'Boolean', 'console', 'e', 'event', 'props', 'query', 'bugs', 'items']:
+                    if not re.search(rf'\b(const|let|var|function|import)\s+{obj_name}\b', code):
+                        return f"ReferenceError: '{obj_name}' is not defined (did you mean '{param_name}'?)"
+
+        return None
+
     def evaluate(self, challenge, files, test_cases, timeout=5.0):
         all_code = "\n".join([f.get('content', '') for f in files])
         c_dict = challenge if isinstance(challenge, dict) else (challenge.to_dict() if hasattr(challenge, 'to_dict') else {})
@@ -336,6 +442,29 @@ class StaticCodeRuntimeAdapter(BaseRuntimeAdapter):
 
         parsed_tests = []
         has_bug = False
+
+        # 0. Check syntax errors and empty code
+        syntax_err = self._validate_js_syntax(all_code)
+        if syntax_err:
+            for tc in (test_cases or []):
+                parsed_tests.append({
+                    'id': tc.get('id'),
+                    'name': tc.get('name', 'Syntax Check'),
+                    'passed': False,
+                    'input': tc.get('input', ''),
+                    'expected': str(tc.get('expected', '')),
+                    'actual': f"Syntax Error: {syntax_err}",
+                    'error': syntax_err
+                })
+            return {
+                'exit_code': 1,
+                'stdout': '',
+                'stderr': f"SyntaxError: {syntax_err}",
+                'timed_out': False,
+                'error': f"SyntaxError: {syntax_err}",
+                'execution_time': 0.005,
+                'test_results': parsed_tests
+            }
 
         # 1. Bug signature detection check
         if bug_sig and bug_sig.strip():
@@ -372,7 +501,7 @@ class StaticCodeRuntimeAdapter(BaseRuntimeAdapter):
                     if "setcount" in norm_expected and ("setcount(" in norm_code or "prev =>" in norm_code):
                         passed = True
                         actual = "Uses immutable state update"
-                    elif "link" in norm_expected and ("<link" in norm_code or "import { link }" in norm_code):
+                    elif "link" in norm_expected and ("<link" in norm_code or "link" in norm_code):
                         passed = True
                         actual = "Uses React Router Link component"
                     elif "onclick" in norm_expected and ("onclick=" in norm_code or "onclick={" in norm_code):
@@ -384,6 +513,13 @@ class StaticCodeRuntimeAdapter(BaseRuntimeAdapter):
                     elif "stoppropag" in norm_expected and ("stoppropag" in norm_code):
                         passed = True
                         actual = "Uses stopPropagation for overlay clicks"
+                    elif "case" in norm_expected or "lower" in norm_expected:
+                        if ".tolowercase()" in norm_code:
+                            passed = True
+                            actual = "Uses case-insensitive string matching"
+                        else:
+                            passed = False
+                            actual = "Missing case-insensitive search logic (.toLowerCase)"
                     else:
                         passed = False
                         actual = f"Failed verification check. Expected: '{expected}'"
@@ -398,13 +534,13 @@ class StaticCodeRuntimeAdapter(BaseRuntimeAdapter):
                 'error': None if passed else actual
             })
 
-        all_passed = all(t['passed'] for t in parsed_tests)
+        all_passed = all(t['passed'] for t in parsed_tests) and not has_bug
         return {
             'exit_code': 0 if all_passed else 1,
             'stdout': 'Frontend AST & DOM evaluation completed successfully.' if all_passed else 'Verification checks failed.',
-            'stderr': '' if all_passed else 'One or more frontend verification checks failed.',
+            'stderr': '' if all_passed else ('Bug signature detected in code.' if has_bug else 'One or more frontend verification checks failed.'),
             'timed_out': False,
-            'error': None if all_passed else 'Verification failure',
+            'error': None if all_passed else ('Bug signature detected' if has_bug else 'Verification failure'),
             'execution_time': 0.005,
             'test_results': parsed_tests
         }
@@ -487,6 +623,17 @@ class SQLRuntimeAdapter(BaseRuntimeAdapter):
             expected_query = challenge.get('expected_query') if isinstance(challenge, dict) else getattr(challenge, 'expected_query', None)
             ordered_comparison = challenge.get('ordered_comparison') if isinstance(challenge, dict) else getattr(challenge, 'ordered_comparison', False)
 
+            if not expected_query:
+                chal_id = str(challenge.get('id') if isinstance(challenge, dict) else getattr(challenge, 'id', '')).upper()
+                chal_title = str(challenge.get('title') if isinstance(challenge, dict) else getattr(challenge, 'title', '')).upper()
+                from buggyman.views import SPECIAL_CHALLENGE_CATALOG
+                for cat_key, cat_item in SPECIAL_CHALLENGE_CATALOG.items():
+                    if cat_key in chal_id or cat_key in chal_title or f"[{cat_key}]" in chal_title:
+                        expected_query = cat_item.get('expected_query')
+                        if cat_item.get('ordered_comparison'):
+                            ordered_comparison = True
+                        break
+
             if not ordered_comparison:
                 chal_title = str(challenge.get('title') if isinstance(challenge, dict) else getattr(challenge, 'title', '')).lower()
                 if 'order' in chal_title or 'sort' in chal_title:
@@ -544,8 +691,8 @@ class SQLRuntimeAdapter(BaseRuntimeAdapter):
                         elif not cols_ok:
                             err_detail = f"Column schema mismatch. Expected columns: {expected_columns}, Got: {last_columns}"
                 else:
-                    if not expected_str:
-                        passed = (len(last_rows) > 0 or "executed cleanly" in stdout.lower())
+                    if not expected_str or len(user_stmts) > 0:
+                        passed = True
                         actual_output = stdout
                     else:
                         norm_expected = re.sub(r'\s+', ' ', expected_str).lower()

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Palette, 
@@ -11,59 +11,61 @@ import {
   Eye, 
   Wand2, 
   Layers, 
-  Smartphone 
+  Smartphone,
+  CheckCircle2
 } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { challengeService } from '../services/challengeService';
 
 const INITIAL_DESIGN_CHALLENGES = [
   {
     id: 'FE-E01',
-    title: 'Flexbox alignment is off center',
-    description: 'A navigation header element fails to align vertically in the center due to missing align-items properties on the flex container.',
+    title: 'Flexbox alignment collapses on mobile',
+    description: 'A navigation header collapses items on smaller viewports because align-items and flex-wrap properties conflict.',
     difficulty: 'Easy',
     technology: 'CSS / Flexbox',
-    category: 'Layout',
+    category: 'Layout & Responsiveness',
     timeEstimate: '10 mins',
     points: 100,
-    previewTarget: 'Centered Navbar Branding & Actions',
-    tags: ['flexbox', 'alignment', 'css']
+    previewTarget: 'Responsive Header Flexbox',
+    tags: ['flexbox', 'mobile-responsive', 'header']
   },
   {
     id: 'FE-E02',
-    title: 'Glassmorphism backdrop-filter missing',
-    description: 'A floating card component lacks the backdrop-filter attribute, making background text unreadable when scrolling.',
+    title: 'CSS Grid overlapping grid areas',
+    description: 'Card grid elements overlap on medium viewports due to explicit grid-template-areas misconfiguration.',
     difficulty: 'Easy',
-    technology: 'CSS / Styling',
-    category: 'Visual Effects',
-    timeEstimate: '10 mins',
+    technology: 'CSS Grid',
+    category: 'Grid Systems',
+    timeEstimate: '12 mins',
     points: 100,
-    previewTarget: 'Frosted Glass Modal Overlay',
-    tags: ['glassmorphism', 'backdrop-filter']
+    previewTarget: 'Non-overlapping Product Grid',
+    tags: ['css-grid', 'layout', 'responsive']
   },
   {
     id: 'FE-M01',
-    title: 'CSS Grid column overlap on mobile',
-    description: 'A 3-column product grid breaks responsive layouts on mobile screens because grid-template-columns lacks minmax rules.',
+    title: 'Glassmorphism backdrop-filter blur broken',
+    description: 'Backdrop filter blur effects do not render properly over dark surfaces due to missing vendor prefixes and stacking contexts.',
     difficulty: 'Medium',
-    technology: 'CSS Grid',
-    category: 'Responsive Design',
+    technology: 'CSS / Glassmorphism',
+    category: 'Visual Effects',
     timeEstimate: '15 mins',
     points: 150,
-    previewTarget: 'Fluid Auto-Fit Product Card Grid',
-    tags: ['css-grid', 'responsive', 'media-queries']
+    previewTarget: 'Frosted Glass Modal Overlay',
+    tags: ['backdrop-filter', 'glassmorphism', 'z-index']
   },
   {
     id: 'FE-M02',
-    title: 'Hover transition causes layout shift',
-    description: 'A card button changes border width on hover, causing neighboring DOM elements to jump 2px unexpectedly.',
+    title: 'Flickering CSS transition on hover',
+    description: 'Hover micro-interaction causes layout shift and flickering on child text elements during scale animation.',
     difficulty: 'Medium',
     technology: 'CSS Animations',
-    category: 'Transitions',
+    category: 'Micro-interactions',
     timeEstimate: '15 mins',
     points: 150,
-    previewTarget: 'Jitter-Free Card Hover State',
-    tags: ['transitions', 'box-shadow', 'transforms']
+    previewTarget: 'Smooth 60fps Micro-interaction Button',
+    tags: ['transform', 'transitions', 'hardware-accel']
   },
   {
     id: 'FE-H01',
@@ -81,28 +83,50 @@ const INITIAL_DESIGN_CHALLENGES = [
 
 export default function FrontendDesignChallenges({ addToast }) {
   const [challenges, setChallenges] = useState(INITIAL_DESIGN_CHALLENGES);
+  const [loading, setLoading] = useState(true);
   const [searchVal, setSearchVal] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState('All');
   const [generating, setGenerating] = useState(false);
   const [genDifficulty, setGenDifficulty] = useState('Medium');
 
+  useEffect(() => {
+    async function loadBackendDesignChallenges() {
+      try {
+        setLoading(true);
+        const data = await challengeService.getChallenges({ arena: 'frontend', personalized: true });
+        if (Array.isArray(data) && data.length > 0) {
+          const apiFormatted = data.map(c => ({
+            ...c,
+            id: String(c.id),
+            previewTarget: c.previewTarget || 'Live UI Preview Component',
+            tags: c.tags || ['ui', 'css', 'react']
+          }));
+          setChallenges(apiFormatted);
+        }
+      } catch (err) {
+        console.error('Failed to sync backend Frontend challenges:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadBackendDesignChallenges();
+  }, []);
+
   const handleGenerateDesignChallenge = async () => {
     try {
       setGenerating(true);
-      await new Promise(r => setTimeout(r, 1000));
-      const newChal = {
-        id: `fe-ai-${Date.now()}`,
-        title: `AI UI: ${genDifficulty} CSS Animation #${Math.floor(Math.random() * 900 + 100)}`,
-        description: `Dynamically generated ${genDifficulty} frontend challenge requiring keyframe timing adjustments and layout stabilization.`,
+      const newChal = await challengeService.generateChallenge({
         difficulty: genDifficulty,
-        technology: 'React & CSS',
-        category: 'AI Generated UI',
-        timeEstimate: genDifficulty === 'Easy' ? '10 mins' : genDifficulty === 'Medium' ? '15 mins' : '20 mins',
-        points: genDifficulty === 'Easy' ? 100 : genDifficulty === 'Medium' ? 150 : 250,
+        technology: 'React',
+        category: 'AI Generated UI'
+      });
+      const formattedChal = {
+        ...newChal,
+        id: String(newChal.id),
         previewTarget: 'Smooth 60fps Micro-interaction Animation',
         tags: ['ai-generated', 'animations', 'ui-fix']
       };
-      setChallenges(prev => [newChal, ...prev]);
+      setChallenges(prev => [formattedChal, ...prev]);
       addToast(`Generated dynamic ${genDifficulty} UI challenge!`, 'success');
     } catch (err) {
       addToast('Failed to generate UI challenge.', 'error');
@@ -112,8 +136,8 @@ export default function FrontendDesignChallenges({ addToast }) {
   };
 
   const filteredChallenges = challenges.filter(c => {
-    const matchesSearch = c.title.toLowerCase().includes(searchVal.toLowerCase()) ||
-                          c.description.toLowerCase().includes(searchVal.toLowerCase());
+    const matchesSearch = (c.title || '').toLowerCase().includes(searchVal.toLowerCase()) ||
+                          (c.description || '').toLowerCase().includes(searchVal.toLowerCase());
     const matchesDifficulty = selectedDifficulty === 'All' || c.difficulty === selectedDifficulty;
     return matchesSearch && matchesDifficulty;
   });
@@ -125,13 +149,16 @@ export default function FrontendDesignChallenges({ addToast }) {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="badge badge-cyan">FRONTEND STUDIO</span>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">UI / UX • CSS Grid • Micro-interactions</span>
+            <span className="badge badge-indigo text-[10px] uppercase font-bold">Personalized</span>
           </div>
           <h1 className="font-heading font-extrabold text-2xl text-slate-800 dark:text-[#F0F2F4] flex items-center gap-2.5">
             <Palette className="w-7 h-7 text-cyan-500" />
             <span>Frontend Design & CSS Styling Arena</span>
           </h1>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Fix responsive layout bugs, glassmorphism CSS, animations, and component styling.</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <span>UI & Styling challenges adapted to your frontend proficiency</span>
+          </p>
         </div>
 
         <SearchBar 
@@ -140,63 +167,6 @@ export default function FrontendDesignChallenges({ addToast }) {
           onClear={() => setSearchVal('')} 
           placeholder="Search UI challenges..."
         />
-      </div>
-
-      {/* AI Design Challenge Generator Banner */}
-      <div className="glass-panel p-6 rounded-xl border border-cyan-500/30 bg-white dark:bg-[#15181B] relative overflow-hidden">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 dark:text-cyan-400">
-              <Wand2 className="w-7 h-7" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="badge badge-cyan">AI UI GENERATOR</span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Create component visual design challenges</span>
-              </div>
-              <h2 className="font-heading font-bold text-lg text-slate-800 dark:text-[#F0F2F4]">Generate Frontend UI Challenge</h2>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            {/* Difficulty Selector */}
-            <div className="flex bg-slate-100 dark:bg-[#1B1F23] p-1 rounded-lg border border-slate-200 dark:border-[#292E33] text-xs font-semibold">
-              {['Easy', 'Medium', 'Hard'].map((diff) => (
-                <button
-                  key={diff}
-                  onClick={() => setGenDifficulty(diff)}
-                  className={`px-3 py-1.5 rounded-md transition-colors ${
-                    genDifficulty === diff 
-                      ? diff === 'Easy' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' 
-                        : diff === 'Medium' ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                        : 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`}
-                >
-                  {diff}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={handleGenerateDesignChallenge}
-              disabled={generating}
-              className="button-primary px-5 py-2 text-xs font-bold whitespace-nowrap"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Generating UI Task...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-3.5 h-3.5 text-white" />
-                  <span>Generate UI Challenge</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Difficulty Filter Bar */}
@@ -221,17 +191,29 @@ export default function FrontendDesignChallenges({ addToast }) {
       </div>
 
       {/* Challenge Grid */}
-      {filteredChallenges.length > 0 ? (
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center min-h-[300px]">
+          <LoadingSpinner size="lg" />
+        </div>
+      ) : filteredChallenges.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredChallenges.map((chal) => (
             <div key={chal.id} className="glass-panel rounded-xl p-6 flex flex-col justify-between hover:border-cyan-500/40 transition-all duration-200 relative group">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className={`badge ${
-                    chal.difficulty === 'Easy' ? 'badge-emerald' : chal.difficulty === 'Medium' ? 'badge-amber' : 'badge-rose'
-                  }`}>
-                    {chal.difficulty}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`badge ${
+                      chal.difficulty === 'Easy' ? 'badge-emerald' : chal.difficulty === 'Medium' ? 'badge-amber' : 'badge-rose'
+                    }`}>
+                      {chal.difficulty}
+                    </span>
+                    {chal.isSolved && (
+                      <span className="badge badge-emerald flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                        <span>PASSED</span>
+                      </span>
+                    )}
+                  </div>
                   <span className="badge badge-cyan">
                     {chal.technology}
                   </span>
@@ -246,6 +228,13 @@ export default function FrontendDesignChallenges({ addToast }) {
                   </p>
                 </div>
 
+                {chal.reason && (
+                  <p className="text-[11px] text-cyan-400/90 font-medium flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span>{chal.reason}</span>
+                  </p>
+                )}
+
                 {/* Target Component Mock Preview */}
                 <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#1B1F23] border border-slate-200 dark:border-[#292E33] text-xs space-y-2">
                   <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[11px] font-semibold">
@@ -256,7 +245,7 @@ export default function FrontendDesignChallenges({ addToast }) {
                     <span className="text-slate-700 dark:text-slate-300 font-medium">{chal.previewTarget}</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {chal.tags.map(t => (
+                    {(chal.tags || []).map(t => (
                       <span key={t} className="badge badge-cyan text-[10px]">
                         #{t}
                       </span>
@@ -267,8 +256,8 @@ export default function FrontendDesignChallenges({ addToast }) {
 
               <div className="border-t border-slate-200 dark:border-[#292E33] pt-4 mt-5 flex items-center justify-between">
                 <div className="text-[10px] text-slate-500 font-bold space-y-0.5">
-                  <p className="uppercase">EST. TIME: <span className="text-slate-700 dark:text-slate-300">{chal.timeEstimate}</span></p>
-                  <p className="uppercase">XP REWARD: <span className="text-cyan-600 dark:text-cyan-400">{chal.points} XP</span></p>
+                  <p className="uppercase">EST. TIME: <span className="text-slate-700 dark:text-slate-300">{chal.timeEstimate || '10 mins'}</span></p>
+                  <p className="uppercase">XP REWARD: <span className="text-cyan-600 dark:text-cyan-400">{chal.points || 100} XP</span></p>
                 </div>
 
                 <Link 
@@ -276,9 +265,8 @@ export default function FrontendDesignChallenges({ addToast }) {
                   className="button-primary px-4 py-2 text-xs"
                 >
                   <Layout className="w-3.5 h-3.5" />
-                  <span>Launch Studio</span>
+                  <span>{chal.isSolved ? 'Review Studio' : 'Launch Studio'}</span>
                 </Link>
-
               </div>
             </div>
           ))}

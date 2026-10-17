@@ -5,7 +5,7 @@ import EmptyState from '../components/EmptyState';
 import SearchBar from '../components/SearchBar';
 import { challengeService } from '../services/challengeService';
 
-export default function Leaderboard({ addToast }) {
+export default function Leaderboard({ user, addToast }) {
   const [board, setBoard] = useState([]);
   const [searchVal, setSearchVal] = useState('');
   const [loading, setLoading] = useState(true);
@@ -76,27 +76,40 @@ export default function Leaderboard({ addToast }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-[#292E33] text-slate-700 dark:text-slate-300">
-                {filteredBoard.map((row) => (
-                  <tr 
-                    key={row.id || row.username}
-                    className="hover:bg-slate-50 dark:hover:bg-[#1B1F23] transition-colors"
-                  >
-                    <td className="p-4 text-center flex items-center justify-center h-12">
-                      {getRankMedal(row.rank)}
-                    </td>
-                    <td className="p-4 font-heading font-semibold text-slate-800 dark:text-[#F0F2F4]">
-                      <div className="flex items-center gap-2.5">
-                        <img
-                          src={row.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
-                          alt={row.name}
-                          className="w-7 h-7 rounded-full object-cover ring-1 ring-cyan-500/30"
-                        />
-                        <div>
-                          <span>{row.name}</span>
-                          <span className="text-[10px] text-slate-500 block">@{row.username}</span>
+                {filteredBoard.map((row) => {
+                  const isCurrentUser = user && (row.username === user.username || String(row.id) === String(user.id));
+                  return (
+                    <tr 
+                      key={row.id || row.username}
+                      className={`transition-colors ${
+                        isCurrentUser 
+                          ? 'bg-cyan-500/10 dark:bg-cyan-500/15 border-l-4 border-l-cyan-500 hover:bg-cyan-500/20 font-semibold' 
+                          : 'hover:bg-slate-50 dark:hover:bg-[#1B1F23]'
+                      }`}
+                    >
+                      <td className="p-4 text-center flex items-center justify-center h-12">
+                        {getRankMedal(row.rank)}
+                      </td>
+                      <td className="p-4 font-heading font-semibold text-slate-800 dark:text-[#F0F2F4]">
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            src={row.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
+                            alt={row.name}
+                            className="w-7 h-7 rounded-full object-cover ring-1 ring-cyan-500/30"
+                          />
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span>{row.name}</span>
+                              {isCurrentUser && (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-cyan-500 text-white uppercase tracking-wider">
+                                  You
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-slate-500 block">@{row.username}</span>
+                          </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
                     <td className="p-4 text-slate-600 dark:text-slate-400">
                       {row.college}
                     </td>
@@ -116,8 +129,9 @@ export default function Leaderboard({ addToast }) {
                       {row.score} XP
                     </td>
                   </tr>
-                ))}
-              </tbody>
+                );
+              })}
+            </tbody>
             </table>
           </div>
         </div>

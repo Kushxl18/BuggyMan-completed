@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, User, Sparkles, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, User, Sparkles, Loader2, ArrowRight, ArrowLeft, CheckCircle2, Target, BookOpen } from 'lucide-react';
 import { authService } from '../../services/authService';
+import OAuthButtons from '../../components/OAuthButtons';
 
 const avatarOptions = [
   'https://images.unsplash.com/photo-1502685104226-ee32379fefbe?w=200',
@@ -12,18 +13,27 @@ const avatarOptions = [
   'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200'
 ];
 
-const interestOptions = [
-  'Bug Hunting',
-  'Web Security',
-  'CTF',
-  'Reverse Engineering',
-  'Malware',
-  'Networking',
-  'OSINT',
-  'Programming'
+const SKILL_CATEGORIES = [
+  'Backend',
+  'SQL',
+  'Frontend',
+  'APIs',
+  'Security',
+  'Testing',
+  'DevOps'
 ];
 
-const accentOptions = ['blue', 'purple', 'green', 'orange', 'red'];
+const interestOptions = [
+  'Frontend Development',
+  'Backend Development',
+  'Full Stack Engineering',
+  'Artificial Intelligence & ML',
+  'Database & SQL Optimization',
+  'Mobile App Development',
+  'Cloud & DevOps',
+  'Web Security & Debugging'
+];
+
 const themeOptions = ['dark', 'light', 'system'];
 
 const countryTimezones = {
@@ -70,7 +80,14 @@ export default function Signup({ setUser, addToast }) {
 
   const [account, setAccount] = useState({ username: '', email: '', password: '', confirmPassword: '', showPassword: false });
   const [profile, setProfile] = useState({ displayName: '', bio: '', country: '', timezone: '', avatar: '' });
-  const [personalization, setPersonalization] = useState({ theme: 'dark', accentColor: 'blue', interests: [], notificationsConfig: { achievements: true, challenges: true, system: true } });
+  const [personalization, setPersonalization] = useState({ 
+    theme: 'dark', 
+    accentColor: 'blue', 
+    interests: [], 
+    strengths: ['Backend', 'SQL'], 
+    weaknesses: ['Frontend'], 
+    notificationsConfig: { achievements: true, challenges: true, system: true } 
+  });
   const [previewAvatar, setPreviewAvatar] = useState('');
   const [zoom, setZoom] = useState(1);
 
@@ -87,7 +104,7 @@ export default function Signup({ setUser, addToast }) {
   const strengthLabel = ['Too weak', 'Fair', 'Good', 'Strong', 'Excellent'][passwordStrength];
   const strengthColor = ['bg-rose-500', 'bg-amber-500', 'bg-emerald-500', 'bg-sky-500', 'bg-fuchsia-500'][passwordStrength];
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setError('');
     if (step === 1) {
       if (!account.username.trim() || !account.email.trim() || !account.password || !account.confirmPassword) {
@@ -106,12 +123,22 @@ export default function Signup({ setUser, addToast }) {
         setError('Please enter a valid email address.');
         return;
       }
+
+      setLoading(true);
+      try {
+        await authService.checkAvailability(account.username.trim(), account.email.trim());
+      } catch (err) {
+        setError(err.message || 'Username or email is already taken.');
+        return;
+      } finally {
+        setLoading(false);
+      }
     }
     if (step === 2 && !profile.displayName.trim()) {
       setError('Display name is required.');
       return;
     }
-    setStep(step + 1);
+    setStep((prev) => prev + 1);
   };
 
   const handleBack = () => {
@@ -135,6 +162,8 @@ export default function Signup({ setUser, addToast }) {
         theme: personalization.theme,
         accentColor: personalization.accentColor,
         interests: personalization.interests,
+        strengths: personalization.strengths,
+        weaknesses: personalization.weaknesses,
         notificationsConfig: personalization.notificationsConfig
       };
       const response = await authService.register(payload);
@@ -160,6 +189,24 @@ export default function Signup({ setUser, addToast }) {
     reader.readAsDataURL(file);
   };
 
+  const toggleStrength = (skill) => {
+    setPersonalization((prev) => {
+      const selected = prev.strengths.includes(skill)
+        ? prev.strengths.filter((s) => s !== skill)
+        : [...prev.strengths, skill];
+      return { ...prev, strengths: selected };
+    });
+  };
+
+  const toggleWeakness = (skill) => {
+    setPersonalization((prev) => {
+      const selected = prev.weaknesses.includes(skill)
+        ? prev.weaknesses.filter((w) => w !== skill)
+        : [...prev.weaknesses, skill];
+      return { ...prev, weaknesses: selected };
+    });
+  };
+
   const toggleInterest = (interest) => {
     setPersonalization((prev) => {
       const selected = prev.interests.includes(interest)
@@ -167,16 +214,6 @@ export default function Signup({ setUser, addToast }) {
         : [...prev.interests, interest];
       return { ...prev, interests: selected };
     });
-  };
-
-  const toggleNotification = (key) => {
-    setPersonalization((prev) => ({
-      ...prev,
-      notificationsConfig: {
-        ...prev.notificationsConfig,
-        [key]: !prev.notificationsConfig[key]
-      }
-    }));
   };
 
   return (
@@ -189,230 +226,214 @@ export default function Signup({ setUser, addToast }) {
                 <Sparkles className="w-6 h-6 text-cyan-300" />
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Create your account</p>
-                <h1 className="mt-3 text-3xl font-heading font-bold text-white">Buggyman Onboarding</h1>
+                <h2 className="font-heading text-xl font-bold">BuggyMan</h2>
+                <p className="text-xs text-slate-400">Software Engineering Lab</p>
               </div>
             </div>
 
-            <p className="text-sm leading-relaxed text-slate-400 mb-8">A premium, animated signup experience with profile setup, theme personalization, and built-in avatar choices.</p>
+            <p className="text-sm text-slate-300 mb-8 leading-relaxed">
+              Join BuggyMan to squash real software bugs, train with AI diagnostics, and climb leaderboards.
+            </p>
 
-            <div className="space-y-4">
-              {['Account', 'Profile', 'Personalization', 'Finish'].map((label, index) => (
-                <div key={label} className="flex items-center gap-4">
-                  <div className={`h-10 w-10 rounded-full flex items-center justify-center text-xs font-bold ${step === index + 1 ? 'bg-cyan-400 text-slate-950' : 'bg-slate-800 text-slate-500'}`}>
-                    {index + 1}
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Step {index + 1}</p>
-                    <p className="font-semibold text-slate-100">{label}</p>
-                  </div>
+            <div className="space-y-4 text-xs font-semibold text-slate-400">
+              {['Account Details', 'Profile Info', 'Tell Us About Your Skills', 'Review & Confirm'].map((label, idx) => (
+                <div key={label} className={`flex items-center gap-3 ${step === idx + 1 ? 'text-slate-100' : ''}`}>
+                  <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs ${step === idx + 1 ? 'bg-cyan-500 text-slate-950 font-bold' : step > idx + 1 ? 'bg-slate-800 text-cyan-400' : 'bg-slate-900 text-slate-600'}`}>
+                    {idx + 1}
+                  </span>
+                  <span>{label}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="p-8 lg:p-10">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Step {step} of 4</p>
-                <h2 className="mt-2 text-2xl font-heading font-bold text-slate-100">{step === 1 ? 'Account details' : step === 2 ? 'Profile setup' : step === 3 ? 'Personalize experience' : 'Finish & create account'}</h2>
-              </div>
-              <span className="text-xs text-slate-400">Your information is safe and encrypted.</span>
-            </div>
-
+          <div className="p-8 lg:p-10 flex flex-col justify-between">
             {error && (
-              <div className="rounded-3xl bg-rose-500/10 border border-rose-500/20 text-rose-200 px-4 py-3 mb-6 text-sm">
+              <div className="mb-6 rounded-3xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-300">
                 {error}
               </div>
             )}
 
             {step === 1 && (
-              <div className="space-y-6">
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <label className="block text-sm text-slate-300">
-                    <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Username</span>
-                    <input
-                      value={account.username}
-                      onChange={(e) => setAccount((prev) => ({ ...prev, username: e.target.value }))}
-                      className="mt-2 w-full rounded-3xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-cyan-400"
-                      placeholder="bugbuster"
-                    />
-                  </label>
-                  <label className="block text-sm text-slate-300">
-                    <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Email</span>
-                    <input
-                      type="email"
-                      value={account.email}
-                      onChange={(e) => setAccount((prev) => ({ ...prev, email: e.target.value }))}
-                      className="mt-2 w-full rounded-3xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-cyan-400"
-                      placeholder="name@college.edu"
-                    />
-                  </label>
+              <div className="space-y-5">
+                <div>
+                  <h3 className="font-heading text-2xl font-bold text-slate-100">Create your account</h3>
+                  <p className="text-xs text-slate-400 mt-1">Start your engineering debugging journey</p>
                 </div>
 
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <label className="block text-sm text-slate-300">
-                    <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Password</span>
-                    <div className="relative mt-2">
+                {/* Instant SSO Sign Up */}
+                <OAuthButtons
+                  setUser={setUser}
+                  addToast={addToast}
+                  subtitle="Or register with email"
+                />
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 mb-1.5 font-bold">Username</label>
+                    <div className="relative">
+                      <User className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
                       <input
-                        type={account.showPassword ? 'text' : 'password'}
-                        value={account.password}
-                        onChange={(e) => setAccount((prev) => ({ ...prev, password: e.target.value }))}
-                        className="w-full rounded-3xl border border-slate-800 bg-slate-950 px-4 py-3 pr-12 text-slate-100 outline-none focus:border-cyan-400"
-                        placeholder="••••••••"
+                        type="text"
+                        placeholder="kushalkumar"
+                        value={account.username}
+                        onChange={(e) => setAccount((prev) => ({ ...prev, username: e.target.value }))}
+                        className="w-full rounded-2xl border border-slate-800 bg-slate-950 py-3 pl-10 pr-4 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                        required
                       />
-                      <button
-                        type="button"
-                        onClick={() => setAccount((prev) => ({ ...prev, showPassword: !prev.showPassword }))}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500"
-                      >
-                        {account.showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
                     </div>
-                  </label>
-                  <label className="block text-sm text-slate-300">
-                    <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Confirm Password</span>
-                    <input
-                      type="password"
-                      value={account.confirmPassword}
-                      onChange={(e) => setAccount((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                      className="mt-2 w-full rounded-3xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-cyan-400"
-                      placeholder="••••••••"
-                    />
-                  </label>
-                </div>
+                  </div>
 
-                <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-4 grid gap-3">
-                  <div className="flex items-center justify-between text-xs text-slate-400 uppercase tracking-[0.24em]">
-                    <span>Password strength</span>
-                    <span className="font-semibold text-slate-100">{strengthLabel}</span>
+                  <div>
+                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 mb-1.5 font-bold">Email address</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
+                      <input
+                        type="email"
+                        placeholder="kushal@example.com"
+                        value={account.email}
+                        onChange={(e) => setAccount((prev) => ({ ...prev, email: e.target.value }))}
+                        className="w-full rounded-2xl border border-slate-800 bg-slate-950 py-3 pl-10 pr-4 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                        required
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
-                    <div className={`h-full ${strengthColor} transition-all`} style={{ width: `${(passwordStrength / 4) * 100}%` }} />
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 mb-1.5 font-bold">Password</label>
+                      <div className="relative">
+                        <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
+                        <input
+                          type={account.showPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          value={account.password}
+                          onChange={(e) => setAccount((prev) => ({ ...prev, password: e.target.value }))}
+                          className="w-full rounded-2xl border border-slate-800 bg-slate-950 py-3 pl-10 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setAccount((prev) => ({ ...prev, showPassword: !prev.showPassword }))}
+                          className="absolute right-3.5 top-3.5 text-slate-500 hover:text-slate-300"
+                        >
+                          {account.showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 mb-1.5 font-bold">Confirm password</label>
+                      <div className="relative">
+                        <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
+                        <input
+                          type={account.showPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          value={account.confirmPassword}
+                          onChange={(e) => setAccount((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                          className="w-full rounded-2xl border border-slate-800 bg-slate-950 py-3 pl-10 pr-4 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-500">
-                    <span className={account.password.length >= 8 ? 'text-slate-100' : ''}>8+ characters</span>
-                    <span className={/[A-Z]/.test(account.password) ? 'text-slate-100' : ''}>Uppercase</span>
-                    <span className={/[0-9]/.test(account.password) ? 'text-slate-100' : ''}>Number</span>
-                    <span className={/[^A-Za-z0-9]/.test(account.password) ? 'text-slate-100' : ''}>Special char</span>
-                  </div>
+
+                  {account.password && (
+                    <div className="space-y-1.5 pt-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-400">Strength: {strengthLabel}</span>
+                        <span className="text-slate-500">{passwordStrength}/4</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
+                        <div className={`h-full transition-all duration-300 ${strengthColor}`} style={{ width: `${(passwordStrength / 4) * 100}%` }} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
             {step === 2 && (
-              <div className="space-y-6">
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <label className="block text-sm text-slate-300">
-                    <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Display Name</span>
+              <div className="space-y-5">
+                <div>
+                  <h3 className="font-heading text-2xl font-bold text-slate-100">Personalize your profile</h3>
+                  <p className="text-xs text-slate-400 mt-1">Let fellow engineers know who you are</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 mb-1.5 font-bold">Display Name</label>
                     <input
+                      type="text"
+                      placeholder="Kushal Kumar"
                       value={profile.displayName}
                       onChange={(e) => setProfile((prev) => ({ ...prev, displayName: e.target.value }))}
-                      className="mt-2 w-full rounded-3xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-cyan-400"
-                      placeholder="Bug Hunter"
+                      className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                      required
                     />
-                  </label>
-                  <label className="block text-sm text-slate-300">
-                    <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Country</span>
-                    <input
-                      list="country-options"
-                      value={profile.country}
-                      onChange={(e) => {
-                        const country = e.target.value;
-                        const timezone = inferTimezone(country);
-                        setProfile((prev) => ({ ...prev, country, timezone: timezone || prev.timezone }));
-                      }}
-                      className="mt-2 w-full rounded-3xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-cyan-400"
-                      placeholder="United States"
-                    />
-                    <datalist id="country-options">
-                      {countryList.map((country) => (
-                        <option key={country} value={country} />
-                      ))}
-                    </datalist>
-                    <p className="mt-2 text-[11px] text-slate-500">Pick from the list or type your country name.</p>
-                  </label>
-                </div>
-
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <label className="block text-sm text-slate-300">
-                    <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Time Zone</span>
-                    <input
-                      value={profile.timezone}
-                      onChange={(e) => setProfile((prev) => ({ ...prev, timezone: e.target.value }))}
-                      className="mt-2 w-full rounded-3xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-cyan-400"
-                      placeholder="America/New_York"
-                    />
-                    <p className="mt-2 text-[11px] text-slate-500">Automatically fills when country is selected.</p>
-                  </label>
-                  <label className="block text-sm text-slate-300 col-span-full">
-                    <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Bio</span>
-                    <textarea
-                      value={profile.bio}
-                      onChange={(e) => setProfile((prev) => ({ ...prev, bio: e.target.value }))}
-                      className="mt-2 w-full min-h-[120px] rounded-3xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-cyan-400 resize-none"
-                      placeholder="A short bio about your debugging superpowers."
-                    />
-                  </label>
-                </div>
-
-                <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Avatar selection</p>
-                      <p className="text-sm text-slate-400 mt-1">Upload your own image or choose from curated profile icons.</p>
-                    </div>
-                    <span className="text-[11px] text-slate-400">Zoom {Math.round(zoom * 100)}%</span>
                   </div>
 
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-                    <div className="relative w-full lg:w-40 h-40 rounded-3xl overflow-hidden border border-slate-800 bg-slate-950">
-                      <img
-                        src={previewAvatar || profile.avatar || avatarOptions[0]}
-                        alt="Avatar preview"
-                        className="h-full w-full object-cover"
-                        style={{ transform: `scale(${zoom})` }}
+                  <div>
+                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 mb-1.5 font-bold">Bio</label>
+                    <textarea
+                      rows={2}
+                      placeholder="Software engineer passionate about building & debugging complex systems..."
+                      value={profile.bio}
+                      onChange={(e) => setProfile((prev) => ({ ...prev, bio: e.target.value }))}
+                      className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400 resize-none"
+                    />
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 mb-1.5 font-bold">Country</label>
+                      <input
+                        type="text"
+                        list="country-options"
+                        placeholder="United States"
+                        value={profile.country}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const tz = inferTimezone(val);
+                          setProfile((prev) => ({ ...prev, country: val, timezone: tz || prev.timezone }));
+                        }}
+                        className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                      />
+                      <datalist id="country-options">
+                        {countryList.map((c) => (
+                          <option key={c} value={c} />
+                        ))}
+                      </datalist>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 mb-1.5 font-bold">Timezone</label>
+                      <input
+                        type="text"
+                        placeholder="America/New_York"
+                        value={profile.timezone}
+                        onChange={(e) => setProfile((prev) => ({ ...prev, timezone: e.target.value }))}
+                        className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
                       />
                     </div>
-                    <div className="flex-1 space-y-4">
-                      <label className="block text-sm text-slate-300">
-                        <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Upload avatar</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleAvatarUpload}
-                          className="mt-2 w-full text-slate-300"
-                        />
-                      </label>
-                      <div>
-                        <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Choose built-in avatar</span>
-                        <div className="mt-3 grid grid-cols-3 gap-3">
-                          {avatarOptions.map((url) => (
-                            <button
-                              type="button"
-                              key={url}
-                              onClick={() => {
-                                setPreviewAvatar('');
-                                setProfile((prev) => ({ ...prev, avatar: url }));
-                              }}
-                              className={`h-16 rounded-3xl overflow-hidden border ${profile.avatar === url && !previewAvatar ? 'border-cyan-400' : 'border-slate-800'}`}>
-                              <img src={url} alt="avatar" className="h-full w-full object-cover" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-xs text-slate-400 uppercase tracking-[0.24em]">Zoom</span>
-                        <input
-                          type="range"
-                          min="1"
-                          max="1.8"
-                          step="0.05"
-                          value={zoom}
-                          onChange={(e) => setZoom(parseFloat(e.target.value))}
-                          className="w-full"
-                        />
-                      </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 mb-2 font-bold">Choose Avatar</label>
+                    <div className="grid grid-cols-6 gap-2">
+                      {avatarOptions.map((url) => (
+                        <button
+                          type="button"
+                          key={url}
+                          onClick={() => {
+                            setPreviewAvatar('');
+                            setProfile((prev) => ({ ...prev, avatar: url }));
+                          }}
+                          className={`h-12 rounded-2xl overflow-hidden border transition-all ${profile.avatar === url && !previewAvatar ? 'border-cyan-400 ring-2 ring-cyan-400/40' : 'border-slate-800 opacity-70 hover:opacity-100'}`}
+                        >
+                          <img src={url} alt="avatar" className="h-full w-full object-cover" />
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -421,98 +442,131 @@ export default function Signup({ setUser, addToast }) {
 
             {step === 3 && (
               <div className="space-y-6">
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <label className="block text-sm text-slate-300">
-                    <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Theme</span>
-                    <select
-                      value={personalization.theme}
-                      onChange={(e) => setPersonalization((prev) => ({ ...prev, theme: e.target.value }))}
-                      className="mt-2 w-full rounded-3xl border border-slate-800 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-cyan-400"
-                    >
-                      {themeOptions.map((option) => (
-                        <option key={option} value={option}>{option}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="block text-sm text-slate-300">
-                    <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Accent color</span>
-                    <div className="mt-2 flex items-center gap-2">
-                      {accentOptions.map((color) => (
+                <div>
+                  <h3 className="font-heading text-2xl font-bold text-slate-100">Tell us about your skills</h3>
+                  <p className="text-xs text-slate-400 mt-1">Select your strengths and areas you want to improve to personalize recommendations</p>
+                </div>
+
+                {/* VISIBLE STRENGTHS SELECTION UI */}
+                <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <span>Strengths (Select your strong skills)</span>
+                    </p>
+                    <span className="text-[10px] text-slate-500">{personalization.strengths.length} selected</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2.5">
+                    {SKILL_CATEGORIES.map((skill) => {
+                      const isSelected = personalization.strengths.includes(skill);
+                      return (
                         <button
-                          key={color}
+                          key={`str-${skill}`}
                           type="button"
-                          onClick={() => setPersonalization((prev) => ({ ...prev, accentColor: color }))}
-                          className={`h-10 w-10 rounded-full border-2 ${personalization.accentColor === color ? 'border-white shadow-lg' : 'border-slate-800'}`}
-                          style={{ backgroundColor: color === 'blue' ? '#2563eb' : color === 'purple' ? '#8b5cf6' : color === 'green' ? '#22c55e' : color === 'orange' ? '#f97316' : '#ef4444' }}
-                        />
-                      ))}
-                    </div>
-                  </label>
-                </div>
-
-                <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500 mb-3">Interests</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {interestOptions.map((interest) => (
-                      <button
-                        key={interest}
-                        type="button"
-                        onClick={() => toggleInterest(interest)}
-                        className={`rounded-3xl border px-4 py-3 text-left text-sm transition-all ${personalization.interests.includes(interest) ? 'border-cyan-400 bg-cyan-500/10 text-slate-100' : 'border-slate-800 bg-slate-950 text-slate-300 hover:border-slate-700'}`}>
-                        {interest}
-                      </button>
-                    ))}
+                          onClick={() => toggleStrength(skill)}
+                          className={`px-4 py-2.5 rounded-2xl border text-xs font-semibold transition-all flex items-center gap-2 ${
+                            isSelected
+                              ? 'border-emerald-500 bg-emerald-500/20 text-emerald-200 shadow-glow-emerald/10'
+                              : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                          }`}
+                        >
+                          <CheckCircle2 className={`w-4 h-4 ${isSelected ? 'text-emerald-400' : 'text-slate-600'}`} />
+                          <span>{skill}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500 mb-3">Notification preferences</p>
-                  <div className="grid gap-3 text-sm text-slate-300">
-                    {Object.entries(personalization.notificationsConfig).map(([key, value]) => (
-                      <label key={key} className="flex items-center gap-3 rounded-3xl border border-slate-800 bg-slate-950 px-4 py-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={value}
-                          onChange={() => toggleNotification(key)}
-                          className="h-4 w-4 rounded border-slate-700 text-cyan-500 bg-slate-950"
-                        />
-                        <span className="capitalize">{key.replace('-', ' ')} notifications</span>
-                      </label>
-                    ))}
+                {/* VISIBLE WEAKNESSES / AREAS TO IMPROVE SELECTION UI */}
+                <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-rose-400 flex items-center gap-1.5">
+                      <Target className="w-4 h-4 text-rose-400" />
+                      <span>Areas you want to improve (Select target skills)</span>
+                    </p>
+                    <span className="text-[10px] text-slate-500">{personalization.weaknesses.length} selected</span>
                   </div>
+                  <div className="flex flex-wrap gap-2.5">
+                    {SKILL_CATEGORIES.map((skill) => {
+                      const isSelected = personalization.weaknesses.includes(skill);
+                      return (
+                        <button
+                          key={`wk-${skill}`}
+                          type="button"
+                          onClick={() => toggleWeakness(skill)}
+                          className={`px-4 py-2.5 rounded-2xl border text-xs font-semibold transition-all flex items-center gap-2 ${
+                            isSelected
+                              ? 'border-rose-500 bg-rose-500/20 text-rose-200 shadow-glow-rose/10'
+                              : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                          }`}
+                        >
+                          <Target className={`w-4 h-4 ${isSelected ? 'text-rose-400' : 'text-slate-600'}`} />
+                          <span>{skill}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Theme Preference */}
+                <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-4 flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">UI Theme</span>
+                  <select
+                    value={personalization.theme}
+                    onChange={(e) => setPersonalization((prev) => ({ ...prev, theme: e.target.value }))}
+                    className="rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2 text-xs text-slate-100 outline-none focus:border-cyan-400"
+                  >
+                    {themeOptions.map((option) => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             )}
 
             {step === 4 && (
-              <div className="space-y-6">
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Account</p>
-                    <p className="mt-3 text-slate-100 font-semibold">{account.username}</p>
-                    <p className="text-slate-400 text-sm mt-2">{account.email}</p>
+              <div className="space-y-5">
+                <div>
+                  <h3 className="font-heading text-2xl font-bold text-slate-100">Review & confirm</h3>
+                  <p className="text-xs text-slate-400 mt-1">Verify your account profile before registering</p>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-4">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">Account</p>
+                    <p className="mt-2 text-slate-100 font-bold text-sm">{account.username}</p>
+                    <p className="text-slate-400 text-xs mt-1">{account.email}</p>
                   </div>
-                  <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Profile</p>
-                    <p className="mt-3 text-slate-100 font-semibold">{profile.displayName}</p>
-                    <p className="text-slate-400 text-sm mt-2">{profile.country || 'Country'} • {profile.timezone || 'Time zone'}</p>
+                  <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-4">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">Profile</p>
+                    <p className="mt-2 text-slate-100 font-bold text-sm">{profile.displayName}</p>
+                    <p className="text-slate-400 text-xs mt-1">{profile.country || 'Country'} • {profile.timezone || 'UTC'}</p>
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
-                  <div className="flex items-center gap-4">
-                    <div className="h-16 w-16 rounded-3xl overflow-hidden bg-slate-800">
-                      <img src={previewAvatar || profile.avatar || avatarOptions[0]} alt="Profile" className="h-full w-full object-cover" />
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Theme / Accent</p>
-                      <p className="mt-2 text-slate-100">{personalization.theme} / {personalization.accentColor}</p>
+                {/* Selected Strengths & Weaknesses Confirmation Summary */}
+                <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5 space-y-3">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-400 font-bold mb-1.5">Selected Strengths</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {personalization.strengths.map((s) => (
+                        <span key={s} className="px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold">
+                          {s}
+                        </span>
+                      ))}
                     </div>
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-2 text-[11px] text-slate-400">
-                    {personalization.interests.slice(0, 4).map((interest) => (
-                      <span key={interest} className="rounded-full border border-slate-700 px-3 py-1 bg-slate-950/80">{interest}</span>
-                    ))}
+
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-rose-400 font-bold mb-1.5">Areas to Improve</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {personalization.weaknesses.map((w) => (
+                        <span key={w} className="px-2.5 py-1 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px] font-semibold">
+                          {w}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -554,7 +608,7 @@ export default function Signup({ setUser, addToast }) {
 
             <div className="text-center mt-4 text-xs text-slate-500">
               Already have an account?{' '}
-              <Link to="/login" className="text-brand-indigo hover:text-slate-100">Sign in</Link>
+              <Link to="/login" className="text-cyan-400 hover:text-slate-100">Sign in</Link>
             </div>
           </div>
         </div>

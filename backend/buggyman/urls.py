@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     path('login', views.login_view, name='login'),
     path('register', views.register_view, name='register'),
+    path('check-availability', views.check_availability_view, name='check_availability'),
     path('profile', views.profile_view, name='profile'),
     path('profile/skill-matrix', views.user_skill_matrix_view, name='user_skill_matrix'),
     path('challenges', views.challenges_list_view, name='challenges_list'),
@@ -26,6 +27,7 @@ urlpatterns = [
     path('analytics/learning-data', views.learning_analytics_data_view, name='analytics_learning_data'),
     path('analytics/adaptive-difficulty', views.adaptive_difficulty_state_view, name='adaptive_difficulty_state'),
     path('analytics/weaknesses', views.user_weaknesses_view, name='user_weaknesses'),
+    path('career-insights', views.career_insights_view, name='career_insights'),
     path('leaderboard', views.leaderboard_view, name='leaderboard'),
     path('notifications', views.notifications_view, name='notifications'),
     path('notifications/<int:pk>/read', views.mark_notification_read_view, name='mark_notification_read'),
@@ -40,7 +42,36 @@ urlpatterns = [
     path('admin/reports/<int:pk>', views.admin_manage_reports_view, name='admin_report_detail'),
     path('admin/backup/export', views.admin_backup_export_view, name='admin_backup_export'),
     path('admin/backup/verify', views.admin_backup_verify_view, name='admin_backup_verify'),
-    path('forgot-password/request', views.forgot_password_request_view, name='forgot_password_request'),
-    path('forgot-password/reset', views.forgot_password_reset_view, name='forgot_password_reset'),
+    path('bugbytes', views.bugbytes_summary_view, name='bugbytes_summary'),
+    path('bugbytes/history', views.bugbytes_history_view, name='bugbytes_history'),
+    path('challenges/<str:pk>/hints', views.challenge_hints_view, name='challenge_hints'),
+    path('store/packages', views.store_packages_view, name='store_packages'),
+    path('store/checkout', views.store_checkout_view, name='store_checkout'),
+    path('store/confirm-payment', views.store_confirm_payment_view, name='store_confirm_payment'),
+    path('store/purchases', views.store_purchases_history_view, name='store_purchases'),
+    path('store/purchases/<int:pk>/refund', views.store_refund_purchase_view, name='store_refund_purchase'),
+    path('store/missions', views.store_missions_view, name='store_missions'),
+    path('store/missions/<int:pk>', views.store_mission_detail_view, name='store_mission_detail'),
+    path('store/missions/<int:pk>/claim', views.store_claim_reward_view, name='store_claim_reward'),
+    path('store/rewards', views.store_rewards_summary_view, name='store_rewards_summary'),
+
+    # PvP Battles
+    path('pvp/create', views.pvp_create_battle_view, name='pvp_create'),
+    path('pvp/join', views.pvp_join_battle_view, name='pvp_join'),
+    path('pvp/quick-match', views.pvp_quick_match_view, name='pvp_quick_match'),
+    path('pvp/history', views.pvp_history_view, name='pvp_history'),
+    path('pvp/<int:pk>/status', views.pvp_battle_status_view, name='pvp_battle_status'),
+    path('pvp/<int:pk>/start', views.pvp_start_battle_view, name='pvp_start'),
+    path('pvp/<int:pk>/progress', views.pvp_update_progress_view, name='pvp_update_progress'),
+    path('pvp/<int:pk>/submit', views.pvp_submit_solution_view, name='pvp_submit'),
+    path('pvp/<int:pk>/cancel', views.pvp_cancel_battle_view, name='pvp_cancel'),
+
+    # OAuth 2.0 / SSO
+    path('auth/oauth/config', views.oauth_config_view, name='oauth_config'),
+    path('auth/oauth/callback', views.oauth_callback_view, name='oauth_callback'),
+    path('auth/oauth', views.oauth_login_view, name='oauth_login'),
+    path('auth/oauth/disconnect', views.oauth_disconnect_view, name='oauth_disconnect'),
+
     path('health', views.health_check_view, name='health_check'),
 ]
+

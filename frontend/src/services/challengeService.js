@@ -8,6 +8,7 @@ export const challengeService = {
     if (params.category && params.category !== 'All') query.append('category', params.category);
     if (params.arena && params.arena !== 'All') query.append('arena', params.arena);
     if (params.search) query.append('search', params.search);
+    if (params.personalized !== undefined) query.append('personalized', params.personalized);
     const queryString = query.toString() ? `?${query.toString()}` : '';
     return await request(`/challenges${queryString}`, {
       method: 'GET'
@@ -167,6 +168,98 @@ export const challengeService = {
     return await request(`/challenges/${challengeId}/report`, {
       method: 'POST',
       body: JSON.stringify(reportData)
+    });
+  },
+
+  getCareerInsights: async (roleId = null) => {
+    const query = roleId ? `?role=${encodeURIComponent(roleId)}` : '';
+    return await request(`/career-insights${query}`, {
+      method: 'GET'
+    });
+  },
+
+  getBugBytesSummary: async () => {
+    return await request('/bugbytes', {
+      method: 'GET'
+    });
+  },
+
+  getBugBytesHistory: async () => {
+    return await request('/bugbytes/history', {
+      method: 'GET'
+    });
+  },
+
+  getUnlockedHints: async (challengeId) => {
+    return await request(`/challenges/${challengeId}/hints`, {
+      method: 'GET'
+    });
+  },
+
+  requestAIHint: async (challengeId, level, payload = {}) => {
+    return await request(`/challenges/${challengeId}/hints`, {
+      method: 'POST',
+      body: JSON.stringify({ level, ...payload })
+    });
+  },
+
+  // PvP Battle APIs
+  createBattle: async (params = {}) => {
+    return await request('/pvp/create', {
+      method: 'POST',
+      body: JSON.stringify(params)
+    });
+  },
+
+  joinBattle: async (roomCode) => {
+    return await request('/pvp/join', {
+      method: 'POST',
+      body: JSON.stringify({ roomCode })
+    });
+  },
+
+  quickMatch: async (params = {}) => {
+    return await request('/pvp/quick-match', {
+      method: 'POST',
+      body: JSON.stringify(params)
+    });
+  },
+
+  getBattleStatus: async (battleId) => {
+    return await request(`/pvp/${battleId}/status`, {
+      method: 'GET'
+    });
+  },
+
+  startBattle: async (battleId) => {
+    return await request(`/pvp/${battleId}/start`, {
+      method: 'POST'
+    });
+  },
+
+  updateBattleProgress: async (battleId, progress) => {
+    return await request(`/pvp/${battleId}/progress`, {
+      method: 'POST',
+      body: JSON.stringify(progress)
+    });
+  },
+
+  submitBattleSolution: async (battleId, code, files = []) => {
+    return await request(`/pvp/${battleId}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ code, files })
+    });
+  },
+
+  cancelBattle: async (battleId) => {
+    return await request(`/pvp/${battleId}/cancel`, {
+      method: 'POST'
+    });
+  },
+
+  getPvPHistory: async () => {
+    return await request('/pvp/history', {
+      method: 'GET'
     });
   }
 };

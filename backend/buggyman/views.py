@@ -1,7 +1,8 @@
 import time
 import sys
 import os
-from django.db.models import Q
+import requests
+from django.db.models import Q, Avg, Count, Sum
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
@@ -10,9 +11,28 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate
-from .models import User, Challenge, Notification, Submission, ChallengeReport
+from django.db import transaction
+from django.utils import timezone
+import uuid
+import random
+import string
+from .models import (
+    User, Challenge, Notification, Submission, ChallengeReport,
+    BugBytesTransaction, UnlockedHint, BugBytesPackage, BugBytesPurchase,
+    RewardMission, MissionChallengeCompletion, SimulatedRewardTransaction,
+    PvPBattle
+)
 from .auth import generate_jwt_token
 from .evaluator.engine import EvaluationEngine
+from .constants import (
+    EASY_BUGBYTE_REWARD,
+    MEDIUM_BUGBYTE_REWARD,
+    HARD_BUGBYTE_REWARD,
+    FIRST_ATTEMPT_BONUS,
+    FULL_TEST_PASS_BONUS,
+    HINT_COSTS
+)
+from .ai.groq_service import AIHintService
 
 evaluation_engine = EvaluationEngine()
 
@@ -28,6 +48,7 @@ from buggyman.ml.recommender import ChallengeRecommender
 from buggyman.ml.adaptive_difficulty import AdaptiveDifficultyManager
 from buggyman.ml.weakness_detector import WeaknessDetector
 from buggyman.ml.learning_path import LearningPathGenerator
+from buggyman.ml.career_engine import CareerEngine
 from buggyman.throttling import apply_rate_limit
 from buggyman.logger import log_event, log_security_event, log_evaluator_event, log_error_event
 from buggyman.backup import BackupManager
@@ -57,7 +78,9 @@ def login_view(request):
 
     if user and user.check_password(password):
         token = generate_jwt_token(user)
-        return Response({'token': token, 'user': user.to_dict()})
+        user_dict = user.to_dict()
+        is_new = not bool(user.onboarding_completed or user.is_onboarded)
+        return Response({'token': token, 'user': user_dict, 'isNewUser': is_new})
     
     return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -117,6 +140,8 @@ def register_view(request):
         country=country,
         timezone=timezone,
         interests=interests,
+        strengths=data.get('strengths', []),
+        weaknesses=data.get('weaknesses', []),
         notifications_config=notifications_config,
         skills={'React': 75, 'Django': 65, 'NodeJS': 50, 'CSS': 70},
         activities=[{
@@ -134,7 +159,23 @@ def register_view(request):
     )
 
     token = generate_jwt_token(user)
-    return Response({'token': token, 'user': user.to_dict()})
+    user_dict = user.to_dict()
+    return Response({'token': token, 'user': user_dict, 'isNewUser': True})
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def check_availability_view(request):
+    data = request.data
+    username = str(data.get('username', '')).strip()
+    email = str(data.get('email', '')).strip()
+
+    if username and User.objects.filter(username__iexact=username).exists():
+        return Response({'available': False, 'field': 'username', 'error': 'Username is already taken'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if email and User.objects.filter(email__iexact=email).exists():
+        return Response({'available': False, 'field': 'email', 'error': 'Email is already registered'}, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response({'available': True})
 
 @api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
@@ -177,8 +218,15 @@ def profile_view(request):
             user.timezone = data['timezone']
         if 'interests' in data:
             user.interests = data['interests']
+        if 'strengths' in data:
+            user.strengths = data['strengths']
+        if 'weaknesses' in data:
+            user.weaknesses = data['weaknesses']
         if 'notifications_config' in data:
             user.notifications_config = data['notifications_config']
+        if 'onboarding_completed' in data or 'onboardingCompleted' in data:
+            val = data.get('onboarding_completed') if 'onboarding_completed' in data else data.get('onboardingCompleted')
+            user.onboarding_completed = bool(val)
         if 'password' in data and data['password']:
             try:
                 validate_password(data['password'], user)
@@ -188,6 +236,7 @@ def profile_view(request):
         if 'skills' in data:
             user.skills = data['skills']
         user.save()
+        SkillProfiler.update_user_skills(user)
         return Response(user.to_dict())
 
 @api_view(['GET'])
@@ -246,7 +295,7 @@ def challenges_list_view(request):
         elif arena_low in ('debugging', 'backend', 'code'):
             queryset = queryset.filter(technology__in=['Python', 'Django', 'NodeJS', 'JavaScript', 'Backend', 'FastAPI'])
     elif not search:
-        queryset = queryset.exclude(title__startswith='[SQL-').exclude(title__startswith='[RE-')
+        queryset = queryset.exclude(title__startswith='[SQL-').exclude(title__startswith='[RE-').exclude(title__startswith='[FE-')
 
     if search:
         queryset = queryset.filter(
@@ -255,6 +304,20 @@ def challenges_list_view(request):
             Q(category__icontains=search) |
             Q(technology__icontains=search)
         )
+
+    is_personalized_param = request.query_params.get('personalized', '').lower()
+    is_personalized = is_personalized_param == 'true' or (is_personalized_param != 'false' and user is not None and user.is_authenticated)
+
+    if is_personalized:
+        challenges = ChallengeRecommender.get_personalized_challenges(
+            user=user,
+            arena=arena,
+            difficulty=difficulty,
+            technology=technology,
+            category=category,
+            search=search
+        )
+        return Response(challenges)
 
     challenges = [c.to_dict() for c in queryset]
     return Response(challenges)
@@ -281,7 +344,11 @@ SPECIAL_CHALLENGE_CATALOG = {
                 'content': "-- BUG: Missing required WHERE condition\nSELECT * FROM orders;"
             }
         ],
-        'test_cases': [{'id': 1, 'name': 'Filters completed orders correctly', 'input': '', 'expected': "WHERE status = 'completed'", 'passed': False}],
+        'test_cases': [
+            { 'id': 1, 'name': 'Completed Orders Filter', 'input': '', 'expected': 'Filters query results to include only completed status orders', 'passed': False },
+            { 'id': 2, 'name': 'Query Output Format', 'input': '', 'expected': 'Returns correct order columns and matching record rows', 'passed': False },
+            { 'id': 3, 'name': 'Excludes Non-Completed Records', 'input': '', 'expected': 'Excludes pending and cancelled orders from output set', 'passed': False }
+        ],
         'bug_signature': 'SELECT * FROM orders;',
         'suspected_component': 'query.sql'
     },
@@ -305,7 +372,11 @@ SPECIAL_CHALLENGE_CATALOG = {
                 'content': "-- BUG: ORDER BY uses wrong column\nSELECT name, price FROM products ORDER BY created_at;"
             }
         ],
-        'test_cases': [{'id': 1, 'name': 'Orders products by price', 'input': '', 'expected': 'ORDER BY price', 'passed': False}],
+        'test_cases': [
+            { 'id': 1, 'name': 'Price Sort Order', 'input': '', 'expected': 'Sorts product list by price in ascending order', 'passed': False },
+            { 'id': 2, 'name': 'Column Projection', 'input': '', 'expected': 'Returns product name and price columns', 'passed': False },
+            { 'id': 3, 'name': 'Ordering Consistency', 'input': '', 'expected': 'Ensures lowest priced products appear at top of result set', 'passed': False }
+        ],
         'bug_signature': 'ORDER BY created_at;',
         'suspected_component': 'report.sql'
     },
@@ -325,7 +396,11 @@ SPECIAL_CHALLENGE_CATALOG = {
                 'content': "-- BUG: users table defined without a primary key\nCREATE TABLE users (\n  username VARCHAR(50),\n  email VARCHAR(100)\n);\nINSERT INTO users VALUES ('alice', 'alice@test.com'), ('bob', 'bob@test.com');"
             }
         ],
-        'test_cases': [{'id': 1, 'name': 'Defines a primary key', 'input': '', 'expected': 'PRIMARY KEY', 'passed': False}],
+        'test_cases': [
+            { 'id': 1, 'name': 'Primary Key Definition', 'input': '', 'expected': 'Enforces unique user identification on primary key column', 'passed': False },
+            { 'id': 2, 'name': 'Schema Structure', 'input': '', 'expected': 'Creates users table with id, username, and email columns', 'passed': False },
+            { 'id': 3, 'name': 'Duplicate Row Prevention', 'input': '', 'expected': 'Prevents duplicate row insertions into database', 'passed': False }
+        ],
         'bug_signature': 'CREATE TABLE users ( username VARCHAR(50), email VARCHAR(100) );',
         'suspected_component': 'schema.sql'
     },
@@ -345,7 +420,11 @@ SPECIAL_CHALLENGE_CATALOG = {
                 'content': "-- BUG: Missing UNIQUE constraint on username\nCREATE TABLE users (\n  id INTEGER PRIMARY KEY,\n  username VARCHAR(50),\n  email VARCHAR(100)\n);\nINSERT INTO users VALUES (1, 'john_doe', 'john@test.com'), (2, 'jane_doe', 'jane@test.com');"
             }
         ],
-        'test_cases': [{'id': 1, 'name': 'Username uniqueness enforced', 'input': '', 'expected': 'UNIQUE', 'passed': False}],
+        'test_cases': [
+            { 'id': 1, 'name': 'Username Uniqueness', 'input': '', 'expected': 'Enforces unique constraint on username field', 'passed': False },
+            { 'id': 2, 'name': 'Database Table Creation', 'input': '', 'expected': 'Defines primary key and valid user table schema', 'passed': False },
+            { 'id': 3, 'name': 'Constraint Assertion', 'input': '', 'expected': 'Rejects insertion of duplicate username records', 'passed': False }
+        ],
         'bug_signature': 'username VARCHAR(50),',
         'suspected_component': 'schema.sql'
     },
@@ -369,7 +448,11 @@ SPECIAL_CHALLENGE_CATALOG = {
                 'content': "-- BUG: Missing GROUP BY column\nSELECT region, SUM(amount) FROM sales;"
             }
         ],
-        'test_cases': [{'id': 1, 'name': 'Uses GROUP BY correctly', 'input': '', 'expected': 'GROUP BY region', 'passed': False}],
+        'test_cases': [
+            { 'id': 1, 'name': 'Region Aggregation', 'input': '', 'expected': 'Groups sales totals by region column', 'passed': False },
+            { 'id': 2, 'name': 'Sum Metric Calculation', 'input': '', 'expected': 'Calculates accurate sum of sales amount per region', 'passed': False },
+            { 'id': 3, 'name': 'Group Column Matching', 'input': '', 'expected': 'Includes non-aggregated SELECT columns in GROUP BY', 'passed': False }
+        ],
         'bug_signature': 'SELECT region, SUM(amount) FROM sales;',
         'suspected_component': 'sales_report.sql'
     },
@@ -393,7 +476,11 @@ SPECIAL_CHALLENGE_CATALOG = {
                 'content': "-- BUG: Join missing proper ON condition\nSELECT o.id, c.name FROM orders o JOIN customers c;"
             }
         ],
-        'test_cases': [{'id': 1, 'name': 'Joins with explicit conditions', 'input': '', 'expected': 'ON o.customer_id = c.id', 'passed': False}],
+        'test_cases': [
+            { 'id': 1, 'name': 'Explicit Join Condition', 'input': '', 'expected': 'Links order records to customer table on matching customer IDs', 'passed': False },
+            { 'id': 2, 'name': 'Duplicate Row Prevention', 'input': '', 'expected': 'Avoids cartesian product and duplicate rows', 'passed': False },
+            { 'id': 3, 'name': 'Relational Key Matching', 'input': '', 'expected': 'Returns combined order ID and customer name dataset', 'passed': False }
+        ],
         'bug_signature': 'SELECT o.id, c.name FROM orders o JOIN customers c;',
         'suspected_component': 'nested_join.sql'
     },
@@ -417,7 +504,11 @@ SPECIAL_CHALLENGE_CATALOG = {
                 'content': "-- BUG: HAVING should be used after aggregation\nSELECT product_id, SUM(quantity) FROM orders HAVING quantity > 10;"
             }
         ],
-        'test_cases': [{'id': 1, 'name': 'Uses WHERE before aggregation', 'input': '', 'expected': 'WHERE quantity > 10', 'passed': False}],
+        'test_cases': [
+            { 'id': 1, 'name': 'Pre-Aggregation Filter', 'input': '', 'expected': 'Filters individual order quantities before grouping', 'passed': False },
+            { 'id': 2, 'name': 'Product Grouping Totals', 'input': '', 'expected': 'Aggregates total quantities per product ID', 'passed': False },
+            { 'id': 3, 'name': 'Clause Order Assertion', 'input': '', 'expected': 'Applies filtering prior to aggregate calculation', 'passed': False }
+        ],
         'bug_signature': 'HAVING quantity > 10;',
         'suspected_component': 'aggregate.sql'
     },
@@ -717,27 +808,38 @@ SPECIAL_CHALLENGE_CATALOG = {
     }
 }
 
+# Alias FE- keys to RE- keys in SPECIAL_CHALLENGE_CATALOG
+for key in ['E01', 'E02', 'E03', 'E04', 'M01', 'M02', 'M03', 'H01', 'H02', 'H03']:
+    if f'RE-{key}' in SPECIAL_CHALLENGE_CATALOG:
+        SPECIAL_CHALLENGE_CATALOG[f'FE-{key}'] = SPECIAL_CHALLENGE_CATALOG[f'RE-{key}']
+
 def get_challenge_or_none(pk):
     pk_str = str(pk).strip()
     
     # 1. Direct PK lookup if integer
     if pk_str.isdigit():
-        try:
-            return Challenge.objects.get(pk=int(pk_str))
-        except Challenge.DoesNotExist:
-            pass
+        chal = Challenge.objects.filter(pk=int(pk_str)).first()
+        if chal:
+            return chal
 
-    # 2. Look up by string ID matching title or category
+    # 2. Look up by title containing pk_str or prefix alias (handles FE- vs RE-)
     chal = Challenge.objects.filter(title__icontains=pk_str).first()
     if chal:
         return chal
 
-    # 3. Look up in catalog if string ID (like SQL-E01, RE-E01)
-    catalog_item = SPECIAL_CHALLENGE_CATALOG.get(pk_str)
+    alt_pk = pk_str.replace('FE-', 'RE-') if pk_str.startswith('FE-') else (pk_str.replace('RE-', 'FE-') if pk_str.startswith('RE-') else pk_str)
+    if alt_pk != pk_str:
+        chal = Challenge.objects.filter(title__icontains=alt_pk).first()
+        if chal:
+            return chal
+
+    # 3. Look up in SPECIAL_CHALLENGE_CATALOG
+    catalog_item = SPECIAL_CHALLENGE_CATALOG.get(pk_str) or SPECIAL_CHALLENGE_CATALOG.get(alt_pk)
     if catalog_item:
         chal = Challenge.objects.create(
             title=f"[{pk_str}] {catalog_item['title']}",
             description=catalog_item['description'],
+            status='published',
             difficulty=catalog_item['difficulty'],
             technology=catalog_item['technology'],
             category=catalog_item['category'],
@@ -750,7 +852,11 @@ def get_challenge_or_none(pk):
         )
         return chal
 
-    # 4. Fallback to first challenge in DB if any exist
+    # 4. Fallback to first published challenge in DB
+    published_chal = Challenge.objects.filter(status='published').first()
+    if published_chal:
+        return published_chal
+
     return Challenge.objects.first()
 
 @api_view(['GET'])
@@ -827,7 +933,7 @@ import datetime
 from django.utils import timezone
 
 def update_user_streak(user):
-    today = datetime.date.today()
+    today = timezone.localdate() if hasattr(timezone, 'localdate') else datetime.date.today()
     if not user.last_active_date:
         user.streak = 1
         user.last_active_date = today
@@ -907,6 +1013,25 @@ def submit_challenge_view(request, pk):
             user.challenges_solved += 1
             user.total_score += awarded_score
 
+            # Calculate BugBytes reward
+            diff_lower = (challenge.difficulty or 'Easy').lower()
+            if diff_lower == 'hard':
+                bb_reward = HARD_BUGBYTE_REWARD
+            elif diff_lower == 'medium':
+                bb_reward = MEDIUM_BUGBYTE_REWARD
+            else:
+                bb_reward = EASY_BUGBYTE_REWARD
+
+            if attempt_number == 1:
+                bb_reward += FIRST_ATTEMPT_BONUS
+
+            tests_passed = eval_res.get('tests_passed', 0)
+            tests_total = eval_res.get('tests_total', 0)
+            if tests_total > 0 and tests_passed == tests_total:
+                bb_reward += FULL_TEST_PASS_BONUS
+
+            user.bugbytes_balance += bb_reward
+
             # Execute Gamification Pipeline
             update_user_streak(user)
             check_and_unlock_badges(user)
@@ -921,10 +1046,19 @@ def submit_challenge_view(request, pk):
             })
             user.activities = current_activities
             user.save()
+
+            BugBytesTransaction.objects.create(
+                user=user,
+                amount=bb_reward,
+                transaction_type='EARN_CHALLENGE',
+                reason=f'Completed challenge "{challenge.title}" ({challenge.difficulty})',
+                challenge=challenge
+            )
+
             summary = eval_res['ai_summary']
         else:
             awarded_score = 0
-            summary = 'Already solved previously. Solution verified without additional XP.'
+            summary = 'Already solved previously. Solution verified without additional XP or BugBytes.'
     else:
         awarded_score = 0
         summary = eval_res['ai_summary']
@@ -943,6 +1077,31 @@ def submit_challenge_view(request, pk):
         stderr=eval_res['stderr'],
         ai_summary=summary
     )
+
+    # Check and update active Money-Back Reward Missions
+    mission_updated = False
+    if is_success:
+        now_ts = timezone.now()
+        active_missions = RewardMission.objects.filter(
+            user=user,
+            status='ACTIVE',
+            deadline__gt=now_ts
+        )
+        for mission in active_missions:
+            if mission.is_challenge_eligible(challenge):
+                if not MissionChallengeCompletion.objects.filter(mission=mission, challenge=challenge).exists():
+                    MissionChallengeCompletion.objects.create(
+                        mission=mission,
+                        user=user,
+                        challenge=challenge,
+                        submission=sub_record
+                    )
+                    mission.completed_count += 1
+                    if mission.completed_count >= mission.required_count:
+                        mission.status = 'COMPLETED'
+                        mission.completed_at = now_ts
+                    mission.save()
+                    mission_updated = True
 
     # Record learning analytics data for Phase 4 ML tracking
     hints_used_input = request.data.get('hintsUsed') or request.data.get('hints_used') or 0
@@ -963,6 +1122,7 @@ def submit_challenge_view(request, pk):
         'tests_total': eval_res['tests_total'],
         'attemptNumber': attempt_number,
         'alreadySolved': already_solved,
+        'missionUpdated': mission_updated,
         'timeTaken': f"{time_mins}m {time_secs:02d}s",
         'bugsFixed': 1 if is_success else 0,
         'remainingIssues': 0 if is_success else max(0, eval_res['tests_total'] - eval_res['tests_passed']),
@@ -1165,36 +1325,76 @@ def analytics_view(request):
     user = get_authenticated_user(request)
     if user:
         total_solved = user.challenges_solved
-        total_attempts = Submission.objects.filter(user=user).count()
-        successful_attempts = Submission.objects.filter(user=user, success=True).count()
-        accuracy = int(round((successful_attempts / total_attempts) * 100)) if total_attempts > 0 else 100
+        all_user_subs = Submission.objects.filter(user=user)
+        total_attempts = all_user_subs.count()
+        successful_attempts = all_user_subs.filter(success=True).count()
+        accuracy = int(round((successful_attempts / total_attempts) * 100)) if total_attempts > 0 else (100 if total_solved > 0 else 0)
 
-        solved_subs = Submission.objects.filter(user=user, success=True).select_related('challenge')
+        solved_subs = all_user_subs.filter(success=True).select_related('challenge')
         easy_count = len({s.challenge_id for s in solved_subs if s.challenge and s.challenge.difficulty.lower() == 'easy'})
         medium_count = len({s.challenge_id for s in solved_subs if s.challenge and s.challenge.difficulty.lower() == 'medium'})
         hard_count = len({s.challenge_id for s in solved_subs if s.challenge and s.challenge.difficulty.lower() == 'hard'})
 
+        # Calculate average execution / solve time
+        avg_exec_time = solved_subs.aggregate(Avg('execution_time'))['execution_time__avg'] or 0.0
+        avg_mins = max(1, int(round(avg_exec_time * 2))) if total_solved > 0 else 0
+        avg_secs = int((avg_exec_time * 60) % 60)
+        formatted_avg_time = f"{avg_mins}m {avg_secs:02d}s" if total_solved > 0 else "0m 00s"
+
+        # Calculate 7-day weekly solve progress
+        from django.utils import timezone
+        import datetime
+        now = timezone.now()
+        days_map = {0: 'Mon', 1: 'Tue', 2: 'Wed', 3: 'Thu', 4: 'Fri', 5: 'Sat', 6: 'Sun'}
+        weekly_progress_data = []
+        for i in range(6, -1, -1):
+            day_date = (now - datetime.timedelta(days=i)).date()
+            day_name = days_map[day_date.weekday()]
+            day_solved = all_user_subs.filter(success=True, created_at__date=day_date).values('challenge_id').distinct().count()
+            weekly_progress_data.append({
+                'day': day_name,
+                'name': day_name,
+                'solved': day_solved,
+                'mins': day_solved * 12
+            })
+
+        # Category bug type breakdown
+        cat_counts = {}
+        for s in solved_subs:
+            if s.challenge and s.challenge.category:
+                cat = s.challenge.category
+                cat_counts[cat] = cat_counts.get(cat, 0) + 1
+
+        bug_stats_data = []
+        for cat_name, count_val in cat_counts.items():
+            bug_stats_data.append({'name': cat_name, 'count': count_val})
+
+        if not bug_stats_data:
+            bug_stats_data = [
+                { 'name': 'State Management', 'count': easy_count },
+                { 'name': 'Styling & CSS', 'count': medium_count },
+                { 'name': 'APIs & Joins', 'count': hard_count }
+            ]
+
         return Response({
+            'solvedCount': total_solved,
             'totalSolved': total_solved,
+            'total_solved': total_solved,
             'totalAttempts': total_attempts,
+            'total_attempts': total_attempts,
+            'accuracyRate': accuracy,
             'accuracy': accuracy,
+            'accuracy_rate': accuracy,
+            'avgTime': formatted_avg_time,
+            'avg_time': formatted_avg_time,
+            'streakDays': user.streak,
             'streak': user.streak,
+            'streak_days': user.streak,
             'totalScore': user.total_score,
-            'timeTrend': [
-                { 'name': 'Mon', 'mins': 15 },
-                { 'name': 'Tue', 'mins': 22 },
-                { 'name': 'Wed', 'mins': 12 },
-                { 'name': 'Thu', 'mins': 30 },
-                { 'name': 'Fri', 'mins': 18 },
-                { 'name': 'Sat', 'mins': 25 },
-                { 'name': 'Sun', 'mins': 8 }
-            ],
-            'bugStats': [
-                { 'name': 'State Management', 'count': max(1, easy_count) },
-                { 'name': 'Styling & CSS', 'count': max(1, medium_count) },
-                { 'name': 'APIs', 'count': max(1, hard_count) },
-                { 'name': 'Async Logic', 'count': 2 }
-            ],
+            'total_score': user.total_score,
+            'weeklyProgress': weekly_progress_data,
+            'timeTrend': weekly_progress_data,
+            'bugStats': bug_stats_data,
             'difficultyProgression': [
                 { 'name': 'Easy', 'completed': easy_count },
                 { 'name': 'Medium', 'completed': medium_count },
@@ -1203,30 +1403,22 @@ def analytics_view(request):
         })
 
     return Response({
-        'totalSolved': 12,
-        'totalAttempts': 15,
-        'accuracy': 78,
-        'streak': 5,
-        'totalScore': 780,
-        'timeTrend': [
-            { 'name': 'Mon', 'mins': 15 },
-            { 'name': 'Tue', 'mins': 22 },
-            { 'name': 'Wed', 'mins': 12 },
-            { 'name': 'Thu', 'mins': 30 },
-            { 'name': 'Fri', 'mins': 18 },
-            { 'name': 'Sat', 'mins': 25 },
-            { 'name': 'Sun', 'mins': 8 }
-        ],
-        'bugStats': [
-            { 'name': 'State Management', 'count': 5 },
-            { 'name': 'Styling & CSS', 'count': 3 },
-            { 'name': 'APIs', 'count': 2 },
-            { 'name': 'Async Logic', 'count': 2 }
-        ],
+        'solvedCount': 0,
+        'totalSolved': 0,
+        'totalAttempts': 0,
+        'accuracyRate': 0,
+        'accuracy': 0,
+        'avgTime': '0m 00s',
+        'streakDays': 0,
+        'streak': 0,
+        'totalScore': 0,
+        'weeklyProgress': [],
+        'timeTrend': [],
+        'bugStats': [],
         'difficultyProgression': [
-            { 'name': 'Easy', 'completed': 8 },
-            { 'name': 'Medium', 'completed': 3 },
-            { 'name': 'Hard', 'completed': 1 }
+            { 'name': 'Easy', 'completed': 0 },
+            { 'name': 'Medium', 'completed': 0 },
+            { 'name': 'Hard', 'completed': 0 }
         ]
     })
 
@@ -1487,39 +1679,59 @@ def generate_challenge_view(request):
 def forgot_password_request_view(request):
     import random
     from django.utils import timezone
+    from django.conf import settings
     import datetime
-    email = request.data.get('email')
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    lim = apply_rate_limit(request, 'forgot_password', limit=5, window_seconds=300)
+    if lim:
+        return lim
+
+    email = (request.data.get('email') or '').strip().lower()
     if not email:
         return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
     
-    user = User.objects.filter(email=email).first()
+    user = User.objects.filter(email__iexact=email).first()
     if not user:
-        return Response({'error': 'User with this email does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        # Prevent user enumeration attack by responding with the same success message
+        return Response({
+            'message': 'If an account with this email exists, a verification code has been sent.'
+        }, status=status.HTTP_200_OK)
         
     otp = str(random.randint(100000, 999999))
     user.otp_code = otp
     user.otp_expiry = timezone.now() + datetime.timedelta(minutes=10)
-    user.save()
+    user.save(update_fields=['otp_code', 'otp_expiry'])
     
-    # In sandbox mode, we return the OTP code directly in response so front-end can display/auto-fill it for verification.
-    print(f"OTP code for {email} is: {otp}")
+    # In development/DEBUG mode only, log to server terminal for developer convenience
+    if getattr(settings, 'DEBUG', False):
+        logger.info(f"[DEV DEBUG] OTP verification code for {email}: {otp}")
+        print(f"[DEV DEBUG] OTP verification code for {email}: {otp}")
+
+    # PRODUCTION SECURITY: Never expose plain OTP codes in client HTTP responses
     return Response({
-        'message': 'Verification code sent successfully. Check your email (or developer console).',
-        'otp': otp  # Return it directly for easy local testing
-    })
+        'message': 'If an account with this email exists, a verification code has been sent. Check your inbox.'
+    }, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def forgot_password_reset_view(request):
     from django.utils import timezone
-    email = request.data.get('email')
-    otp = request.data.get('otp')
+
+    lim = apply_rate_limit(request, 'forgot_password_reset', limit=5, window_seconds=300)
+    if lim:
+        return lim
+
+    email = (request.data.get('email') or '').strip().lower()
+    otp = (request.data.get('otp') or '').strip()
     new_password = request.data.get('password')
     
     if not email or not otp or not new_password:
         return Response({'error': 'Email, OTP, and password are required'}, status=status.HTTP_400_BAD_REQUEST)
         
-    user = User.objects.filter(email=email).first()
+    user = User.objects.filter(email__iexact=email).first()
     if not user:
         return Response({'error': 'User with this email does not exist'}, status=status.HTTP_404_NOT_FOUND)
         
@@ -1827,5 +2039,1561 @@ def admin_backup_verify_view(request):
         return Response({'valid': False, 'error': msg}, status=status.HTTP_400_BAD_REQUEST)
 
     return Response({'valid': True, 'message': msg, 'counts': payload.get('counts')}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def career_insights_view(request):
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    role_id = request.query_params.get('role')
+    insights = CareerEngine.calculate_role_insights(user)
+
+    if role_id:
+        matched_role = next((r for r in insights['roles'] if r['id'] == role_id), None)
+        if not matched_role:
+            return Response({'error': 'Role not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(matched_role, status=status.HTTP_200_OK)
+
+    return Response(insights, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def bugbytes_summary_view(request):
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    earned = BugBytesTransaction.objects.filter(user=user, amount__gt=0).aggregate(total=Sum('amount'))['total'] or 0
+    spent = abs(BugBytesTransaction.objects.filter(user=user, amount__lt=0).aggregate(total=Sum('amount'))['total'] or 0)
+    hints_unlocked = UnlockedHint.objects.filter(user=user).count()
+
+    return Response({
+        'balance': user.bugbytes_balance,
+        'bugbytes_balance': user.bugbytes_balance,
+        'earned': earned,
+        'spent': spent,
+        'hints_unlocked': hints_unlocked
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def bugbytes_history_view(request):
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    txs = BugBytesTransaction.objects.filter(user=user).order_by('-created_at')[:50]
+    return Response([t.to_dict() for t in txs], status=status.HTTP_200_OK)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([AllowAny])
+def challenge_hints_view(request, pk):
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    challenge = get_challenge_or_none(pk)
+    if not challenge:
+        return Response({'error': 'Challenge not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        unlocked = UnlockedHint.objects.filter(user=user, challenge=challenge).order_by('hint_level')
+        return Response([u.to_dict() for u in unlocked], status=status.HTTP_200_OK)
+
+    if request.method == 'POST':
+        lim = apply_rate_limit(request, 'ai_hint', limit=15)
+        if lim:
+            return lim
+
+        try:
+            level = int(request.data.get('level', 1))
+        except (ValueError, TypeError):
+            return Response({'error': 'Invalid hint level'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if level not in [1, 2, 3]:
+            return Response({'error': 'Hint level must be 1, 2, or 3'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if already unlocked
+        existing = UnlockedHint.objects.filter(user=user, challenge=challenge, hint_level=level).first()
+        if existing:
+            return Response({
+                'level': level,
+                'cost': 0,
+                'already_unlocked': True,
+                'remaining_bugbytes': user.bugbytes_balance,
+                'hint': existing.hint_content
+            }, status=status.HTTP_200_OK)
+
+        cost = HINT_COSTS.get(level, 5)
+
+        # Use atomic transaction to verify balance and prevent double-spend
+        with transaction.atomic():
+            user_db = User.objects.select_for_update().get(id=user.id)
+            if user_db.bugbytes_balance < cost:
+                return Response({
+                    'error': f'You need {cost} BugBytes to unlock this hint.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            user_code = request.data.get('code', '')
+            test_results = request.data.get('testResults') or request.data.get('test_results') or []
+
+            ai_res = AIHintService.generate_hint(challenge, user_code, test_results, level)
+            if not ai_res.get('success'):
+                return Response({
+                    'error': ai_res.get('error', 'AI assistance is temporarily unavailable. Your BugBytes were not deducted.')
+                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+            hint_text = ai_res.get('hint', '')
+
+            # Deduct BugBytes and record transaction
+            user_db.bugbytes_balance -= cost
+            user_db.save()
+
+            BugBytesTransaction.objects.create(
+                user=user_db,
+                amount=-cost,
+                transaction_type='SPEND_HINT',
+                reason=f'Unlocked Hint Level {level} for "{challenge.title}"',
+                challenge=challenge,
+                hint_level=level
+            )
+
+            unlocked_obj = UnlockedHint.objects.create(
+                user=user_db,
+                challenge=challenge,
+                hint_level=level,
+                hint_content=hint_text,
+                cost=cost
+            )
+
+            return Response({
+                'level': level,
+                'cost': cost,
+                'remaining_bugbytes': user_db.bugbytes_balance,
+                'hint': hint_text,
+                'unlockedHint': unlocked_obj.to_dict()
+            }, status=status.HTTP_200_OK)
+
+
+# ============================================================================
+# BUGBYTES STORE & MONEY-BACK REWARD MISSIONS (DEMO PROTOTYPE)
+# ============================================================================
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def store_packages_view(request):
+    """
+    Lists available BugBytes Store packages, user balance, and active mission count.
+    """
+    user = get_authenticated_user(request)
+    packages = BugBytesPackage.objects.filter(is_active=True).order_by('order_priority', 'price_inr')
+    
+    balance = user.bugbytes_balance if user else 0
+    active_missions_count = 0
+    if user:
+        active_missions_count = RewardMission.objects.filter(user=user, status='ACTIVE', deadline__gt=timezone.now()).count()
+
+    return Response({
+        'packages': [p.to_dict() for p in packages],
+        'userBalance': balance,
+        'activeMissionsCount': active_missions_count,
+        'isDemo': True,
+        'disclaimer': 'Demonstration Prototype for Academic Evaluation Only. All transactions and refunds are simulated — no real money charged.'
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def store_checkout_view(request):
+    """
+    Initiates a mock checkout session for purchasing BugBytes.
+    Generates a unique transaction reference and returns order summary.
+    """
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required to make a purchase.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    pkg_id = request.data.get('packageId') or request.data.get('package_id')
+    if not pkg_id:
+        return Response({'error': 'Package ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    package = BugBytesPackage.objects.filter(id=pkg_id, is_active=True).first()
+    if not package:
+        return Response({'error': 'Selected package not found or inactive.'}, status=status.HTTP_404_NOT_FOUND)
+
+    idempotency_key = request.data.get('idempotencyKey') or request.data.get('idempotency_key')
+    if idempotency_key:
+        existing_order = BugBytesPurchase.objects.filter(user=user, idempotency_key=idempotency_key).first()
+        if existing_order:
+            return Response({
+                'purchase': existing_order.to_dict(),
+                'package': package.to_dict(),
+                'demoNotice': 'Mock checkout session restored from idempotency key.'
+            }, status=status.HTTP_200_OK)
+
+    tx_ref = f"DEMO-PUR-{uuid.uuid4().hex[:10].upper()}"
+    purchase = BugBytesPurchase.objects.create(
+        user=user,
+        package=package,
+        package_name=package.name,
+        bugbytes_amount=package.bugbytes,
+        price_inr=package.price_inr,
+        status='PENDING',
+        transaction_reference=tx_ref,
+        idempotency_key=idempotency_key,
+        payment_method='DEMO_SIMULATOR'
+    )
+
+    return Response({
+        'purchase': purchase.to_dict(),
+        'package': package.to_dict(),
+        'orderSummary': {
+            'packageName': package.name,
+            'bugbytesAmount': package.bugbytes,
+            'priceInr': float(package.price_inr),
+            'currency': 'INR',
+            'transactionReference': tx_ref,
+        },
+        'rewardMissionPreview': {
+            'title': package.mission_title,
+            'requiredDifficulty': package.mission_difficulty,
+            'requiredCount': package.mission_challenge_count,
+            'durationDays': package.mission_days,
+            'rewardAmountInr': float(package.reward_amount_inr),
+        },
+        'demoNotice': 'Academic Evaluation Only — No Real Money Charged.'
+    }, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def store_confirm_payment_view(request):
+    """
+    Simulates payment outcome (SUCCESS or FAILURE).
+    Credits BugBytes exactly once on simulated SUCCESS with atomic lock.
+    Optionally starts the associated Money-Back Reward Mission.
+    """
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    tx_ref = request.data.get('transactionReference') or request.data.get('transaction_reference')
+    purchase_id = request.data.get('purchaseId') or request.data.get('purchase_id')
+    outcome = str(request.data.get('simulateOutcome') or request.data.get('simulate_outcome') or 'SUCCESS').upper()
+    start_mission = request.data.get('startMission', True)
+
+    query = Q(user=user)
+    if tx_ref:
+        query &= Q(transaction_reference=tx_ref)
+    elif purchase_id:
+        query &= Q(id=purchase_id)
+    else:
+        return Response({'error': 'Transaction reference or purchase ID required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        purchase = BugBytesPurchase.objects.select_for_update().filter(query).first()
+        if not purchase:
+            return Response({'error': 'Purchase transaction not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Idempotency / Duplicate Protection
+        if purchase.status == 'COMPLETED':
+            existing_mission = RewardMission.objects.filter(purchase=purchase).first()
+            return Response({
+                'success': True,
+                'alreadyProcessed': True,
+                'message': 'This purchase was already completed. BugBytes were already credited.',
+                'purchase': purchase.to_dict(),
+                'userBalance': user.bugbytes_balance,
+                'rewardMission': existing_mission.to_dict() if existing_mission else None,
+            }, status=status.HTTP_200_OK)
+
+        if purchase.status == 'FAILED':
+            return Response({
+                'success': False,
+                'alreadyProcessed': True,
+                'error': f'This purchase previously failed: {purchase.failure_reason}',
+                'purchase': purchase.to_dict(),
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Handle Simulated Outcome
+        if outcome == 'SUCCESS':
+            purchase.status = 'COMPLETED'
+            purchase.completed_at = timezone.now()
+            purchase.save()
+
+            # Credit BugBytes to user
+            user_db = User.objects.select_for_update().get(id=user.id)
+            user_db.bugbytes_balance += purchase.bugbytes_amount
+            user_db.save()
+
+            # Audit ledger
+            BugBytesTransaction.objects.create(
+                user=user_db,
+                amount=purchase.bugbytes_amount,
+                transaction_type='STORE_PURCHASE',
+                reason=f'Purchased {purchase.package_name} (+{purchase.bugbytes_amount} BugBytes) [Ref: {purchase.transaction_reference}]'
+            )
+
+            # Auto-activate Reward Mission if requested
+            created_mission = None
+            if start_mission and purchase.package:
+                pkg = purchase.package
+                deadline = timezone.now() + timezone.timedelta(days=pkg.mission_days)
+                created_mission, _ = RewardMission.objects.get_or_create(
+                    purchase=purchase,
+                    defaults={
+                        'user': user_db,
+                        'title': pkg.mission_title,
+                        'required_difficulty': pkg.mission_difficulty,
+                        'required_count': pkg.mission_challenge_count,
+                        'duration_days': pkg.mission_days,
+                        'deadline': deadline,
+                        'reward_amount_inr': pkg.reward_amount_inr,
+                        'status': 'ACTIVE',
+                    }
+                )
+
+            return Response({
+                'success': True,
+                'message': f'Simulated Payment Successful! {purchase.bugbytes_amount} BugBytes credited.',
+                'purchase': purchase.to_dict(),
+                'newBalance': user_db.bugbytes_balance,
+                'rewardMission': created_mission.to_dict() if created_mission else None,
+                'demoNotice': 'Academic Demonstration: No real money was charged.'
+            }, status=status.HTTP_200_OK)
+
+        else:
+            # Simulated Failure
+            failure_reason = request.data.get('failureReason') or 'Simulated Card/UPI Decline or User Cancellation'
+            purchase.status = 'FAILED'
+            purchase.failure_reason = failure_reason
+            purchase.save()
+
+            return Response({
+                'success': False,
+                'message': 'Simulated payment failed. No BugBytes were credited.',
+                'purchase': purchase.to_dict(),
+                'failureReason': failure_reason,
+            }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def store_purchases_history_view(request):
+    """
+    Retrieves the authenticated user's mock purchase history.
+    """
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    purchases = BugBytesPurchase.objects.filter(user=user).order_by('-created_at')
+    return Response({
+        'purchases': [p.to_dict() for p in purchases],
+        'totalCount': purchases.count()
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def store_refund_purchase_view(request, pk):
+    """
+    Simulates refunding an eligible BugBytes purchase.
+    STRICT BUSINESS RULE:
+    1. Refund is granted ONLY if the user solved the required challenge(s) within the deadline.
+    2. Refund is ONLY user's real money (INR) returned to original payment source.
+    3. User's BugBytes are NOT deducted — they keep their BugBytes as their learning reward!
+    """
+    lim = apply_rate_limit(request, 'store', limit=15)
+    if lim:
+        return lim
+
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    purchase = BugBytesPurchase.objects.filter(pk=pk, user=user).first()
+    if not purchase:
+        return Response({'error': 'Purchase record not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if purchase.status == 'REFUNDED' or purchase.refunded_at:
+        return Response({'error': 'This purchase has already been refunded.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if purchase.status != 'COMPLETED':
+        return Response({'error': 'Only completed purchases are eligible for refund.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    mission = getattr(purchase, 'reward_mission', None)
+    if not mission:
+        return Response({
+            'error': 'Refund ineligible: Refunds are only granted when you complete the 100% Money-Back Coding Mission within the time limit.'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    mission.check_and_update_status()
+
+    if mission.status == 'EXPIRED':
+        return Response({
+            'error': f"Refund ineligible: The coding mission expired on {mission.deadline.strftime('%Y-%m-%d %H:%M')} without completing the required challenges ({mission.completed_count}/{mission.required_count}). Refunds are only granted when challenges are solved within the time limit."
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    if mission.status == 'ACTIVE':
+        return Response({
+            'error': f"Refund not yet eligible: You must complete the coding mission first! You have solved {mission.completed_count}/{mission.required_count} required challenge(s). Solve {mission.required_count - mission.completed_count} more before the deadline to claim your 100% money-back refund.",
+            'completedCount': mission.completed_count,
+            'requiredCount': mission.required_count,
+            'status': 'ACTIVE'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    if mission.status == 'CLAIMED':
+        return Response({'error': 'The 100% money-back refund has already been claimed for this purchase.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if mission.status != 'COMPLETED':
+        return Response({
+            'error': 'Requirements not met: You must solve all required challenges within the deadline to receive your refund.'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    data = request.data or {}
+    reason = str(data.get('reason', '')).strip() or f"100% Money-Back Guarantee: Completed {mission.completed_count}/{mission.required_count} challenges on time"
+
+    with transaction.atomic():
+        # Update mission status to CLAIMED
+        mission.status = 'CLAIMED'
+        mission.claimed_at = timezone.now()
+        mission.save(update_fields=['status', 'claimed_at'])
+
+        # Update purchase: REFUND USER MONEY ONLY — DO NOT TOUCH BUGBYTES!
+        purchase.status = 'REFUNDED'
+        purchase.refund_amount_inr = purchase.price_inr
+        purchase.refund_reason = reason
+        purchase.refunded_at = timezone.now()
+        purchase.save()
+
+        # Log simulated refund transaction
+        ref_id = f"DEMO-REW-{uuid.uuid4().hex[:10].upper()}"
+        reward_tx = SimulatedRewardTransaction.objects.create(
+            mission=mission,
+            user=user,
+            purchase=purchase,
+            reward_amount_inr=purchase.price_inr,
+            transaction_reference=ref_id,
+            status='SUCCESS',
+            mock_processing_time_ms=1200,
+            notes=f'100% Money-Back Refund for "{purchase.package_name}". User completed {mission.completed_count}/{mission.required_count} challenges on time. BugBytes retained in full.'
+        )
+
+        # Notify user: Money refunded, BugBytes retained!
+        Notification.objects.create(
+            user=user,
+            title='100% Money-Back Refund Issued!',
+            message=f"Congratulations! You solved all required challenges on time. A full refund of ₹{purchase.price_inr} has been processed back to your payment method. You keep all {purchase.bugbytes_amount} BugBytes as your learning reward!",
+            type='system'
+        )
+
+    return Response({
+        'success': True,
+        'message': f"Successfully refunded ₹{purchase.price_inr} to your account! You keep all {purchase.bugbytes_amount} BugBytes for solving the challenges within the deadline.",
+        'purchase': purchase.to_dict(),
+        'refundAmountInr': float(purchase.price_inr),
+        'keptBugbytes': purchase.bugbytes_amount,
+        'newBalance': user.bugbytes_balance,
+        'rewardTransaction': reward_tx.to_dict()
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def store_missions_view(request):
+    """
+    Retrieves all Money-Back Reward Missions for the authenticated user.
+    """
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    missions = RewardMission.objects.filter(user=user).order_by('-start_date')
+    for m in missions:
+        m.check_and_update_status()
+
+    missions_list = [m.to_dict() for m in missions]
+    active = [m for m in missions_list if m['status'] == 'ACTIVE']
+    completed = [m for m in missions_list if m['status'] == 'COMPLETED']
+    claimed = [m for m in missions_list if m['status'] == 'CLAIMED']
+    expired = [m for m in missions_list if m['status'] == 'EXPIRED']
+
+    total_rewards_claimed = sum(m['reward_amount_inr'] for m in claimed)
+    total_potential_rewards = sum(m['reward_amount_inr'] for m in active + completed)
+
+    return Response({
+        'missions': missions_list,
+        'activeMissions': active,
+        'completedMissions': completed,
+        'claimedMissions': claimed,
+        'expiredMissions': expired,
+        'stats': {
+            'totalMissions': len(missions_list),
+            'activeCount': len(active),
+            'claimableCount': len(completed),
+            'claimedCount': len(claimed),
+            'expiredCount': len(expired),
+            'totalRewardsClaimedInr': total_rewards_claimed,
+            'totalPotentialRewardsInr': total_potential_rewards,
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def store_mission_detail_view(request, pk):
+    """
+    Retrieves detailed mission information including all completed challenges.
+    """
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    mission = RewardMission.objects.filter(id=pk, user=user).first()
+    if not mission:
+        return Response({'error': 'Mission not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    mission.check_and_update_status()
+    completions = mission.completions.select_related('challenge').order_by('completed_at')
+
+    return Response({
+        'mission': mission.to_dict(),
+        'completions': [c.to_dict() for c in completions],
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def store_claim_reward_view(request, pk):
+    """
+    Claims an eligible Money-Back Reward for a satisfied mission.
+    Generates a simulated refund transaction record and updates mission status.
+    Guarantees one-time claiming per mission via atomic locks.
+    """
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    with transaction.atomic():
+        mission = RewardMission.objects.select_for_update().filter(id=pk, user=user).first()
+        if not mission:
+            return Response({'error': 'Mission not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        mission.check_and_update_status()
+
+        if mission.status == 'CLAIMED':
+            existing_tx = SimulatedRewardTransaction.objects.filter(mission=mission).first()
+            return Response({
+                'error': 'Reward has already been claimed for this mission.',
+                'alreadyClaimed': True,
+                'rewardTransaction': existing_tx.to_dict() if existing_tx else None,
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if mission.status == 'EXPIRED':
+            return Response({
+                'error': 'This mission has expired. The deadline was not met.',
+                'status': 'EXPIRED'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if mission.status != 'COMPLETED' and mission.completed_count < mission.required_count:
+            return Response({
+                'error': f'Requirements not met: {mission.completed_count}/{mission.required_count} challenges completed.',
+                'status': mission.status,
+                'completedCount': mission.completed_count,
+                'requiredCount': mission.required_count,
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Mark as CLAIMED
+        mission.status = 'CLAIMED'
+        mission.claimed_at = timezone.now()
+        mission.save(update_fields=['status', 'claimed_at'])
+
+        # Mark purchase as REFUNDED (Money refunded, BugBytes retained)
+        if mission.purchase:
+            p = mission.purchase
+            p.status = 'REFUNDED'
+            p.refund_amount_inr = mission.reward_amount_inr
+            p.refund_reason = f"100% Money-Back Guarantee: Completed {mission.completed_count}/{mission.required_count} challenges on time"
+            p.refunded_at = timezone.now()
+            p.save()
+
+        # Create Simulated Refund/Reward Transaction
+        ref_id = f"DEMO-REW-{uuid.uuid4().hex[:10].upper()}"
+        reward_tx = SimulatedRewardTransaction.objects.create(
+            mission=mission,
+            user=user,
+            purchase=mission.purchase,
+            reward_amount_inr=mission.reward_amount_inr,
+            transaction_reference=ref_id,
+            status='SUCCESS',
+            mock_processing_time_ms=1200,
+            notes=f'100% Money-Back Refund for mission "{mission.title}" ({mission.completed_count}/{mission.required_count} challenges).'
+        )
+
+        # Notify user: Money refunded, BugBytes retained!
+        Notification.objects.create(
+            user=user,
+            title='100% Money-Back Refund Issued!',
+            message=f"Congratulations! You solved all required challenges within the deadline. ₹{mission.reward_amount_inr} has been refunded to your original payment method. You keep all your BugBytes!",
+            type='system'
+        )
+
+        return Response({
+            'success': True,
+            'message': f'Congratulations! Your 100% money-back refund of ₹{mission.reward_amount_inr} has been processed. You keep all your BugBytes!',
+            'rewardTransaction': reward_tx.to_dict(),
+            'mission': mission.to_dict(),
+            'purchase': mission.purchase.to_dict() if mission.purchase else None,
+            'demoNotice': 'Academic Evaluation: Virtual reward only. No actual banking or payment gateway transfer.'
+        }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def store_rewards_summary_view(request):
+    """
+    Summary of all mock purchases, simulated refunds, and net simulated costs.
+    """
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    rewards = SimulatedRewardTransaction.objects.filter(user=user).order_by('-created_at')
+    purchases = BugBytesPurchase.objects.filter(user=user, status='COMPLETED')
+
+    total_purchased_inr = float(purchases.aggregate(total=Sum('price_inr'))['total'] or 0)
+    total_rewarded_inr = float(rewards.aggregate(total=Sum('reward_amount_inr'))['total'] or 0)
+    net_simulated_cost_inr = max(0.0, total_purchased_inr - total_rewarded_inr)
+
+    return Response({
+        'totalPurchasedInr': total_purchased_inr,
+        'totalRewardedInr': total_rewarded_inr,
+        'netSimulatedCostInr': net_simulated_cost_inr,
+        'rewardsCount': rewards.count(),
+        'rewards': [r.to_dict() for r in rewards],
+        'demoNotice': 'All figures represent simulated demonstration credits for academic evaluation.'
+    }, status=status.HTTP_200_OK)
+
+
+# =============================================================================
+# PvP Battle Views & Helpers
+# =============================================================================
+
+def _finalize_pvp_battle(battle, winner=None, is_draw=False):
+    """
+    Finalizes a PvP battle, assigns winner/draw, awards rewards, and sends notifications.
+    """
+    if battle.status in ['COMPLETED', 'CANCELLED', 'EXPIRED']:
+        return battle
+
+    battle.status = 'COMPLETED'
+    battle.ended_at = timezone.now()
+    battle.winner = winner
+    battle.is_draw = is_draw
+
+    if winner:
+        winner.total_score += battle.xp_reward
+        winner.bugbytes_balance += battle.bugbytes_reward
+        winner.save(update_fields=['total_score', 'bugbytes_balance', 'updated_at'])
+
+        opponent = battle.player2 if winner.id == battle.player1_id else battle.player1
+
+        BugBytesTransaction.objects.create(
+            user=winner,
+            amount=battle.bugbytes_reward,
+            transaction_type='EARN_BONUS',
+            reason=f'PvP Victory reward (Room: {battle.room_code})',
+            challenge=battle.challenge
+        )
+
+        Notification.objects.create(
+            user=winner,
+            title='PvP Battle Victory! 🏆',
+            message=f'You defeated {opponent.display_name or opponent.username if opponent else "your opponent"}! +{battle.xp_reward} XP and +{battle.bugbytes_reward} BugBytes awarded.',
+            type='achievement'
+        )
+
+        if opponent:
+            Notification.objects.create(
+                user=opponent,
+                title='PvP Battle Defeat',
+                message=f'Battle finished. {winner.display_name or winner.username} won the match in room {battle.room_code}.',
+                type='system'
+            )
+    elif is_draw:
+        for player in [battle.player1, battle.player2]:
+            if player:
+                Notification.objects.create(
+                    user=player,
+                    title='PvP Battle Draw ⚔️',
+                    message=f'The battle in room {battle.room_code} ended in a draw!',
+                    type='system'
+                )
+
+    battle.save()
+    return battle
+
+
+def _finish_battle_on_timeout(battle):
+    """
+    Determines winner and completes battle when time limit expires.
+    """
+    p1_prog = battle.player1_progress or {}
+    p2_prog = battle.player2_progress or {}
+
+    p1_success = bool(p1_prog.get('success', False))
+    p2_success = bool(p2_prog.get('success', False))
+    p1_tests = int(p1_prog.get('tests_passed', 0))
+    p2_tests = int(p2_prog.get('tests_passed', 0))
+    p1_time = p1_prog.get('solve_time')
+    p2_time = p2_prog.get('solve_time')
+
+    if p1_success and not p2_success:
+        return _finalize_pvp_battle(battle, winner=battle.player1)
+    elif p2_success and not p1_success:
+        return _finalize_pvp_battle(battle, winner=battle.player2)
+    elif p1_success and p2_success:
+        t1 = p1_time if p1_time is not None else 999999
+        t2 = p2_time if p2_time is not None else 999999
+        if t1 < t2:
+            return _finalize_pvp_battle(battle, winner=battle.player1)
+        elif t2 < t1:
+            return _finalize_pvp_battle(battle, winner=battle.player2)
+        else:
+            return _finalize_pvp_battle(battle, is_draw=True)
+    else:
+        if p1_tests > p2_tests:
+            return _finalize_pvp_battle(battle, winner=battle.player1)
+        elif p2_tests > p1_tests:
+            return _finalize_pvp_battle(battle, winner=battle.player2)
+        else:
+            return _finalize_pvp_battle(battle, is_draw=True)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def pvp_create_battle_view(request):
+    lim = apply_rate_limit(request, 'pvp', limit=30)
+    if lim:
+        return lim
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    difficulty = (request.data.get('difficultyFilter') or request.data.get('difficulty_filter') or '').strip()
+    raw_time_limit = request.data.get('timeLimitSeconds') or request.data.get('time_limit_seconds') or 600
+    try:
+        time_limit = int(raw_time_limit)
+        if time_limit <= 0:
+            time_limit = 600
+    except (ValueError, TypeError):
+        time_limit = 600
+
+    challenges = Challenge.objects.filter(status='published')
+    if difficulty and difficulty.lower() != 'all':
+        filtered = challenges.filter(difficulty__iexact=difficulty)
+        if filtered.exists():
+            challenges = filtered
+
+    challenge_pool = list(challenges)
+    if not challenge_pool:
+        challenge_pool = list(Challenge.objects.all())
+    if not challenge_pool:
+        return Response({'error': 'No challenges available for battle'}, status=status.HTTP_400_BAD_REQUEST)
+
+    challenge = random.choice(challenge_pool)
+
+    for _ in range(50):
+        room_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        if not PvPBattle.objects.filter(room_code=room_code).exists():
+            break
+    else:
+        room_code = uuid.uuid4().hex[:6].upper()
+
+    total_tests = len(challenge.test_cases or [])
+    p1_prog = {'tests_passed': 0, 'tests_total': total_tests, 'submitted': False, 'solve_time': None}
+    p2_prog = {'tests_passed': 0, 'tests_total': total_tests, 'submitted': False, 'solve_time': None}
+
+    battle = PvPBattle.objects.create(
+        player1=user,
+        challenge=challenge,
+        status='WAITING',
+        room_code=room_code,
+        difficulty_filter=difficulty,
+        time_limit_seconds=time_limit,
+        player1_progress=p1_prog,
+        player2_progress=p2_prog,
+        xp_reward=50,
+        bugbytes_reward=15
+    )
+
+    return Response(battle.to_dict(), status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def pvp_join_battle_view(request):
+    lim = apply_rate_limit(request, 'pvp', limit=30)
+    if lim:
+        return lim
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    room_code = (request.data.get('roomCode') or request.data.get('room_code') or '').strip().upper()
+    if not room_code:
+        return Response({'error': 'Room code is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        battle = PvPBattle.objects.select_for_update().filter(room_code=room_code).first()
+        if not battle:
+            return Response({'error': 'Battle room not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if battle.player1_id == user.id:
+            return Response({'error': 'You cannot join your own battle room'}, status=status.HTTP_400_BAD_REQUEST)
+
+        now = timezone.now()
+        if battle.status == 'WAITING' and (now - battle.created_at).total_seconds() > 300:
+            battle.status = 'EXPIRED'
+            battle.ended_at = now
+            battle.save()
+            return Response({'error': 'Battle room has expired'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if battle.status != 'WAITING':
+            return Response({'error': f'Cannot join battle with status {battle.status}'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if battle.player2_id is not None:
+            return Response({'error': 'Battle room is already full'}, status=status.HTTP_400_BAD_REQUEST)
+
+        battle.player2 = user
+        battle.status = 'MATCHED'
+        battle.save()
+
+    return Response(battle.to_dict(), status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def pvp_quick_match_view(request):
+    lim = apply_rate_limit(request, 'pvp', limit=30)
+    if lim:
+        return lim
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    difficulty = (request.data.get('difficultyFilter') or request.data.get('difficulty_filter') or '').strip()
+    raw_time_limit = request.data.get('timeLimitSeconds') or request.data.get('time_limit_seconds') or 600
+    try:
+        time_limit = int(raw_time_limit)
+        if time_limit <= 0:
+            time_limit = 600
+    except (ValueError, TypeError):
+        time_limit = 600
+
+    now = timezone.now()
+    PvPBattle.objects.filter(
+        status='WAITING',
+        created_at__lt=now - timezone.timedelta(minutes=5)
+    ).update(status='EXPIRED')
+
+    waiting_qs = PvPBattle.objects.filter(status='WAITING').exclude(player1=user)
+    if difficulty and difficulty.lower() != 'all':
+        diff_qs = waiting_qs.filter(difficulty_filter__iexact=difficulty)
+        if diff_qs.exists():
+            waiting_qs = diff_qs
+
+    matched_battle = None
+    for candidate in waiting_qs.order_by('created_at'):
+        with transaction.atomic():
+            locked = PvPBattle.objects.select_for_update().filter(id=candidate.id, status='WAITING').first()
+            if locked and locked.player2 is None and locked.player1_id != user.id:
+                locked.player2 = user
+                locked.status = 'MATCHED'
+                locked.save()
+                matched_battle = locked
+                break
+
+    if matched_battle:
+        res = matched_battle.to_dict()
+        res['action'] = 'joined'
+        return Response(res, status=status.HTTP_200_OK)
+
+    challenges = Challenge.objects.filter(status='published')
+    if difficulty and difficulty.lower() != 'all':
+        filtered = challenges.filter(difficulty__iexact=difficulty)
+        if filtered.exists():
+            challenges = filtered
+
+    challenge_pool = list(challenges)
+    if not challenge_pool:
+        challenge_pool = list(Challenge.objects.all())
+    if not challenge_pool:
+        return Response({'error': 'No challenges available for battle'}, status=status.HTTP_400_BAD_REQUEST)
+
+    challenge = random.choice(challenge_pool)
+
+    for _ in range(50):
+        room_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        if not PvPBattle.objects.filter(room_code=room_code).exists():
+            break
+    else:
+        room_code = uuid.uuid4().hex[:6].upper()
+
+    total_tests = len(challenge.test_cases or [])
+    p1_prog = {'tests_passed': 0, 'tests_total': total_tests, 'submitted': False, 'solve_time': None}
+    p2_prog = {'tests_passed': 0, 'tests_total': total_tests, 'submitted': False, 'solve_time': None}
+
+    new_battle = PvPBattle.objects.create(
+        player1=user,
+        challenge=challenge,
+        status='WAITING',
+        room_code=room_code,
+        difficulty_filter=difficulty,
+        time_limit_seconds=time_limit,
+        player1_progress=p1_prog,
+        player2_progress=p2_prog,
+        xp_reward=50,
+        bugbytes_reward=15
+    )
+
+    res = new_battle.to_dict()
+    res['action'] = 'created'
+    return Response(res, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def pvp_battle_status_view(request, pk):
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    battle = PvPBattle.objects.filter(id=pk).first()
+    if not battle:
+        return Response({'error': 'Battle not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    now = timezone.now()
+    if battle.status == 'WAITING' and (now - battle.created_at).total_seconds() > 300:
+        battle.status = 'EXPIRED'
+        battle.ended_at = now
+        battle.save()
+    elif battle.status == 'IN_PROGRESS' and battle.started_at:
+        elapsed = (now - battle.started_at).total_seconds()
+        if elapsed >= battle.time_limit_seconds:
+            _finish_battle_on_timeout(battle)
+
+    return Response(battle.to_dict(), status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def pvp_start_battle_view(request, pk):
+    lim = apply_rate_limit(request, 'pvp', limit=30)
+    if lim:
+        return lim
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    battle = PvPBattle.objects.filter(id=pk).first()
+    if not battle:
+        return Response({'error': 'Battle not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if user.id not in [battle.player1_id, battle.player2_id]:
+        return Response({'error': 'You are not a participant in this battle'}, status=status.HTTP_403_FORBIDDEN)
+
+    if battle.status == 'IN_PROGRESS':
+        return Response(battle.to_dict(), status=status.HTTP_200_OK)
+
+    if battle.status != 'MATCHED' or not battle.player1 or not battle.player2:
+        return Response({'error': f'Battle is not ready to start (status: {battle.status})'}, status=status.HTTP_400_BAD_REQUEST)
+
+    battle.status = 'IN_PROGRESS'
+    battle.started_at = timezone.now()
+    battle.save()
+
+    return Response(battle.to_dict(), status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def pvp_update_progress_view(request, pk):
+    lim = apply_rate_limit(request, 'pvp', limit=60)
+    if lim:
+        return lim
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    battle = PvPBattle.objects.filter(id=pk).first()
+    if not battle:
+        return Response({'error': 'Battle not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if user.id not in [battle.player1_id, battle.player2_id]:
+        return Response({'error': 'You are not a participant in this battle'}, status=status.HTTP_403_FORBIDDEN)
+
+    if battle.status != 'IN_PROGRESS':
+        return Response({'error': f'Cannot update progress for battle with status {battle.status}'}, status=status.HTTP_400_BAD_REQUEST)
+
+    data = request.data
+    tests_passed = data.get('testsPassed', data.get('tests_passed', 0))
+    tests_total = data.get('testsTotal', data.get('tests_total', len(battle.challenge.test_cases or [])))
+    submitted = data.get('submitted', False)
+
+    try:
+        tests_passed = int(tests_passed)
+    except (ValueError, TypeError):
+        tests_passed = 0
+
+    try:
+        tests_total = int(tests_total)
+    except (ValueError, TypeError):
+        tests_total = 0
+
+    progress_update = {
+        'tests_passed': tests_passed,
+        'tests_total': tests_total,
+        'submitted': bool(submitted),
+    }
+
+    if user.id == battle.player1_id:
+        current = battle.player1_progress or {}
+        current.update(progress_update)
+        battle.player1_progress = current
+    else:
+        current = battle.player2_progress or {}
+        current.update(progress_update)
+        battle.player2_progress = current
+
+    battle.save(update_fields=['player1_progress', 'player2_progress', 'updated_at'])
+    return Response(battle.to_dict(), status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def pvp_submit_solution_view(request, pk):
+    lim = apply_rate_limit(request, 'pvp', limit=30)
+    if lim:
+        return lim
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    battle = PvPBattle.objects.filter(id=pk).first()
+    if not battle:
+        return Response({'error': 'Battle not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if user.id not in [battle.player1_id, battle.player2_id]:
+        return Response({'error': 'You are not a participant in this battle'}, status=status.HTTP_403_FORBIDDEN)
+
+    if battle.status != 'IN_PROGRESS':
+        return Response({'error': f'Battle is not in progress (current status: {battle.status})'}, status=status.HTTP_400_BAD_REQUEST)
+
+    now = timezone.now()
+    if battle.started_at:
+        elapsed = (now - battle.started_at).total_seconds()
+        if elapsed > battle.time_limit_seconds:
+            _finish_battle_on_timeout(battle)
+            return Response({'error': 'Battle time limit has expired', 'battle': battle.to_dict()}, status=status.HTTP_400_BAD_REQUEST)
+        solve_time = round(elapsed, 2)
+    else:
+        solve_time = 0.0
+
+    code = request.data.get('code', '')
+    files = request.data.get('files', None)
+
+    eval_res = evaluation_engine.evaluate(battle.challenge, files=files, code=code)
+    is_success = bool(eval_res.get('success', False))
+    tests_passed = eval_res.get('tests_passed', 0)
+    tests_total = eval_res.get('tests_total', len(battle.challenge.test_cases or []))
+
+    # Log Submission
+    existing_count = Submission.objects.filter(user=user, challenge=battle.challenge).count()
+    Submission.objects.create(
+        user=user,
+        challenge=battle.challenge,
+        submitted_code=code,
+        submitted_files=files or [],
+        success=is_success,
+        score=battle.xp_reward if is_success else 0,
+        test_results=eval_res.get('test_results', []),
+        execution_time=eval_res.get('execution_time', 0.0),
+        attempt_number=existing_count + 1,
+        stdout=eval_res.get('stdout', ''),
+        stderr=eval_res.get('stderr', ''),
+        ai_summary=eval_res.get('ai_summary', '')
+    )
+
+    is_p1 = (user.id == battle.player1_id)
+    my_progress = {
+        'tests_passed': tests_passed,
+        'tests_total': tests_total,
+        'submitted': True,
+        'success': is_success,
+        'solve_time': solve_time if is_success else None
+    }
+
+    if is_p1:
+        current_p1 = battle.player1_progress or {}
+        current_p1.update(my_progress)
+        battle.player1_progress = current_p1
+        other_progress = battle.player2_progress or {}
+        other_player = battle.player2
+    else:
+        current_p2 = battle.player2_progress or {}
+        current_p2.update(my_progress)
+        battle.player2_progress = current_p2
+        other_progress = battle.player1_progress or {}
+        other_player = battle.player1
+
+    other_submitted = bool(other_progress.get('submitted', False))
+    other_success = bool(other_progress.get('success', False))
+
+    if is_success:
+        if other_success:
+            other_time = other_progress.get('solve_time') or 999999
+            if solve_time < other_time:
+                _finalize_pvp_battle(battle, winner=user)
+            elif other_time < solve_time:
+                _finalize_pvp_battle(battle, winner=other_player)
+            else:
+                _finalize_pvp_battle(battle, is_draw=True)
+        else:
+            _finalize_pvp_battle(battle, winner=user)
+    elif other_submitted:
+        if other_success:
+            _finalize_pvp_battle(battle, winner=other_player)
+        else:
+            my_tests = tests_passed
+            other_tests = int(other_progress.get('tests_passed', 0))
+            if my_tests > other_tests:
+                _finalize_pvp_battle(battle, winner=user)
+            elif other_tests > my_tests:
+                _finalize_pvp_battle(battle, winner=other_player)
+            else:
+                _finalize_pvp_battle(battle, is_draw=True)
+    else:
+        battle.save(update_fields=['player1_progress', 'player2_progress', 'updated_at'])
+
+    res = battle.to_dict()
+    res['evaluation'] = eval_res
+    return Response(res, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def pvp_cancel_battle_view(request, pk):
+    lim = apply_rate_limit(request, 'pvp', limit=30)
+    if lim:
+        return lim
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    battle = PvPBattle.objects.filter(id=pk).first()
+    if not battle:
+        return Response({'error': 'Battle not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if battle.player1_id != user.id:
+        return Response({'error': 'Only the creator can cancel this battle'}, status=status.HTTP_403_FORBIDDEN)
+
+    if battle.status not in ['WAITING', 'MATCHED']:
+        return Response({'error': f'Cannot cancel battle with status {battle.status}'}, status=status.HTTP_400_BAD_REQUEST)
+
+    battle.status = 'CANCELLED'
+    battle.ended_at = timezone.now()
+    battle.save()
+
+    return Response(battle.to_dict(), status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def pvp_history_view(request):
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    status_filter = request.query_params.get('status')
+    qs = PvPBattle.objects.filter(Q(player1=user) | Q(player2=user))
+    if status_filter:
+        qs = qs.filter(status__iexact=status_filter)
+    else:
+        qs = qs.filter(status__in=['COMPLETED', 'CANCELLED', 'EXPIRED'])
+
+    battles = qs.order_by('-created_at')[:20]
+    return Response([b.to_dict() for b in battles], status=status.HTTP_200_OK)
+
+
+# ==============================================================================
+# OAuth 2.0 / SSO AUTHENTICATION (Google, GitHub)
+# ==============================================================================
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def oauth_config_view(request):
+    """
+    Returns public OAuth configuration and status for Google and GitHub.
+    """
+    frontend_base = os.environ.get('FRONTEND_BASE_URL', '').strip().rstrip('/')
+    if not frontend_base:
+        referer = request.META.get('HTTP_REFERER')
+        if referer:
+            from urllib.parse import urlparse
+            p = urlparse(referer)
+            frontend_base = f"{p.scheme}://{p.netloc}"
+        else:
+            frontend_base = 'http://localhost:3000'
+
+    redirect_uri = f"{frontend_base}/auth/callback"
+
+    google_client_id = os.environ.get('GOOGLE_CLIENT_ID', '').strip()
+    google_secret = os.environ.get('GOOGLE_CLIENT_SECRET', '').strip()
+
+    github_client_id = os.environ.get('GITHUB_CLIENT_ID', '').strip()
+    github_secret = os.environ.get('GITHUB_CLIENT_SECRET', '').strip()
+
+    return Response({
+        'redirectUri': redirect_uri,
+        'providers': {
+            'google': {
+                'id': 'google',
+                'name': 'Google',
+                'configured': bool(google_client_id and google_secret),
+                'clientId': google_client_id,
+                'authUrl': 'https://accounts.google.com/o/oauth2/v2/auth',
+                'scope': 'openid email profile',
+            },
+            'github': {
+                'id': 'github',
+                'name': 'GitHub',
+                'configured': bool(github_client_id and github_secret),
+                'clientId': github_client_id,
+                'authUrl': 'https://github.com/login/oauth/authorize',
+                'scope': 'read:user user:email',
+            }
+        }
+    })
+
+
+def _provision_or_login_oauth_user(provider, data):
+    email = str(data.get('email', '')).strip().lower()
+    if not email or '@' not in email:
+        return Response({'error': 'Valid email address is required for SSO authentication'}, status=status.HTTP_400_BAD_REQUEST)
+
+    oauth_id = str(data.get('oauth_id') or data.get('id') or data.get('sub') or '').strip()
+    if not oauth_id:
+        oauth_id = f"{provider}_{uuid.uuid5(uuid.NAMESPACE_DNS, email).hex[:16]}"
+
+    display_name = str(data.get('name') or data.get('displayName') or data.get('display_name') or '').strip()
+    avatar = str(data.get('avatar') or '').strip()
+    college = str(data.get('college') or '').strip()
+
+    if not avatar:
+        if provider == 'github':
+            avatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+        else:
+            avatar = 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150'
+
+    is_new_user = False
+    with transaction.atomic():
+        user = User.objects.filter(auth_provider=provider, oauth_id=oauth_id).first()
+
+        if not user:
+            user = User.objects.filter(email__iexact=email).first()
+            if user:
+                user.auth_provider = provider
+                user.oauth_id = oauth_id
+                if not user.avatar or 'unsplash' in user.avatar:
+                    user.avatar = avatar
+                if display_name and (not user.display_name or user.display_name == user.username):
+                    user.display_name = display_name
+                user.save()
+            else:
+                is_new_user = True
+                preferred_username = str(data.get('username', '')).strip().lower()
+                if not preferred_username:
+                    preferred_username = email.split('@')[0].lower()
+
+                clean_username = ''.join(c for c in preferred_username if c.isalnum() or c in '_-')
+                if not clean_username or len(clean_username) < 3:
+                    clean_username = f"{provider}_user"
+
+                candidate_username = clean_username
+                counter = 1
+                while User.objects.filter(username__iexact=candidate_username).exists():
+                    candidate_username = f"{clean_username}_{counter}"
+                    counter += 1
+
+                name_parts = display_name.split(' ', 1) if display_name else []
+                first_name = name_parts[0] if name_parts else ''
+                last_name = name_parts[1] if len(name_parts) > 1 else ''
+
+                provider_display = provider.capitalize()
+                user = User.objects.create_user(
+                    username=candidate_username,
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    display_name=display_name or candidate_username,
+                    college=college or 'Tech Institute of Engineering',
+                    bio=f'Software engineer exploring debugging challenges. Joined via {provider_display} SSO.',
+                    avatar=avatar,
+                    theme='dark',
+                    accent_color='blue',
+                    country=data.get('country', 'United States'),
+                    timezone=data.get('timezone', 'America/New_York'),
+                    auth_provider=provider,
+                    oauth_id=oauth_id,
+                    bugbytes_balance=50,
+                    skills={'React': 75, 'Django': 65, 'NodeJS': 50, 'SQL': 60},
+                    activities=[{
+                        'id': int(time.time()),
+                        'text': f'Joined BuggyMan via {provider_display} SSO',
+                        'time': 'Just now',
+                        'xp': 50
+                    }],
+                    badges=[{
+                        'name': 'SSO Connected',
+                        'desc': f'Signed up with verified {provider_display} account',
+                        'icon': '🔗',
+                        'date': 'Today'
+                    }, {
+                        'name': 'First Bug Defeated',
+                        'desc': 'Ready to resolve your first bug',
+                        'icon': '🐞',
+                        'date': 'Today'
+                    }]
+                )
+                user.set_unusable_password()
+                user.save()
+
+    update_user_streak(user)
+    user.save()
+
+    token = generate_jwt_token(user)
+
+    log_security_event(
+        event_name=f'oauth_{provider}_success',
+        message=f'User {user.username} authenticated via {provider} SSO',
+        extra={
+            'email': email,
+            'is_new_user': is_new_user,
+            'provider': provider
+        }
+    )
+
+    user_dict = user.to_dict()
+    is_new = bool(is_new_user or not user.is_onboarded)
+
+    return Response({
+        'token': token,
+        'user': user_dict,
+        'isNewUser': is_new,
+        'provider': provider,
+        'message': f'Successfully authenticated with {provider.capitalize()}'
+    }, status=status.HTTP_200_OK if not is_new else status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def oauth_login_view(request):
+    """
+    Direct SSO OAuth login / registration endpoint.
+    """
+    lim = apply_rate_limit(request, 'auth', limit=15)
+    if lim:
+        return lim
+
+    data = request.data or {}
+    provider = str(data.get('provider', '')).strip().lower()
+    allowed_providers = {'google', 'github'}
+    if provider not in allowed_providers:
+        return Response({
+            'error': f"Unsupported authentication provider '{provider}'. Must be one of: google, github"
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    return _provision_or_login_oauth_user(provider, data)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def oauth_callback_view(request):
+    """
+    Real OAuth 2.0 authorization code exchange.
+    Exchanges code for access token with Google or GitHub token servers,
+    retrieves user profile, and returns BuggyMan JWT.
+    """
+    lim = apply_rate_limit(request, 'auth', limit=20)
+    if lim:
+        return lim
+
+    data = request.data or {}
+    provider = str(data.get('provider', '')).strip().lower()
+    code = str(data.get('code', '')).strip()
+    redirect_uri = str(data.get('redirect_uri') or data.get('redirectUri') or '').strip()
+
+    if not provider or provider not in {'google', 'github'}:
+        return Response({'error': f"Invalid or missing OAuth provider '{provider}'"}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not code:
+        return Response({'error': 'Authorization code is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    user_info = {}
+
+    try:
+        # ======================================================================
+        # 1. GOOGLE OAUTH 2.0 CODE EXCHANGE
+        # ======================================================================
+        if provider == 'google':
+            client_id = os.environ.get('GOOGLE_CLIENT_ID', '').strip()
+            client_secret = os.environ.get('GOOGLE_CLIENT_SECRET', '').strip()
+            if not client_id or not client_secret:
+                return Response({
+                    'error': 'Google OAuth credentials (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET) are not configured in backend/.env'
+                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+            token_res = requests.post(
+                'https://oauth2.googleapis.com/token',
+                data={
+                    'client_id': client_id,
+                    'client_secret': client_secret,
+                    'code': code,
+                    'grant_type': 'authorization_code',
+                    'redirect_uri': redirect_uri or 'http://localhost:3000/auth/callback'
+                },
+                headers={'Accept': 'application/json'},
+                timeout=10
+            )
+
+            token_data = token_res.json()
+            if token_res.status_code != 200 or 'access_token' not in token_data:
+                err_msg = token_data.get('error_description') or token_data.get('error') or 'Failed to exchange Google authorization code'
+                return Response({'error': f"Google OAuth Error: {err_msg}"}, status=status.HTTP_400_BAD_REQUEST)
+
+            access_token = token_data['access_token']
+            profile_res = requests.get(
+                'https://www.googleapis.com/oauth2/v3/userinfo',
+                headers={'Authorization': f'Bearer {access_token}'},
+                timeout=10
+            )
+            profile_data = profile_res.json()
+            if profile_res.status_code != 200:
+                return Response({'error': 'Failed to retrieve Google user profile'}, status=status.HTTP_400_BAD_REQUEST)
+
+            user_info = {
+                'oauth_id': str(profile_data.get('sub')),
+                'email': profile_data.get('email'),
+                'name': profile_data.get('name') or profile_data.get('given_name') or '',
+                'avatar': profile_data.get('picture') or ''
+            }
+
+        # ======================================================================
+        # 2. GITHUB OAUTH 2.0 CODE EXCHANGE
+        # ======================================================================
+        elif provider == 'github':
+            client_id = os.environ.get('GITHUB_CLIENT_ID', '').strip()
+            client_secret = os.environ.get('GITHUB_CLIENT_SECRET', '').strip()
+            if not client_id or not client_secret:
+                return Response({
+                    'error': 'GitHub OAuth credentials (GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET) are not configured in backend/.env'
+                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+            token_res = requests.post(
+                'https://github.com/login/oauth/access_token',
+                json={
+                    'client_id': client_id,
+                    'client_secret': client_secret,
+                    'code': code,
+                    'redirect_uri': redirect_uri or 'http://localhost:3000/auth/callback'
+                },
+                headers={'Accept': 'application/json'},
+                timeout=10
+            )
+
+            token_data = token_res.json()
+            if token_res.status_code != 200 or 'access_token' not in token_data:
+                err_msg = token_data.get('error_description') or token_data.get('error') or 'Failed to exchange GitHub authorization code'
+                return Response({'error': f"GitHub OAuth Error: {err_msg}"}, status=status.HTTP_400_BAD_REQUEST)
+
+            access_token = token_data['access_token']
+            profile_res = requests.get(
+                'https://api.github.com/user',
+                headers={'Authorization': f'Bearer {access_token}', 'User-Agent': 'BuggyMan-App'},
+                timeout=10
+            )
+            profile_data = profile_res.json()
+            if profile_res.status_code != 200:
+                return Response({'error': 'Failed to retrieve GitHub user profile'}, status=status.HTTP_400_BAD_REQUEST)
+
+            user_email = profile_data.get('email')
+            if not user_email:
+                emails_res = requests.get(
+                    'https://api.github.com/user/emails',
+                    headers={'Authorization': f'Bearer {access_token}', 'User-Agent': 'BuggyMan-App'},
+                    timeout=10
+                )
+                if emails_res.status_code == 200:
+                    emails_data = emails_res.json()
+                    for item in emails_data:
+                        if item.get('primary') and item.get('verified'):
+                            user_email = item.get('email')
+                            break
+                    if not user_email and emails_data:
+                        user_email = emails_data[0].get('email')
+
+            if not user_email:
+                user_email = f"{profile_data.get('login')}@users.noreply.github.com"
+
+            user_info = {
+                'oauth_id': str(profile_data.get('id')),
+                'email': user_email,
+                'name': profile_data.get('name') or profile_data.get('login') or '',
+                'username': profile_data.get('login') or '',
+                'avatar': profile_data.get('avatar_url') or ''
+            }
+
+    except requests.RequestException as e:
+        log_error_event('oauth_network_error', f"Network error connecting to {provider}: {str(e)}")
+        return Response({'error': f"Failed to connect to {provider} authentication server. Check network connection."}, status=status.HTTP_502_BAD_GATEWAY)
+
+    if not user_info.get('email'):
+        return Response({'error': f"Could not retrieve verified email from {provider}."}, status=status.HTTP_400_BAD_REQUEST)
+
+    return _provision_or_login_oauth_user(provider, user_info)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def oauth_disconnect_view(request):
+    """
+    Unlinks the social OAuth provider from the user profile, allowing fallback to password login.
+    """
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    if not user.has_usable_password():
+        return Response({
+            'error': 'Cannot disconnect SSO account without setting an account password first. Please set a password in Settings.'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    user.auth_provider = 'local'
+    user.oauth_id = ''
+    user.save()
+
+    return Response({
+        'success': True,
+        'message': 'Social account disconnected successfully.',
+        'user': user.to_dict()
+    }, status=status.HTTP_200_OK)
 
 

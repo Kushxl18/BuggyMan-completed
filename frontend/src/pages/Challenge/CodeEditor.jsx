@@ -1,32 +1,73 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 export default function CodeEditor({ file, onChange, theme = 'dark', fontSize = 14 }) {
+  const editorRef = useRef(null);
+  const containerRef = useRef(null);
+
+  const handleEditorDidMount = (editor) => {
+    editorRef.current = editor;
+    setTimeout(() => {
+      try {
+        editor.layout();
+      } catch (e) {}
+    }, 50);
+  };
+
+  // ResizeObserver forces Monaco to layout when container flex size shifts
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver(() => {
+      if (editorRef.current) {
+        try {
+          editorRef.current.layout();
+        } catch (e) {}
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Force layout when file or theme changes
+  useEffect(() => {
+    if (editorRef.current) {
+      try {
+        editorRef.current.layout();
+      } catch (e) {}
+    }
+  }, [file?.name, file?.content, theme]);
+
   if (!file) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-slate-950 text-slate-500">
+      <div className="w-full h-full flex-1 flex flex-col bg-slate-950 relative min-h-[300px] items-center justify-center text-slate-500">
         Select a file to begin coding
       </div>
     );
   }
 
   // Deduce language type based on extension
-  const getLanguage = (filename) => {
-    if (filename.endsWith('.jsx')) return 'javascript';
-    if (filename.endsWith('.py')) return 'python';
-    if (filename.endsWith('.css')) return 'css';
-    if (filename.endsWith('.json')) return 'json';
+  const getLanguage = (filename = '') => {
+    if (!filename) return 'javascript';
+    const lower = filename.toLowerCase();
+    if (lower.endsWith('.jsx') || lower.endsWith('.js') || lower.endsWith('.tsx') || lower.endsWith('.ts')) return 'javascript';
+    if (lower.endsWith('.py')) return 'python';
+    if (lower.endsWith('.css')) return 'css';
+    if (lower.endsWith('.sql')) return 'sql';
+    if (lower.endsWith('.html') || lower.endsWith('.htm')) return 'html';
+    if (lower.endsWith('.json')) return 'json';
     return 'javascript';
   };
 
   return (
-    <div className="flex-1 h-full bg-slate-950 relative">
+    <div ref={containerRef} className="w-full h-full flex-1 flex flex-col bg-slate-950 relative min-h-[300px]">
       <Editor
         height="100%"
-        language={getLanguage(file.name)}
-        value={file.content}
+        width="100%"
+        language={getLanguage(file?.name)}
+        value={file?.content || ''}
         onChange={onChange}
+        onMount={handleEditorDidMount}
         theme={theme === 'dark' ? 'vs-dark' : 'light'}
         loading={<LoadingSpinner className="absolute inset-0 bg-slate-950" />}
         options={{

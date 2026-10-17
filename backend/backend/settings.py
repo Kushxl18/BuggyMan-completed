@@ -12,22 +12,42 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+# Load environment from project root .env.local (Neon), root .env, and backend .env
+load_dotenv(BASE_DIR.parent / '.env.local')
+load_dotenv(BASE_DIR.parent / '.env')
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-_$ii-15zem_*84m&#*fi4g7e461_arz*)jhq_dw^ro9@s@ndjw')
+DEFAULT_INSECURE_SECRET = 'django-insecure-_$ii-15zem_*84m&#*fi4g7e461_arz*)jhq_dw^ro9@s@ndjw'
+SECRET_KEY = os.environ.get('SECRET_KEY', DEFAULT_INSECURE_SECRET)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-raw_allowed_hosts = os.environ.get('ALLOWED_HOSTS', '*')
-ALLOWED_HOSTS = [h.strip() for h in raw_allowed_hosts.split(',') if h.strip()]
+if not DEBUG and SECRET_KEY == DEFAULT_INSECURE_SECRET:
+    import warnings
+    warnings.warn(
+        "CRITICAL SECURITY WARNING: SECRET_KEY is set to an insecure default while DEBUG=False! "
+        "Set a unique SECRET_KEY in your production environment variables immediately.",
+        RuntimeWarning
+    )
+
+raw_allowed_hosts = os.environ.get('ALLOWED_HOSTS', '')
+if raw_allowed_hosts:
+    ALLOWED_HOSTS = [h.strip() for h in raw_allowed_hosts.split(',') if h.strip()]
+elif DEBUG:
+    ALLOWED_HOSTS = ['*']
+else:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -49,6 +69,7 @@ AUTH_USER_MODEL = 'buggyman.User'
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -57,10 +78,33 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'True').lower() in ('true', '1', 'yes')
-if not CORS_ALLOW_ALL_ORIGINS:
-    raw_cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
+# CORS Configuration
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'True').lower() in ('true', '1', 'yes')
+else:
+    CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'False').lower() in ('true', '1', 'yes')
+
+raw_cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
+if raw_cors_origins:
     CORS_ALLOWED_ORIGINS = [o.strip() for o in raw_cors_origins.split(',') if o.strip()]
+elif not CORS_ALLOW_ALL_ORIGINS:
+    frontend_url = os.environ.get('FRONTEND_BASE_URL', 'http://localhost:3000').strip()
+    CORS_ALLOWED_ORIGINS = list({frontend_url, 'http://localhost:3000', 'http://127.0.0.1:3000'})
+
+# Production Security & HTTPS Headers
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'false').lower() in ('true', '1', 'yes')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    if SECURE_SSL_REDIRECT:
+        SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '31536000'))
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+        SECURE_HSTS_PRELOAD = True
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'buggyman.auth.JWTAuthentication',
@@ -87,15 +131,44 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+# Database Configuration
+# Production-ready PostgreSQL with zero-config SQLite fallback for local development.
+# Configure via standard DATABASE_URL (Neon, Supabase, AWS RDS, Render, Railway, Docker)
+# or individual DB_* environment variables.
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
+DB_ENGINE = os.environ.get('DB_ENGINE', '').strip().lower()
+DB_NAME = os.environ.get('DB_NAME', '').strip()
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=int(os.environ.get('DB_CONN_MAX_AGE', '600')),
+            conn_health_checks=True,
+            ssl_require=os.environ.get('DB_SSL_REQUIRE', 'false').lower() in ('true', '1')
+        )
     }
-}
+elif DB_ENGINE in ('postgres', 'postgresql') or (DB_NAME and os.environ.get('DB_USER')):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': DB_NAME or 'buggyman',
+            'USER': os.environ.get('DB_USER', 'postgres'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+            'CONN_MAX_AGE': int(os.environ.get('DB_CONN_MAX_AGE', '600')),
+            'CONN_HEALTH_CHECKS': True,
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
