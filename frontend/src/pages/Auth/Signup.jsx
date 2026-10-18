@@ -152,7 +152,6 @@ export default function Signup({ setUser, addToast }) {
       const payload = {
         username: account.username.trim(),
         email: account.email.trim(),
-        phone: account.phone.trim(),
         password: account.password,
         displayName: profile.displayName.trim(),
         bio: profile.bio.trim(),
