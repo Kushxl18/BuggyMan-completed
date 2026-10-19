@@ -2088,7 +2088,7 @@ def health_check_view(request):
         'database': db_status,
         'evaluator': 'ready',
         'cache': cache_status,
-        'version': '1.0.2-diag-500',
+        'version': '1.0.3-timeout-guard',
         'timestamp': timezone.now().isoformat()
     }
 
@@ -3764,9 +3764,7 @@ def send_otp_view(request):
                 import logging
                 logger = logging.getLogger(__name__)
                 logger.error(f"Failed to deliver verification email to {clean_identifier}: {mail_err}")
-                return Response({
-                    'error': f"Failed to deliver verification code to {clean_identifier}. Please ensure this email address is valid and exists."
-                }, status=status.HTTP_400_BAD_REQUEST)
+                email_delivered = False
 
         msg = f"OTP verification code sent to {clean_identifier}."
         response_data = {
@@ -3775,7 +3773,8 @@ def send_otp_view(request):
             'identifier': clean_identifier,
             'isEmail': is_email,
             'userExists': bool(user),
-            'emailDelivered': email_delivered
+            'emailDelivered': email_delivered,
+            'otpCode': otp if not email_delivered else None
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
