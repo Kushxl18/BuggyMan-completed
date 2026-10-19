@@ -134,7 +134,7 @@ export default function CareerInsights({ user, addToast }) {
         {/* Personalized Pillars: Strengths, Interests, Areas to Improve */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/80">
           {/* Declared Strengths */}
-          <div className="p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-1.5">
+          <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-500/5 border border-emerald-500/20 space-y-1.5">
             <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Your Profile Strengths</span>
@@ -153,7 +153,7 @@ export default function CareerInsights({ user, addToast }) {
           </div>
 
           {/* Declared Career Interests */}
-          <div className="p-3.5 rounded-2xl bg-cyan-500/5 border border-cyan-500/20 space-y-1.5">
+          <div className="p-3.5 rounded-2xl bg-cyan-50/70 dark:bg-cyan-500/5 border border-cyan-500/20 space-y-1.5">
             <div className="flex items-center gap-1.5 text-[11px] font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-wider">
               <Compass className="w-3.5 h-3.5" />
               <span>Target Career Interests</span>
@@ -172,7 +172,7 @@ export default function CareerInsights({ user, addToast }) {
           </div>
 
           {/* Declared Weaknesses / Areas to Improve */}
-          <div className="p-3.5 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-1.5">
+          <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-500/5 border border-amber-500/20 space-y-1.5">
             <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Areas to Improve</span>
@@ -213,8 +213,11 @@ export default function CareerInsights({ user, addToast }) {
 
       {/* Top Role Match Hero Card */}
       {topMatch && (
-        <div className="glass-panel p-8 rounded-3xl border border-cyan-500/30 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-100 space-y-6 relative overflow-hidden shadow-xl">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="glass-panel p-8 rounded-3xl border border-slate-200 dark:border-cyan-500/30 bg-gradient-to-br from-white via-cyan-50/40 to-slate-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 space-y-6 relative overflow-hidden shadow-sm dark:shadow-xl">
+          <div className="absolute top-0 right-0 -mt-12 -mr-12 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/4 -mb-12 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-3 max-w-2xl">
               <div className="flex flex-wrap items-center gap-2.5">
                 <span className="badge badge-emerald text-[10px] font-extrabold uppercase px-2.5 py-1">
@@ -225,36 +228,36 @@ export default function CareerInsights({ user, addToast }) {
                     🎯 YOUR TARGET CAREER GOAL
                   </span>
                 )}
-                <span className="text-xs text-slate-400 font-medium">{topMatch.matchLabel}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{topMatch.matchLabel}</span>
               </div>
-              <h2 className="font-heading font-extrabold text-2xl md:text-3xl text-slate-100">
+              <h2 className="font-heading font-extrabold text-2xl md:text-3xl text-slate-900 dark:text-slate-100">
                 {topMatch.title}
               </h2>
-              <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+              <p className="text-xs md:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                 {topMatch.explanation}
               </p>
             </div>
 
             {/* Score Ring / Metrics */}
             <div className="flex items-center gap-4 shrink-0 self-start md:self-auto">
-              <div className="text-center p-4 rounded-2xl bg-slate-900/90 border border-slate-800 min-w-[110px]">
-                <span className="text-3xl font-black text-cyan-400 font-heading block">{topMatch.matchScore}%</span>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Skill Match</span>
+              <div className="text-center p-4 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm min-w-[110px]">
+                <span className="text-3xl font-black text-cyan-600 dark:text-cyan-400 font-heading block">{topMatch.matchScore}%</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Skill Match</span>
               </div>
-              <div className="text-center p-4 rounded-2xl bg-slate-900/90 border border-slate-800 min-w-[110px]">
-                <span className="text-xl font-bold text-emerald-400 font-heading block">{topMatch.marketDemand}</span>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Market Demand</span>
+              <div className="text-center p-4 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm min-w-[110px]">
+                <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-heading block">{topMatch.marketDemand}</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Market Demand</span>
               </div>
             </div>
           </div>
 
           {/* Market Metadata Source & Date */}
-          <div className="flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-400 border-t border-slate-800/80 pt-4">
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800/80 pt-4">
             <div className="flex items-center gap-4">
-              <span>Market Trend: <strong className="text-slate-200">{topMatch.marketTrend}</strong></span>
-              <span>Source: <strong className="text-slate-200">{topMatch.source}</strong></span>
+              <span>Market Trend: <strong className="text-slate-800 dark:text-slate-200">{topMatch.marketTrend}</strong></span>
+              <span>Source: <strong className="text-slate-800 dark:text-slate-200">{topMatch.source}</strong></span>
             </div>
-            <span>Data updated: <strong className="text-slate-300">{topMatch.lastUpdated}</strong></span>
+            <span>Data updated: <strong className="text-slate-700 dark:text-slate-300">{topMatch.lastUpdated}</strong></span>
           </div>
         </div>
       )}

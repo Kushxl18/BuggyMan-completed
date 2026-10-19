@@ -74,28 +74,31 @@ export default function Dashboard({ user, addToast }) {
       />
 
       {/* 1. Hero Section */}
-      <div className="glass-panel p-8 md:p-12 rounded-3xl border border-cyan-500/30 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-100 relative overflow-hidden space-y-6">
-        <div className="flex items-center gap-2.5">
+      <div className="glass-panel p-8 md:p-12 rounded-3xl border border-slate-200 dark:border-cyan-500/30 bg-gradient-to-br from-white via-cyan-50/40 to-slate-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 relative overflow-hidden space-y-6 shadow-sm dark:shadow-xl">
+        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-12 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex items-center gap-2.5">
           <span className="badge badge-cyan flex items-center gap-1.5 px-3 py-1">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <Sparkles className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
             <span>AI DEBUGGER LAB</span>
           </span>
-          <span className="text-xs text-slate-400 font-medium">Hands-on Engineering Practice</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Hands-on Engineering Practice</span>
         </div>
 
-        <div className="space-y-3 max-w-3xl">
-          <h1 className="font-heading font-black text-3xl md:text-5xl text-slate-100 tracking-tight leading-tight">
-            Welcome to <span className="text-cyan-400">BuggyMan</span>
+        <div className="relative z-10 space-y-3 max-w-3xl">
+          <h1 className="font-heading font-black text-3xl md:text-5xl text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
+            Welcome to <span className="text-cyan-600 dark:text-cyan-400">BuggyMan</span>
           </h1>
-          <p className="text-base md:text-lg text-slate-300 font-medium leading-relaxed">
+          <p className="text-base md:text-lg text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
             Find bugs. Fix real-world software problems. Build practical engineering skills.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 pt-2">
+        <div className="relative z-10 flex flex-wrap items-center gap-4 pt-2">
           <Link
             to="/challenges"
-            className="button-primary px-6 py-3 text-sm font-bold flex items-center gap-2"
+            className="button-primary px-6 py-3 text-sm font-bold flex items-center gap-2 shadow-lg shadow-cyan-500/20"
           >
             <span>Start Debugging</span>
             <ArrowRight className="w-4 h-4" />
@@ -287,39 +290,39 @@ export default function Dashboard({ user, addToast }) {
       </div>
 
       {/* 6. BugBytes Store & Money-Back Rewards Widget */}
-      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-amber-500/30 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-2 max-w-2xl">
+      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-amber-500/30 bg-gradient-to-br from-amber-50/70 via-white to-amber-50/30 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm dark:shadow-xl relative overflow-hidden">
+        <div className="space-y-2 max-w-2xl relative z-10">
           <div className="flex items-center gap-2">
             <span className="badge badge-amber text-[10px] font-bold uppercase tracking-wider">
               AI HINT CREDITS & REWARDS
             </span>
-            <span className="text-[11px] text-amber-400 font-bold flex items-center gap-1">
+            <span className="text-[11px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
               <Bug className="w-3.5 h-3.5" />
               <span>{profile?.bugbytes_balance ?? profile?.bugbytesBalance ?? 0} BugBytes Available</span>
             </span>
           </div>
-          <h2 className="font-heading font-bold text-xl text-slate-100">
+          <h2 className="font-heading font-bold text-xl text-slate-900 dark:text-slate-100">
             BugBytes Store + Challenge-Based Money-Back Rewards
           </h2>
-          <p className="text-xs text-slate-300 leading-relaxed">
+          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
             Need AI hints for tricky debugging sessions? Purchase mock BugBytes packages and recover 100% of your simulated purchase through coding missions.
           </p>
         </div>
         <Link
           to="/store"
-          className="button-primary bg-amber-600 hover:bg-amber-500 text-xs px-5 py-2.5 flex items-center justify-center gap-2 whitespace-nowrap self-start md:self-auto font-bold shadow-lg"
+          className="button-primary bg-amber-600 hover:bg-amber-500 text-white text-xs px-5 py-2.5 flex items-center justify-center gap-2 whitespace-nowrap self-start md:self-auto font-bold shadow-lg shadow-amber-500/20 relative z-10"
         >
           <ShoppingBag className="w-4 h-4" />
           <span>Open BugBytes Store</span>
         </Link>
       </div>
 
-      {/* 6. Getting Started / Continuation CTA */}
-      <div className="glass-panel p-8 rounded-3xl border border-cyan-500/30 bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 text-center space-y-4">
-        <h3 className="font-heading font-bold text-xl text-slate-100">
+      {/* 7. Getting Started / Continuation CTA */}
+      <div className="glass-panel p-8 rounded-3xl border border-slate-200 dark:border-cyan-500/30 bg-gradient-to-r from-cyan-50/40 via-white to-slate-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 text-center space-y-4 shadow-sm dark:shadow-xl">
+        <h3 className="font-heading font-bold text-xl text-slate-900 dark:text-slate-100">
           {isNewUser ? 'Ready to start debugging?' : 'Continue your learning journey'}
         </h3>
-        <p className="text-xs text-slate-300 max-w-lg mx-auto leading-relaxed">
+        <p className="text-xs text-slate-600 dark:text-slate-300 max-w-lg mx-auto leading-relaxed">
           {isNewUser 
             ? 'Dive into your first interactive code challenge and start building real-world software troubleshooting skills.'
             : 'Pick up right where you left off or explore customized challenges tailored to your latest performance.'}
@@ -327,7 +330,7 @@ export default function Dashboard({ user, addToast }) {
         <div className="pt-2">
           <Link
             to="/challenges"
-            className="button-primary px-6 py-3 text-xs font-bold inline-flex items-center gap-2"
+            className="button-primary px-6 py-3 text-xs font-bold inline-flex items-center gap-2 shadow-lg shadow-cyan-500/20"
           >
             <span>{isNewUser ? 'Start Your First Challenge' : 'Continue Debugging'}</span>
             <ArrowRight className="w-4 h-4" />
