@@ -40,7 +40,7 @@ export default function CodeEditor({ file, onChange, theme = 'dark', fontSize = 
 
   if (!file) {
     return (
-      <div className="w-full h-full flex-1 flex flex-col bg-slate-950 relative min-h-[300px] items-center justify-center text-slate-500">
+      <div className="w-full h-full flex-1 flex flex-col bg-[var(--bg-main)] relative min-h-[300px] items-center justify-center text-[var(--text-muted)]">
         Select a file to begin coding
       </div>
     );
@@ -60,7 +60,7 @@ export default function CodeEditor({ file, onChange, theme = 'dark', fontSize = 
   };
 
   return (
-    <div ref={containerRef} className="w-full h-full flex-1 flex flex-col bg-slate-950 relative min-h-[300px]">
+    <div ref={containerRef} className="w-full h-full flex-1 flex flex-col bg-[var(--bg-main)] relative min-h-[300px]">
       <Editor
         height="100%"
         width="100%"
@@ -69,7 +69,7 @@ export default function CodeEditor({ file, onChange, theme = 'dark', fontSize = 
         onChange={onChange}
         onMount={handleEditorDidMount}
         theme={theme === 'dark' ? 'vs-dark' : 'light'}
-        loading={<LoadingSpinner className="absolute inset-0 bg-slate-950" />}
+        loading={<LoadingSpinner className="absolute inset-0 bg-[var(--bg-main)]" />}
         options={{
           fontSize: fontSize,
           minimap: { enabled: false },

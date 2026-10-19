@@ -219,6 +219,49 @@
   background: radial-gradient(circle at 50% 50%, var(--brand-cyan-bg) 0%, transparent 80%);
 }
 
+/* The challenge workspace and result view have legacy dark utility classes.
+   Re-map their surfaces and text in light mode without changing dark mode. */
+:root:not(.dark) .theme-adaptive-page .bg-slate-950,
+:root:not(.dark) .theme-adaptive-page .bg-slate-950\/40,
+:root:not(.dark) .theme-adaptive-page .bg-slate-950\/60,
+:root:not(.dark) .theme-adaptive-page .bg-slate-950\/80,
+:root:not(.dark) .theme-adaptive-page .bg-slate-900,
+:root:not(.dark) .theme-adaptive-page .bg-slate-900\/60,
+:root:not(.dark) .theme-adaptive-page .bg-slate-900\/80,
+:root:not(.dark) .theme-adaptive-page .bg-slate-900\/90,
+:root:not(.dark) .theme-adaptive-page .bg-slate-900\/95,
+:root:not(.dark) .theme-adaptive-page .bg-slate-800,
+:root:not(.dark) .theme-adaptive-page .bg-slate-800\/40,
+:root:not(.dark) .theme-adaptive-page .bg-slate-800\/90 {
+  background-color: var(--bg-card) !important;
+}
+
+:root:not(.dark) .theme-adaptive-page .border-slate-900,
+:root:not(.dark) .theme-adaptive-page .border-slate-800,
+:root:not(.dark) .theme-adaptive-page .border-slate-800\/80,
+:root:not(.dark) .theme-adaptive-page .border-slate-700,
+:root:not(.dark) .theme-adaptive-page .border-slate-700\/80 {
+  border-color: var(--border-color) !important;
+}
+
+:root:not(.dark) .theme-adaptive-page .text-slate-100,
+:root:not(.dark) .theme-adaptive-page .text-slate-200,
+:root:not(.dark) .theme-adaptive-page .text-slate-300 {
+  color: var(--text-primary) !important;
+}
+
+:root:not(.dark) .theme-adaptive-page .text-slate-400,
+:root:not(.dark) .theme-adaptive-page .text-slate-500,
+:root:not(.dark) .theme-adaptive-page .text-slate-600 {
+  color: var(--text-secondary) !important;
+}
+
+:root:not(.dark) .theme-adaptive-page .hover\:bg-slate-800:hover,
+:root:not(.dark) .theme-adaptive-page .hover\:bg-slate-900:hover,
+:root:not(.dark) .theme-adaptive-page .hover\:bg-slate-800\/40:hover {
+  background-color: var(--bg-hover) !important;
+}
+
 .text-gradient {
   background: linear-gradient(135deg, var(--text-primary) 0%, var(--brand-cyan) 100%);
   -webkit-background-clip: text;

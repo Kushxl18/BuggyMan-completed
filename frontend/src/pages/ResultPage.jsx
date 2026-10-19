@@ -129,7 +129,7 @@ export default function ResultPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-8 space-y-8 animate-fade-in px-4">
+    <div className="theme-adaptive-page max-w-3xl mx-auto py-8 space-y-8 animate-fade-in px-4">
       
       {/* Top Header & Banner */}
       <div className={`p-8 rounded-3xl border text-center space-y-4 relative overflow-hidden ${

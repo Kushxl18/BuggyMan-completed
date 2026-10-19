@@ -380,7 +380,7 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
   const techBadge = challenge?.technology || 'JavaScript';
 
   return (
-    <div className="h-screen flex flex-col bg-slate-950 overflow-hidden font-sans select-none">
+    <div className="theme-adaptive-page h-screen flex flex-col bg-[var(--bg-main)] overflow-hidden font-sans select-none">
       {/* 1. TOP HEADER: Authentic LeetCode Navigation Bar */}
       <div className="h-12 bg-slate-900/95 border-b border-slate-800 flex items-center justify-between px-3 shrink-0 text-slate-200">
         {/* Left: Problem List & Prev/Next Chevrons */}
