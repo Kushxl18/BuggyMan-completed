@@ -235,13 +235,19 @@ export default function BugBytesStore({ user, setUser, addToast }) {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
+if (loading) {
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center"
+      style={{
+        backgroundColor: 'var(--bg-main)',
+        color: 'var(--text-primary)',
+      }}
+    >
+      <LoadingSpinner size="lg" />
+    </div>
+  );
+}
 
   const activeMissionsCount = missionsData.activeMissions?.length || 0;
   const claimableCount = missionsData.completedMissions?.length || 0;
