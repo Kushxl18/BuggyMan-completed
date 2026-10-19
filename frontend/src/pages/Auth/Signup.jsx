@@ -312,12 +312,8 @@ export default function Signup({ setUser, addToast }) {
             {step === 1 && (
               <div className="space-y-5">
                 <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold mb-3">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Mandatory Email OTP Verification</span>
-                  </div>
                   <h3 className="font-heading text-2xl font-bold text-slate-100">Create your account</h3>
-                  <p className="text-xs text-slate-400 mt-1">Start your engineering debugging journey • Verified via 6-digit email code</p>
+                  <p className="text-xs text-slate-400 mt-1">Start your engineering debugging journey</p>
                 </div>
 
                 <div className="space-y-4">
