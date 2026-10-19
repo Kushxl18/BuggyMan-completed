@@ -2083,12 +2083,25 @@ def health_check_view(request):
     is_healthy = (db_status == "connected" and "unhealthy" not in cache_status)
     status_code = status.HTTP_200_OK if is_healthy else status.HTTP_503_SERVICE_UNAVAILABLE
 
+    import socket
+    smtp_ports = {}
+    for p in [587, 465, 25]:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(2.5)
+        try:
+            s.connect(('smtp.gmail.com', p))
+            smtp_ports[str(p)] = 'open'
+            s.close()
+        except Exception as e:
+            smtp_ports[str(p)] = str(e)
+
     payload = {
         'status': 'healthy' if is_healthy else 'degraded',
         'database': db_status,
         'evaluator': 'ready',
         'cache': cache_status,
-        'version': '1.0.3-timeout-guard',
+        'smtp_ports': smtp_ports,
+        'version': '1.0.4-no-otp-hint',
         'timestamp': timezone.now().isoformat()
     }
 
@@ -3773,8 +3786,7 @@ def send_otp_view(request):
             'identifier': clean_identifier,
             'isEmail': is_email,
             'userExists': bool(user),
-            'emailDelivered': email_delivered,
-            'otpCode': otp if not email_delivered else None
+            'emailDelivered': email_delivered
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
