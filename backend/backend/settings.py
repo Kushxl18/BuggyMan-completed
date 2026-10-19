@@ -79,17 +79,15 @@ MIDDLEWARE = [
 ]
 
 # CORS Configuration
-if DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'True').lower() in ('true', '1', 'yes')
-else:
-    CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'False').lower() in ('true', '1', 'yes')
+CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'True').lower() in ('true', '1', 'yes')
 
 raw_cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
 if raw_cors_origins:
     CORS_ALLOWED_ORIGINS = [o.strip() for o in raw_cors_origins.split(',') if o.strip()]
 elif not CORS_ALLOW_ALL_ORIGINS:
-    frontend_url = os.environ.get('FRONTEND_BASE_URL', 'http://localhost:3000').strip()
-    CORS_ALLOWED_ORIGINS = list({frontend_url, 'http://localhost:3000', 'http://127.0.0.1:3000'})
+    frontend_url = os.environ.get('FRONTEND_BASE_URL', 'https://buggy-man-completed.vercel.app').strip()
+    CORS_ALLOWED_ORIGINS = list({frontend_url, 'https://buggy-man-completed.vercel.app', 'http://localhost:3000', 'http://127.0.0.1:3000'})
+CORS_ALLOW_CREDENTIALS = True
 
 # Production Security & HTTPS Headers
 if not DEBUG:
