@@ -398,9 +398,17 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
 
           {/* Problem List Button */}
           <button
-            onClick={() => navigate('/challenges')}
+            onClick={() => {
+              if (challenge?.arenaKey === 'sql' || challenge?.arena === 'SQL Lab') {
+                navigate('/sql-challenges');
+              } else if (challenge?.arenaKey === 'frontend' || challenge?.arena === 'Frontend Studio') {
+                navigate('/design-challenges');
+              } else {
+                navigate('/challenges');
+              }
+            }}
             className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-slate-300 hover:text-white bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg transition-all"
-            title="All Challenges"
+            title="Return to Challenge List"
           >
             <Menu className="w-3.5 h-3.5 text-slate-400" />
             <span className="hidden sm:inline">Problem List</span>

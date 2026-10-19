@@ -72,16 +72,16 @@ class ChallengeRecommender:
         if arena and arena.lower() != 'all':
             arena_low = arena.lower()
             if arena_low in ('sql', 'database'):
-                queryset = queryset.filter(Q(technology__iexact='SQL') | Q(title__startswith='[SQL-'))
+                queryset = queryset.filter(Q(id__gte=51, id__lte=85) | Q(title__startswith='[SQL-') | Q(technology__iexact='SQL'))
             elif arena_low in ('frontend', 'studio', 'design'):
                 queryset = queryset.filter(
-                    Q(technology__in=['React', 'React Router', 'Web', 'CSS', 'HTML', 'Styling', 'Controlled Components']) |
-                    Q(title__startswith='[RE-') | Q(title__startswith='[FE-')
+                    Q(id__gte=86, id__lte=120) |
+                    Q(title__startswith='[FE-') | Q(title__startswith='[RE-')
                 )
             elif arena_low in ('debugging', 'backend', 'code'):
                 queryset = queryset.filter(
-                    Q(technology__in=['Python', 'Django', 'NodeJS', 'JavaScript', 'Backend', 'FastAPI']) |
-                    Q(title__startswith='[PY-') | Q(title__startswith='[JS-')
+                    (Q(id__lte=50) | Q(title__startswith='[CODE-') | Q(title__startswith='[PY-') | Q(title__startswith='[JS-')) &
+                    ~Q(title__startswith='[FE-') & ~Q(title__startswith='[SQL-')
                 )
 
         # Filter by difficulty, technology, category, search

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+import re
 
 class User(AbstractUser):
     college = models.CharField(max_length=255, blank=True, default='')
@@ -133,19 +134,69 @@ class Challenge(models.Model):
     def to_dict(self):
         tech_lower = (self.technology or '').lower()
         title_str = str(self.title or '')
-        if 'sql' in tech_lower or 'database' in tech_lower or title_str.startswith('[SQL-'):
+        cid = self.id or 0
+
+        # Arena resolution and question numbers
+        if (51 <= cid <= 85) or 'sql' in tech_lower or 'database' in tech_lower or title_str.startswith('[SQL-'):
             page = 'SQL Lab'
-        elif any(k in tech_lower for k in ['react', 'css', 'html', 'frontend', 'ui']) or title_str.startswith('[FE-') or title_str.startswith('[RE-'):
+            arena_key = 'sql'
+            q_num = (cid - 50) if (51 <= cid <= 85) else cid
+        elif (86 <= cid <= 120) or any(k in tech_lower for k in ['react', 'css', 'html', 'frontend', 'ui']) or title_str.startswith('[FE-') or title_str.startswith('[RE-'):
             page = 'Frontend Studio'
+            arena_key = 'frontend'
+            q_num = (cid - 85) if (86 <= cid <= 120) else cid
         else:
             page = 'Code Challenges'
+            arena_key = 'code'
+            q_num = cid if (1 <= cid <= 50) else cid
+
+        # Canonical title strips tag prefixes like [CODE-E01], [SQL-E01], [FE-E01]
+        canonical_title = re.sub(r'^\[(?:CODE|SQL|FE|RE|PY|JS)-[EMH]\d+\]\s*', '', title_str).strip()
+        if not canonical_title:
+            canonical_title = title_str
+
+        display_number = f"Q{q_num}" if q_num > 0 else ""
+        display_title = f"{display_number}. {canonical_title}" if display_number else canonical_title
 
         computed_topics = self.topics if self.topics else ([self.category] if self.category else [])
         computed_skills = self.skills_tested if self.skills_tested else ([self.technology, self.category] if self.technology else [])
 
+        # Extract schema tables for SQL challenges
+        tables = []
+        if arena_key == 'sql':
+            for f in (self.files or []):
+                content = f.get('content', '')
+                matches = re.findall(r'CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_]+)', content, re.IGNORECASE)
+                for m in matches:
+                    if m.lower() not in [t.lower() for t in tables]:
+                        tables.append(m)
+            if not tables:
+                tables = ['orders', 'customers']
+
+        # Extract component name for frontend challenges
+        preview_target = 'Live UI Component'
+        if arena_key == 'frontend':
+            for f in (self.files or []):
+                fname = f.get('name', '')
+                if fname.endswith('.jsx') or fname.endswith('.tsx') or fname.endswith('.css'):
+                    clean_name = fname.replace('.jsx', '').replace('.tsx', '').replace('.css', '')
+                    preview_target = f"{clean_name} Component"
+                    break
+
         return {
             'id': str(self.id),
             'title': self.title,
+            'canonicalTitle': canonical_title,
+            'canonical_title': canonical_title,
+            'questionNumber': q_num,
+            'question_number': q_num,
+            'displayNumber': display_number,
+            'display_number': display_number,
+            'displayTitle': display_title,
+            'display_title': display_title,
+            'arena': page,
+            'arenaKey': arena_key,
+            'arena_key': arena_key,
             'description': self.description,
             'status': self.status,
             'difficulty': self.difficulty,
@@ -160,6 +211,8 @@ class Challenge(models.Model):
             'timeEstimate': self.time_estimate,
             'time_estimate': self.time_estimate,
             'points': self.points,
+            'tables': tables,
+            'previewTarget': preview_target,
             'files': self.files or [],
             'testCases': self.test_cases or [],
             'test_cases': self.test_cases or [],

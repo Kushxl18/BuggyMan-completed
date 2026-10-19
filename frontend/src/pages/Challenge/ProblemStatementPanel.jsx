@@ -118,10 +118,10 @@ export default function ProblemStatementPanel({
 
   if (!challenge) return null;
 
-  // Title formatting: "51. Customer Report Excludes Records..."
+  // Consistent Title formatting matching the authoritative challenge metadata
   const rawTitle = challenge.title || 'Challenge';
-  const cleanTitle = rawTitle.replace(/^\[.*?\]\s*/, '').replace(/^\d+\.\s*/, '').trim();
-  const displayTitle = `${challenge.id}. ${cleanTitle}`;
+  const cleanTitle = challenge.canonicalTitle || challenge.canonical_title || rawTitle.replace(/^\[.*?\]\s*/, '').replace(/^\d+\.\s*/, '').trim();
+  const displayTitle = challenge.displayTitle || challenge.display_title || (challenge.displayNumber ? `${challenge.displayNumber}. ${cleanTitle}` : cleanTitle);
 
   // Derive genuine topics from challenge metadata
   const topics = challenge.topics && challenge.topics.length > 0 
