@@ -1,10 +1,25 @@
 // Custom Fetch API Client with Mock Fallback for local testing when backend is not running
 import { isValidEmail, getEmailValidationError } from '../utils/validators';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl && envUrl !== '/api') {
+    return envUrl.replace(/\/+$/, '');
+  }
+  // In production (Vercel, custom domain), always connect directly to live Render backend API
+  if (typeof window !== 'undefined' && window.location && window.location.hostname) {
+    const host = window.location.hostname.toLowerCase();
+    if (host !== 'localhost' && host !== '127.0.0.1' && !host.startsWith('192.168.') && !host.startsWith('10.')) {
+      return 'https://buggyman-completed.onrender.com/api';
+    }
+  }
+  return '/api';
+};
+
+const BASE_URL = getApiBaseUrl();
 const ENABLE_MOCK_FALLBACK = import.meta.env.VITE_ENABLE_MOCK_FALLBACK !== undefined
   ? import.meta.env.VITE_ENABLE_MOCK_FALLBACK === 'true'
-  : import.meta.env.DEV;
+  : false;
 
 const DJANGO_MOCK_CHALLENGES = [
   {
