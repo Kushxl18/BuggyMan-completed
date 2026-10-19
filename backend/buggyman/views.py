@@ -1,4 +1,5 @@
 import time
+import datetime
 import sys
 import os
 import requests
@@ -3687,97 +3688,103 @@ def send_otp_view(request):
     Sends a 6-digit OTP code to the provided email or phone number.
     Works for both registration verification and OTP instant login.
     """
-    lim = apply_rate_limit(request, 'otp_send', limit=6, window_seconds=60)
+    lim = apply_rate_limit(request, 'otp_send', limit=20, window_seconds=60)
     if lim:
         return lim
 
-    identifier = (request.data.get('identifier') or request.data.get('email') or request.data.get('phone') or '').strip()
-    purpose = (request.data.get('purpose') or 'login').strip().lower()
+    try:
+        identifier = (request.data.get('identifier') or request.data.get('email') or request.data.get('phone') or '').strip()
+        purpose = (request.data.get('purpose') or 'login').strip().lower()
 
-    if not identifier:
-        return Response({'error': 'Email address or phone number is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not identifier:
+            return Response({'error': 'Email address or phone number is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    is_email = '@' in identifier
-    if is_email:
-        try:
-            from buggyman.validators import validate_legitimate_email
-            clean_identifier = validate_legitimate_email(identifier)
-        except ValidationError as e:
-            return Response({'error': ', '.join(e.messages) if hasattr(e, 'messages') else str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    else:
-        clean_identifier = ''.join(c for c in identifier if c.isdigit() or c == '+')
-
-    # Find existing user if purpose is login
-    user = None
-    if is_email:
-        user = User.objects.filter(email__iexact=clean_identifier).first()
-    else:
-        user = User.objects.filter(phone=clean_identifier).first()
-
-    # Generate secure 6-digit OTP
-    otp = str(random.randint(100000, 999999))
-    expiry = timezone.now() + datetime.timedelta(minutes=10)
-
-    from django.core.cache import cache
-    cache.set(f"reg_otp_{clean_identifier}", otp, timeout=600)
-
-    if user:
-        user.otp_code = otp
-        user.otp_expiry = expiry
-        user.save(update_fields=['otp_code', 'otp_expiry'])
-    else:
-        # Cache registration OTP on request session / temporary store if session exists
-        if hasattr(request, 'session'):
+        is_email = '@' in identifier
+        if is_email:
             try:
-                request.session[f"reg_otp_{clean_identifier}"] = {
-                    'otp': otp,
-                    'expiry': expiry.isoformat()
-                }
-                request.session.modified = True
-            except Exception:
-                pass
+                from buggyman.validators import validate_legitimate_email
+                clean_identifier = validate_legitimate_email(identifier)
+            except ValidationError as e:
+                return Response({'error': ', '.join(e.messages) if hasattr(e, 'messages') else str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            clean_identifier = ''.join(c for c in identifier if c.isdigit() or c == '+')
 
-    email_user = getattr(settings, 'EMAIL_HOST_USER', '')
-    email_delivered = False
-    if is_email and email_user:
-        try:
-            from django.core.mail import send_mail
-            subject = 'BuggyMan - Your 6-Digit Email Verification Code'
-            message = (
-                f"Hello,\n\n"
-                f"Your 6-digit verification code for BuggyMan is: {otp}\n\n"
-                f"This code will expire in 10 minutes.\n"
-                f"Please enter this code on the registration page to verify your email.\n\n"
-                f"If you did not request this verification, please safely ignore this email.\n\n"
-                f"- The BuggyMan Team"
-            )
-            send_mail(
-                subject,
-                message,
-                settings.DEFAULT_FROM_EMAIL or email_user,
-                [clean_identifier],
-                fail_silently=False
-            )
-            email_delivered = True
-        except Exception as mail_err:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Failed to deliver verification email to {clean_identifier}: {mail_err}")
-            return Response({
-                'error': f"Failed to deliver verification code to {clean_identifier}. Please ensure this email address is valid and exists."
-            }, status=status.HTTP_400_BAD_REQUEST)
+        # Find existing user if purpose is login
+        user = None
+        if is_email:
+            user = User.objects.filter(email__iexact=clean_identifier).first()
+        else:
+            user = User.objects.filter(phone=clean_identifier).first()
 
-    msg = f"OTP verification code sent to {clean_identifier}."
-    response_data = {
-        'success': True,
-        'message': msg,
-        'identifier': clean_identifier,
-        'isEmail': is_email,
-        'userExists': bool(user),
-        'emailDelivered': email_delivered
-    }
+        # Generate secure 6-digit OTP
+        otp = str(random.randint(100000, 999999))
+        expiry = timezone.now() + datetime.timedelta(minutes=10)
 
-    return Response(response_data, status=status.HTTP_200_OK)
+        from django.core.cache import cache
+        cache.set(f"reg_otp_{clean_identifier}", otp, timeout=600)
+
+        if user:
+            user.otp_code = otp
+            user.otp_expiry = expiry
+            user.save(update_fields=['otp_code', 'otp_expiry'])
+        else:
+            # Cache registration OTP on request session / temporary store if session exists
+            if hasattr(request, 'session'):
+                try:
+                    request.session[f"reg_otp_{clean_identifier}"] = {
+                        'otp': otp,
+                        'expiry': expiry.isoformat()
+                    }
+                    request.session.modified = True
+                except Exception:
+                    pass
+
+        email_user = getattr(settings, 'EMAIL_HOST_USER', '')
+        email_delivered = False
+        if is_email and email_user:
+            try:
+                from django.core.mail import send_mail
+                subject = 'BuggyMan - Your 6-Digit Email Verification Code'
+                message = (
+                    f"Hello,\n\n"
+                    f"Your 6-digit verification code for BuggyMan is: {otp}\n\n"
+                    f"This code will expire in 10 minutes.\n"
+                    f"Please enter this code on the registration page to verify your email.\n\n"
+                    f"If you did not request this verification, please safely ignore this email.\n\n"
+                    f"- The BuggyMan Team"
+                )
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL or email_user,
+                    [clean_identifier],
+                    fail_silently=False
+                )
+                email_delivered = True
+            except Exception as mail_err:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to deliver verification email to {clean_identifier}: {mail_err}")
+                return Response({
+                    'error': f"Failed to deliver verification code to {clean_identifier}. Please ensure this email address is valid and exists."
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        msg = f"OTP verification code sent to {clean_identifier}."
+        response_data = {
+            'success': True,
+            'message': msg,
+            'identifier': clean_identifier,
+            'isEmail': is_email,
+            'userExists': bool(user),
+            'emailDelivered': email_delivered
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+    except Exception as exc:
+        import logging, traceback
+        logger = logging.getLogger(__name__)
+        logger.error(f"Unhandled error in send_otp_view: {traceback.format_exc()}")
+        return Response({'error': f"Unable to process OTP request: {str(exc)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
