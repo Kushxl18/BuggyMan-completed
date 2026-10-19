@@ -146,7 +146,7 @@ export default function Login({ setUser, addToast }) {
 
         {/* Login Card */}
         <div className="glass-panel rounded-2xl p-8 border border-slate-800 shadow-2xl space-y-6">
-          {/* Mode Switcher: Password vs Email OTP */}
+          {/* Mode Switcher preserved for future activation
           <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs font-semibold">
             <button
               type="button"
@@ -164,6 +164,7 @@ export default function Login({ setUser, addToast }) {
               <span>Email OTP Login</span>
             </button>
           </div>
+          */}
 
           {error && (
             <div className="p-3.5 bg-rose-500/10 border border-brand-rose/25 text-brand-rose text-xs font-semibold rounded-xl animate-fade-in">

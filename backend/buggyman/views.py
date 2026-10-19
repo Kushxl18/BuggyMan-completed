@@ -133,9 +133,18 @@ def register_view(request):
     saved_otp = cache.get(f"reg_otp_{email}") or session_otp_val
     email_user = getattr(settings, 'EMAIL_HOST_USER', '')
 
-    if email_user or otp or saved_otp:
+    # OTP verification preserved - enabled when REQUIRE_REGISTRATION_OTP is True
+    REQUIRE_REGISTRATION_OTP = getattr(settings, 'REQUIRE_REGISTRATION_OTP', False)
+    if REQUIRE_REGISTRATION_OTP and (email_user or saved_otp):
         if not otp or not saved_otp or str(saved_otp).strip() != str(otp).strip():
             return Response({'error': 'Invalid or expired 6-digit verification code. Please check your inbox or request a new code.'}, status=status.HTTP_400_BAD_REQUEST)
+        cache.delete(f"reg_otp_{email}")
+        if hasattr(request, 'session'):
+            try:
+                request.session.pop(f"reg_otp_{email}", None)
+            except Exception:
+                pass
+    elif otp and saved_otp and str(saved_otp).strip() == str(otp).strip():
         cache.delete(f"reg_otp_{email}")
         if hasattr(request, 'session'):
             try:
@@ -1507,7 +1516,7 @@ def leaderboard_view(request):
             'score': u.total_score,
             'streak': u.streak,
             'solved': u.challenges_solved,
-            'college': u.college or 'State Technical University',
+            'college': u.college or '-',
             'avatar': u.avatar,
             'badgesCount': len(u.badges or [])
         })

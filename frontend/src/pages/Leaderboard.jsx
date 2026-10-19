@@ -111,7 +111,7 @@ export default function Leaderboard({ user, addToast }) {
                         </div>
                       </td>
                     <td className="p-4 text-slate-600 dark:text-slate-400">
-                      {row.college}
+                      {row.college || '-'}
                     </td>
                     <td className="p-4 text-center">
                       <span className="badge badge-emerald">

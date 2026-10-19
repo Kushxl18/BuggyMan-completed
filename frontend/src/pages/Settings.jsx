@@ -16,14 +16,10 @@ import {
   Award,
   Info,
   Code2,
-  CheckSquare,
-  ShieldCheck,
-  Link2,
-  Unlink
+  CheckSquare
 } from 'lucide-react';
 import { authService } from '../services/authService';
 import { challengeService } from '../services/challengeService';
-import { GoogleIcon, GitHubIcon } from '../components/OAuthButtons';
 
 export default function Settings({ user, theme, toggleTheme, addToast, setUser, settings, setSettings, notifications = [], setNotifications }) {
   const navigate = useNavigate();
@@ -278,72 +274,7 @@ export default function Settings({ user, theme, toggleTheme, addToast, setUser, 
             </div>
           </div>
 
-          {/* Connected Accounts & OAuth SSO */}
-          <div className="glass-card p-6 rounded-2xl space-y-4">
-            <h3 className="font-heading font-bold text-sm text-slate-800 dark:text-[#F0F2F4] flex items-center justify-between border-b border-slate-200 dark:border-[#292E33] pb-3">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4.5 h-4.5 text-cyan-500" />
-                <span>Connected Accounts & OAuth SSO</span>
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                Single Sign-On Active
-              </span>
-            </h3>
 
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Link your developer identity with third-party providers for instant 1-click authentication and verified profile badges.
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              {/* Google Provider Card */}
-              <div className={`p-4 rounded-xl border flex flex-col justify-between transition-all ${
-                user?.authProvider === 'google' || user?.auth_provider === 'google'
-                  ? 'bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/20'
-                  : 'bg-slate-50 dark:bg-[#1B1F23] border-slate-200 dark:border-[#292E33]'
-              }`}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700">
-                    <GoogleIcon className="w-5 h-5" />
-                  </div>
-                  {user?.authProvider === 'google' || user?.auth_provider === 'google' ? (
-                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                      Connected
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-slate-500">Not Linked</span>
-                  )}
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">Google SSO</h4>
-                  <p className="text-[10px] text-slate-500 mt-0.5">Google Cloud Identity</p>
-                </div>
-              </div>
-
-              {/* GitHub Provider Card */}
-              <div className={`p-4 rounded-xl border flex flex-col justify-between transition-all ${
-                user?.authProvider === 'github' || user?.auth_provider === 'github'
-                  ? 'bg-slate-500/10 border-slate-500/30 ring-1 ring-slate-500/20'
-                  : 'bg-slate-50 dark:bg-[#1B1F23] border-slate-200 dark:border-[#292E33]'
-              }`}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700">
-                    <GitHubIcon className="w-5 h-5 text-slate-900 dark:text-white" />
-                  </div>
-                  {user?.authProvider === 'github' || user?.auth_provider === 'github' ? (
-                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                      Connected
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-slate-500">Not Linked</span>
-                  )}
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">GitHub SSO</h4>
-                  <p className="text-[10px] text-slate-500 mt-0.5">GitHub Developer OAuth</p>
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Danger Zone */}
           <div className="glass-card p-6 rounded-2xl border border-rose-500/25 space-y-4">

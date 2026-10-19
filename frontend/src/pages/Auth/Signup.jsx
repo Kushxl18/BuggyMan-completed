@@ -84,7 +84,7 @@ export default function Signup({ setUser, addToast }) {
   const [devOtpHint, setDevOtpHint] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
 
-  const [profile, setProfile] = useState({ displayName: '', bio: '', country: '', timezone: '', avatar: '' });
+  const [profile, setProfile] = useState({ displayName: '', college: '', bio: '', country: '', timezone: '', avatar: '' });
   const [personalization, setPersonalization] = useState({ 
     theme: 'dark', 
     accentColor: 'blue', 
@@ -143,15 +143,15 @@ export default function Signup({ setUser, addToast }) {
       setLoading(true);
       try {
         await authService.checkAvailability(account.username.trim(), account.email.trim());
-        const otpRes = await authService.sendOtp(account.email.trim(), 'register');
-        if (otpRes?.otpCode) {
-          setDevOtpHint(otpRes.otpCode);
-        }
-        setResendCooldown(60);
-        addToast(`Verification code sent to ${account.email.trim()}`, 'info');
-        setStep(2);
+        // Email verification bypassed currently per user request - advance directly to profile step
+        // (OTP email code preserved intact for future activation)
+        // const otpRes = await authService.sendOtp(account.email.trim(), 'register');
+        // if (otpRes?.otpCode) setDevOtpHint(otpRes.otpCode);
+        // setResendCooldown(60);
+        // setStep(2);
+        setStep(3);
       } catch (err) {
-        setError(err.message || 'Failed to send verification code. Please check that your email is valid.');
+        setError(err.message || 'Validation failed. Please check your account details.');
       } finally {
         setLoading(false);
       }
@@ -179,7 +179,11 @@ export default function Signup({ setUser, addToast }) {
 
   const handleBack = () => {
     setError('');
-    setStep((prev) => Math.max(1, prev - 1));
+    if (step === 3) {
+      setStep(1);
+    } else {
+      setStep((prev) => Math.max(1, prev - 1));
+    }
   };
 
   const handleResendOtp = async () => {
@@ -210,6 +214,7 @@ export default function Signup({ setUser, addToast }) {
         password: account.password,
         otp: otp.trim(),
         displayName: profile.displayName.trim(),
+        college: profile.college.trim(),
         bio: profile.bio.trim(),
         country: profile.country.trim(),
         timezone: profile.timezone.trim(),
@@ -291,9 +296,14 @@ export default function Signup({ setUser, addToast }) {
             </p>
 
             <div className="space-y-4 text-xs font-semibold text-slate-400">
-              {['Account Details', 'Verify Email', 'Profile Info', 'Tell Us About Your Skills', 'Review & Confirm'].map((label, idx) => (
-                <div key={label} className={`flex items-center gap-3 ${step === idx + 1 ? 'text-slate-100' : ''}`}>
-                  <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs ${step === idx + 1 ? 'bg-cyan-500 text-slate-950 font-bold' : step > idx + 1 ? 'bg-slate-800 text-cyan-400' : 'bg-slate-900 text-slate-600'}`}>
+              {[
+                { label: 'Account Details', stepNum: 1 },
+                { label: 'Profile Info', stepNum: 3 },
+                { label: 'Tell Us About Your Skills', stepNum: 4 },
+                { label: 'Review & Confirm', stepNum: 5 }
+              ].map(({ label, stepNum }, idx) => (
+                <div key={label} className={`flex items-center gap-3 ${step === stepNum ? 'text-slate-100' : ''}`}>
+                  <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs ${step === stepNum ? 'bg-cyan-500 text-slate-950 font-bold' : step > stepNum ? 'bg-slate-800 text-cyan-400' : 'bg-slate-900 text-slate-600'}`}>
                     {idx + 1}
                   </span>
                   <span>{label}</span>
@@ -492,6 +502,17 @@ export default function Signup({ setUser, addToast }) {
                       onChange={(e) => setProfile((prev) => ({ ...prev, displayName: e.target.value }))}
                       className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
                       required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 mb-1.5 font-bold">College / Institution</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. NIE, Stanford, MIT, IIT (or leave blank if self-taught)"
+                      value={profile.college}
+                      onChange={(e) => setProfile((prev) => ({ ...prev, college: e.target.value }))}
+                      className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
                     />
                   </div>
 
@@ -722,11 +743,11 @@ export default function Signup({ setUser, addToast }) {
                     {loading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Sending verification code...</span>
+                        <span>Validating...</span>
                       </>
                     ) : (
                       <>
-                        <span>{step === 1 ? 'Verify Email & Continue' : 'Continue'}</span>
+                        <span>Continue</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
