@@ -226,15 +226,15 @@ export default function ProblemStatementFormatter({
           {examples.map((ex) => (
             <div 
               key={ex.id}
-              className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl space-y-2 font-mono text-xs"
+                className="p-3 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl space-y-2 font-mono text-xs"
             >
-              <div className="font-sans font-bold text-slate-200 text-xs flex items-center justify-between">
+              <div className="font-sans font-bold text-[var(--text-primary)] text-xs flex items-center justify-between">
                 <span>Example {ex.id}:</span>
               </div>
 
               <div className="space-y-1.5 pl-1">
                 <div className="flex items-start gap-2">
-                  <span className="font-sans font-semibold text-slate-400 shrink-0 select-none">
+                  <span className="font-sans font-semibold text-[var(--text-secondary)] shrink-0 select-none">
                     {isSql ? 'Input Query:' : isFrontend ? 'Action:' : 'Input:'}
                   </span>
                   <span className="text-cyan-300 break-all whitespace-pre-wrap">
@@ -243,7 +243,7 @@ export default function ProblemStatementFormatter({
                 </div>
 
                 <div className="flex items-start gap-2">
-                  <span className="font-sans font-semibold text-slate-400 shrink-0 select-none">
+                  <span className="font-sans font-semibold text-[var(--text-secondary)] shrink-0 select-none">
                     {isSql ? 'Expected Rows:' : isFrontend ? 'UI State:' : 'Output:'}
                   </span>
                   <span className="text-emerald-400 break-all whitespace-pre-wrap">
@@ -252,11 +252,11 @@ export default function ProblemStatementFormatter({
                 </div>
 
                 {ex.explanation && (
-                  <div className="flex items-start gap-2 pt-1 font-sans text-[11px] text-slate-400 border-t border-slate-800/60">
-                    <span className="font-semibold text-slate-300 shrink-0 select-none">
+                  <div className="flex items-start gap-2 pt-1 font-sans text-[11px] text-[var(--text-secondary)] border-t border-[var(--border-color)]">
+                      <span className="font-semibold text-[var(--text-primary)] shrink-0 select-none">
                       Explanation:
                     </span>
-                    <span className="text-slate-300 leading-normal">
+                      <span className="text-[var(--text-primary)] leading-normal">
                       {ex.explanation}
                     </span>
                   </div>
