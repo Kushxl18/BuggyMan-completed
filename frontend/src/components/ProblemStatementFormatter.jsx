@@ -1,167 +1,320 @@
 import React from 'react';
-import { Target, Info, AlertTriangle, ListChecks, CheckCircle2 } from 'lucide-react';
+import { 
+  Building2, 
+  Bug, 
+  ListOrdered, 
+  CheckCircle2, 
+  XCircle, 
+  AlertTriangle, 
+  CheckSquare, 
+  Info,
+  Layers,
+  ArrowRight
+} from 'lucide-react';
 
-export function parseProblemStatement(description = '', title = '', technology = '', category = '') {
-  let cleanDesc = (description || '').trim();
+/**
+ * Helper to render inline markdown like `code`, **bold**, *italic* safely into React elements
+ */
+export function formatInlineText(text = '') {
+  if (!text) return null;
 
-  let context = '';
-  let currentIssue = '';
-  let requirements = [];
-  let goal = '';
+  // Split text by code backticks first: `code`
+  const parts = text.split(/(`[^`]+`)/g);
 
-  const techLow = (technology || '').toLowerCase();
-  const titleClean = (title || 'Challenge').replace(/^\d+\.\s*/, '').replace(/^\[.*?\]\s*/, '').trim();
+  return parts.map((part, index) => {
+    if (part.startsWith('`') && part.endsWith('`')) {
+      const code = part.slice(1, -1);
+      return (
+        <code 
+          key={index} 
+          className="px-1.5 py-0.5 mx-0.5 rounded text-[12px] font-mono bg-slate-800 text-cyan-300 border border-slate-700/60"
+        >
+          {code}
+        </code>
+      );
+    }
 
-  const isFrontend = techLow.includes('react') || techLow.includes('css') || techLow.includes('html') || techLow.includes('web') || techLow.includes('styling') || techLow.includes('controlled');
-  const isSql = techLow.includes('sql') || techLow.includes('database');
-  const isBackend = techLow.includes('python') || techLow.includes('django') || techLow.includes('node') || techLow.includes('api') || techLow.includes('fastapi');
-
-  // Parse description if it has explicit Requirements / Goal sections
-  if (cleanDesc.includes('Requirements:') || cleanDesc.includes('Requirements')) {
-    const parts = cleanDesc.split(/Requirements:?/i);
-    context = parts[0].trim();
-    const reqText = parts[1] || '';
-
-    const lines = reqText.split('\n').map(l => l.trim()).filter(Boolean);
-    lines.forEach(line => {
-      if (line.toLowerCase().startsWith('goal:')) {
-        goal = line.replace(/^goal:?/i, '').trim();
-      } else {
-        const cleanedLine = line.replace(/^[-*•]\s*/, '').trim();
-        if (cleanedLine) requirements.push(cleanedLine);
+    // Split bold: **bold**
+    const boldParts = part.split(/(\*\*[^*]+\*\*)/g);
+    return boldParts.map((bPart, bIndex) => {
+      if (bPart.startsWith('**') && bPart.endsWith('**')) {
+        return (
+          <strong key={`${index}-${bIndex}`} className="font-semibold text-slate-100">
+            {bPart.slice(2, -2)}
+          </strong>
+        );
       }
+      return bPart;
     });
-  } else {
-    context = cleanDesc;
-  }
+  });
+}
 
-  // Ensure Context is structured and clear
-  if (!context || context.length < 15) {
-    if (isFrontend) {
-      context = `The application renders a ${titleClean} component designed to provide real-time user interface interaction and state updates.`;
-    } else if (isSql) {
-      context = `The database contains records supporting the ${titleClean} reporting workflow to generate structured data output.`;
-    } else if (isBackend) {
-      context = `The backend service implements ${titleClean} endpoints to process incoming requests and manage data integrity.`;
-    } else {
-      context = `The system implements ${titleClean} logic to perform required data operations and produce expected results.`;
+/**
+ * Parse structured bug report markdown or fallback to clean sections
+ */
+export function parseProblemStatement(description = '', title = '', technology = '', category = '') {
+  const raw = (description || '').trim();
+  const techLow = (technology || '').toLowerCase();
+  const cleanTitle = (title || 'Challenge').replace(/^\[.*?\]\s*/, '').replace(/^\d+\.\s*/, '').trim();
+
+  const isFrontend = techLow.includes('react') || techLow.includes('css') || techLow.includes('html') || techLow.includes('frontend') || techLow.includes('web');
+  const isSql = techLow.includes('sql') || techLow.includes('database');
+  const isBackend = techLow.includes('python') || techLow.includes('django') || techLow.includes('node') || techLow.includes('api');
+
+  // Check if text has markdown headings (### )
+  const sections = {};
+  const currentSection = { name: 'scenario', lines: [] };
+  
+  if (raw.includes('###')) {
+    const lines = raw.split('\n');
+    let currentKey = 'scenario';
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      const lower = trimmed.toLowerCase();
+
+      if (lower.startsWith('### company scenario') || lower.startsWith('### scenario')) {
+        currentKey = 'scenario';
+        if (!sections[currentKey]) sections[currentKey] = [];
+      } else if (lower.startsWith('### bug report') || lower.startsWith('### current issue') || lower.startsWith('### defect')) {
+        currentKey = 'bugReport';
+        if (!sections[currentKey]) sections[currentKey] = [];
+      } else if (lower.startsWith('### steps to reproduce')) {
+        currentKey = 'reproduce';
+        if (!sections[currentKey]) sections[currentKey] = [];
+      } else if (lower.startsWith('### expected behavior') || lower.startsWith('### expected')) {
+        currentKey = 'expected';
+        if (!sections[currentKey]) sections[currentKey] = [];
+      } else if (lower.startsWith('### actual behavior') || lower.startsWith('### actual')) {
+        currentKey = 'actual';
+        if (!sections[currentKey]) sections[currentKey] = [];
+      } else if (lower.startsWith('### impact')) {
+        currentKey = 'impact';
+        if (!sections[currentKey]) sections[currentKey] = [];
+      } else if (lower.startsWith('### requirements') || lower.startsWith('### requirement')) {
+        currentKey = 'requirements';
+        if (!sections[currentKey]) sections[currentKey] = [];
+      } else if (lower.startsWith('### example') || lower.startsWith('### test case')) {
+        currentKey = 'examples';
+        if (!sections[currentKey]) sections[currentKey] = [];
+      } else {
+        if (!sections[currentKey]) sections[currentKey] = [];
+        sections[currentKey].push(line);
+      }
     }
   }
 
-  // Synthesize Current Issue
-  if (isFrontend) {
-    currentIssue = `The current implementation has functional issues under specific user interactions or state updates. Identify and fix the defects in the ${titleClean} component while preserving the existing UI styling and architecture.`;
-  } else if (isSql) {
-    currentIssue = `The current query fails to return expected result sets due to incorrect filtering, missing joins, or improper clause ordering. Identify and fix the query statement to return accurate records.`;
-  } else if (isBackend) {
-    currentIssue = `The server handler fails to process payloads or returns invalid responses under edge cases. Identify and resolve the bug in the API logic.`;
-  } else {
-    currentIssue = `The current implementation contains one or more logic bugs causing invalid return values. Identify and fix the defects to satisfy problem assertions.`;
+  // Helper to join and clean lines
+  const getSectionText = (key) => {
+    if (!sections[key] || sections[key].length === 0) return '';
+    return sections[key].join('\n').trim();
+  };
+
+  let scenario = getSectionText('scenario');
+  let bugReport = getSectionText('bugReport');
+  let reproduceRaw = getSectionText('reproduce');
+  let expected = getSectionText('expected');
+  let actual = getSectionText('actual');
+  let impact = getSectionText('impact');
+  let reqsRaw = getSectionText('requirements');
+  let examplesRaw = getSectionText('examples');
+
+  // If not parsed by ### headers, attempt legacy split by "Requirements:"
+  if (!scenario && !bugReport && !expected && !reqsRaw) {
+    if (raw.includes('Requirements:') || raw.includes('Requirements')) {
+      const parts = raw.split(/Requirements:?/i);
+      scenario = parts[0].trim();
+      reqsRaw = parts[1] || '';
+    } else {
+      scenario = raw;
+    }
   }
 
-  // Ensure Requirements bullet points are detailed and problem-specific
+  // Parse reproduce steps into array
+  const reproduceSteps = [];
+  if (reproduceRaw) {
+    const lines = reproduceRaw.split('\n');
+    for (const l of lines) {
+      const step = l.trim().replace(/^\d+[\.\)]\s*/, '').replace(/^[-*•]\s*/, '').trim();
+      if (step) reproduceSteps.push(step);
+    }
+  }
+
+  // Parse requirements into array
+  const requirements = [];
+  if (reqsRaw) {
+    const lines = reqsRaw.split('\n');
+    for (const l of lines) {
+      const req = l.trim().replace(/^[-*•]\s*/, '').trim();
+      if (req && !req.toLowerCase().startsWith('goal:')) {
+        requirements.push(req);
+      }
+    }
+  }
+
+  // Fallbacks if missing
+  if (!scenario) {
+    if (isFrontend) {
+      scenario = `In a production client application, users interact with the ${cleanTitle} component to view and manage state dynamically.`;
+    } else if (isSql) {
+      scenario = `A production analytics and reporting pipeline relies on ${cleanTitle} queries to extract accurate records from the database.`;
+    } else {
+      scenario = `A core production service executes ${cleanTitle} logic to handle critical request payloads and data transactions.`;
+    }
+  }
+
+  if (!bugReport && !actual) {
+    if (isFrontend) {
+      bugReport = `The component fails to update or render expected state under specific interaction flows or boundary conditions.`;
+    } else if (isSql) {
+      bugReport = `The query returns incorrect results due to improper filtering, join conditions, or handling of NULL values.`;
+    } else {
+      bugReport = `The implementation produces incorrect outputs or throws unexpected exceptions under edge case inputs.`;
+    }
+  }
+
   if (requirements.length === 0) {
     if (isFrontend) {
-      requirements = [
-        `Render ${titleClean} UI controls cleanly according to visual design.`,
-        `Update component state dynamically in real time upon user interactions.`,
-        `Handle empty inputs and boundary conditions without crashing.`,
-        `Maintain case-insensitive filtering or responsive layout behavior where applicable.`,
-        `Ensure error fallback messages display correctly when zero items match.`
-      ];
+      requirements.push(
+        `Ensure ${cleanTitle} renders correctly and updates state dynamically upon user interaction.`,
+        `Handle boundary inputs and edge cases without runtime errors.`
+      );
     } else if (isSql) {
-      requirements = [
-        `Select exact table columns required for the target query output.`,
-        `Apply precise filter constraints to exclude invalid or unwanted records.`,
-        `Ensure table join conditions and aggregate groupings execute correctly.`,
-        `Sort results in expected ascending or descending order.`,
-        `Handle NULL values and missing relational records gracefully.`
-      ];
-    } else if (isBackend) {
-      requirements = [
-        `Validate incoming request parameters and body payload structures.`,
-        `Process target operations and mutate database records accurately.`,
-        `Return standard HTTP response status codes and structured JSON payloads.`,
-        `Handle validation errors and invalid inputs with proper error messages.`
-      ];
+      requirements.push(
+        `Update the SQL query to return the exact columns and rows required.`,
+        `Ensure proper filtering, joins, and correct handling of NULL values.`
+      );
     } else {
-      requirements = [
-        `Process input parameters and execute target algorithms accurately.`,
-        `Return expected data structures and calculation outputs.`,
-        `Handle boundary inputs and edge cases without runtime exceptions.`
-      ];
-    }
-  }
-
-  // Synthesize Goal
-  if (!goal) {
-    if (isFrontend) {
-      goal = `Fix the ${titleClean} component functionality so it behaves correctly for normal interactions and relevant edge cases.`;
-    } else if (isSql) {
-      goal = `Correct the ${titleClean} SQL statement to return the exact expected record set, schema, and row order.`;
-    } else if (isBackend) {
-      goal = `Resolve the issue in ${titleClean} to ensure proper request processing, data integrity, and error handling.`;
-    } else {
-      goal = `Fix the logic for ${titleClean} so all input conditions and test assertions pass cleanly.`;
+      requirements.push(
+        `Identify and fix the defect in ${cleanTitle} logic.`,
+        `Ensure all visible and hidden evaluation test assertions pass cleanly.`
+      );
     }
   }
 
   return {
-    title: titleClean,
-    context,
-    currentIssue,
+    scenario,
+    bugReport,
+    reproduceSteps,
+    expected,
+    actual,
+    impact,
     requirements,
-    goal
+    examplesRaw
   };
 }
 
-export default function ProblemStatementFormatter({ description = '', title = '', technology = '', category = '' }) {
-  const statement = parseProblemStatement(description, title, technology, category);
+export default function ProblemStatementFormatter({ 
+  description = '', 
+  title = '', 
+  technology = '', 
+  category = '' 
+}) {
+  const parsed = parseProblemStatement(description, title, technology, category);
 
   return (
-    <div className="space-y-4 text-xs text-slate-300 font-sans leading-relaxed">
-      {/* 1. Context Section */}
-      <div className="space-y-1.5">
-        <h4 className="text-[11px] font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-          <Info className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Context</span>
-        </h4>
-        <p className="text-slate-300 leading-normal">{statement.context}</p>
-      </div>
+    <div className="space-y-5 text-slate-300 text-[13px] leading-relaxed font-sans select-text">
+      {/* 1. Company Scenario / Problem Introduction (LeetCode Style prose) */}
+      {parsed.scenario && (
+        <div className="space-y-1.5 text-slate-200">
+          <p className="leading-relaxed">
+            {formatInlineText(parsed.scenario)}
+          </p>
+        </div>
+      )}
 
-      {/* 2. Current Issue Section */}
-      <div className="space-y-1.5">
-        <h4 className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-          <span>Current Issue</span>
-        </h4>
-        <p className="text-slate-300 leading-normal">{statement.currentIssue}</p>
-      </div>
+      {/* 2. Bug Report / Defect Description */}
+      {parsed.bugReport && (
+        <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/90 shadow-sm space-y-1.5">
+          <div className="flex items-center gap-2 text-amber-400 font-semibold text-xs uppercase tracking-wider">
+            <Bug className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span>Defect Observed</span>
+          </div>
+          <p className="text-slate-300 text-xs leading-normal">
+            {formatInlineText(parsed.bugReport)}
+          </p>
+        </div>
+      )}
 
-      {/* 3. Requirements Section */}
-      <div className="space-y-2">
-        <h4 className="text-[11px] font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-          <ListChecks className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Requirements</span>
-        </h4>
-        <ul className="space-y-1.5 pl-1">
-          {statement.requirements.map((req, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-slate-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
-              <span className="leading-normal">{req}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/* 3. Steps to Reproduce */}
+      {parsed.reproduceSteps.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5 text-slate-400 font-semibold text-xs uppercase tracking-wider">
+            <ListOrdered className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span>Steps to Reproduce</span>
+          </div>
+          <ol className="space-y-1.5 pl-1">
+            {parsed.reproduceSteps.map((step, idx) => (
+              <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-300">
+                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-slate-800 text-cyan-400 text-[10px] font-mono font-bold shrink-0 mt-0.5">
+                  {idx + 1}
+                </span>
+                <span className="leading-normal">{formatInlineText(step)}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
 
-      {/* 4. Goal Section */}
-      <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
-        <h4 className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
-          <Target className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Goal</span>
-        </h4>
-        <p className="text-slate-300 leading-normal font-medium">{statement.goal}</p>
-      </div>
+      {/* 4. Expected vs Actual Comparison (LeetCode Contrast Cards) */}
+      {(parsed.expected || parsed.actual) && (
+        <div className="grid grid-cols-1 gap-2.5 pt-1">
+          {parsed.expected && (
+            <div className="p-3 rounded-xl bg-emerald-950/15 border border-emerald-500/25 space-y-1">
+              <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-xs">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>Expected Behavior</span>
+              </div>
+              <p className="text-slate-300 text-xs leading-normal pl-5">
+                {formatInlineText(parsed.expected)}
+              </p>
+            </div>
+          )}
+
+          {parsed.actual && (
+            <div className="p-3 rounded-xl bg-rose-950/15 border border-rose-500/25 space-y-1">
+              <div className="flex items-center gap-1.5 text-rose-400 font-semibold text-xs">
+                <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                <span>Actual Behavior (Defect)</span>
+              </div>
+              <p className="text-slate-300 text-xs leading-normal pl-5">
+                {formatInlineText(parsed.actual)}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 5. Business / System Impact */}
+      {parsed.impact && (
+        <div className="p-3 rounded-xl bg-amber-950/15 border border-amber-500/20 text-xs space-y-1">
+          <div className="flex items-center gap-1.5 text-amber-400 font-semibold text-[11px] uppercase tracking-wider">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span>Production Impact</span>
+          </div>
+          <p className="text-slate-300 leading-normal pl-5">
+            {formatInlineText(parsed.impact)}
+          </p>
+        </div>
+      )}
+
+      {/* 6. Requirements */}
+      {parsed.requirements.length > 0 && (
+        <div className="space-y-2 pt-1 border-t border-slate-800/80">
+          <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-xs uppercase tracking-wider">
+            <CheckSquare className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span>Requirements</span>
+          </div>
+          <ul className="space-y-1.5 pl-1">
+            {parsed.requirements.map((req, idx) => (
+              <li key={idx} className="flex items-start gap-2 text-xs text-slate-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
+                <span className="leading-normal">{formatInlineText(req)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

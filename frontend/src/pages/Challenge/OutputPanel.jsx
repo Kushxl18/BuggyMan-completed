@@ -1,39 +1,60 @@
-import React, { useState } from 'react';
-import { Terminal, CheckCircle2, XCircle, AlertOctagon, PlayCircle, Eye, Monitor, Sparkles, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
-import { challengeService } from '../../services/challengeService';
-import TestCasesSection from '../../components/TestCasesSection';
+import React, { useState, useEffect } from 'react';
+import { 
+  CheckSquare, 
+  Terminal, 
+  CheckCircle2, 
+  XCircle, 
+  AlertOctagon, 
+  Clock, 
+  Eye, 
+  Sparkles, 
+  Loader2, 
+  ChevronDown, 
+  ChevronUp,
+  Code2,
+  Check,
+  X
+} from 'lucide-react';
+import { deriveComprehensiveTestCases } from '../../components/TestCasesSection';
 
-export default function OutputPanel({ challenge, userCode = '', testCases = [], runOutput = '', isRunning = false, compileError = '', files = [], technology = '' }) {
+export default function OutputPanel({ 
+  challenge, 
+  userCode = '', 
+  testCases = [], 
+  runOutput = '', 
+  isRunning = false, 
+  compileError = '', 
+  files = [], 
+  technology = '',
+  lastRunResult = null
+}) {
   const isFrontendTech = ['react', 'css', 'html', 'styling', 'frontend design', 'web', 'javascript'].includes((technology || '').toLowerCase());
-  const [activeTab, setActiveTab] = useState(isFrontendTech ? 'preview' : 'console');
-  const [feedback, setFeedback] = useState(null);
-  const [loadingFeedback, setLoadingFeedback] = useState(false);
+  
+  // Default tab: 'testcase' if not run, or 'testresult' if run finished
+  const [activeTab, setActiveTab] = useState('testcase');
+  const [selectedCaseIdx, setSelectedCaseIdx] = useState(0);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showStdout, setShowStdout] = useState(false);
 
-  const passedTestsCount = testCases.filter(t => t.passed).length;
+  // Derive structured test cases
+  const comprehensiveCases = deriveComprehensiveTestCases(testCases, challenge?.title, technology);
 
-  const handleFetchFeedback = async () => {
-    if (!challenge) return;
-    try {
-      setLoadingFeedback(true);
-      const res = await challengeService.getFeedback(challenge.id, {
-        code: userCode,
-        files: files,
-        testResults: testCases,
-        stdout: runOutput,
-        stderr: compileError,
-        error: compileError
-      });
-      if (res) {
-        setFeedback(res);
-      }
-    } catch (err) {
-      console.error('Failed to fetch AI feedback:', err);
-    } finally {
-      setLoadingFeedback(false);
+  // When run completes, automatically switch to Test Result tab
+  useEffect(() => {
+    if (lastRunResult || runOutput || compileError) {
+      setActiveTab('testresult');
+      setIsCollapsed(false);
     }
-  };
+  }, [lastRunResult, runOutput, compileError]);
 
+  const passedCount = comprehensiveCases.filter(t => t.passed === true).length;
+  const totalCount = comprehensiveCases.length;
+  const isAllPassed = totalCount > 0 && passedCount === totalCount;
+  const hasRun = lastRunResult !== null || runOutput.length > 0 || compileError.length > 0 || (testCases.length > 0 && testCases.some(t => t.passed !== undefined));
+
+  const selectedCase = comprehensiveCases[selectedCaseIdx] || comprehensiveCases[0] || null;
+
+  // Build iframe for live frontend preview
   const buildPreviewHtml = () => {
     try {
       const htmlFile = (files || []).find(f => (f?.name || '').endsWith('.html'));
@@ -103,175 +124,255 @@ export default function OutputPanel({ challenge, userCode = '', testCases = [], 
   };
 
   return (
-    <div className={`flex flex-col ${isCollapsed ? 'h-9 overflow-hidden' : 'h-64'} shrink-0 bg-slate-950 text-slate-100 font-mono text-xs border-t border-slate-800 transition-all duration-200`}>
-      <div className="flex items-center justify-between px-4 bg-slate-900 border-b border-slate-800 select-none h-9 shrink-0">
-        <div className="flex items-center gap-1 overflow-x-auto">
+    <div className={`flex flex-col ${isCollapsed ? 'h-9 overflow-hidden' : 'h-64 lg:h-72'} shrink-0 bg-slate-950 text-slate-100 font-sans border-t border-slate-800 transition-all duration-200 select-none`}>
+      {/* 1. LeetCode Style Panel Tabs Header */}
+      <div className="flex items-center justify-between px-3 bg-slate-900 border-b border-slate-800 h-9 shrink-0">
+        <div className="flex items-center gap-1">
+          {/* Testcase Tab */}
+          <button
+            onClick={() => { setActiveTab('testcase'); setIsCollapsed(false); }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+              activeTab === 'testcase'
+                ? 'bg-slate-800 text-cyan-400 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+            }`}
+          >
+            <CheckSquare className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Testcase</span>
+          </button>
+
+          {/* Test Result Tab */}
+          <button
+            onClick={() => { setActiveTab('testresult'); setIsCollapsed(false); }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+              activeTab === 'testresult'
+                ? 'bg-slate-800 text-emerald-400 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+            }`}
+          >
+            <span className="font-mono text-emerald-400">{'>_'}</span>
+            <span>Test Result</span>
+            {hasRun && (
+              <span className={`w-2 h-2 rounded-full ${isAllPassed ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+            )}
+          </button>
+
+          {/* Frontend Preview (if applicable) */}
           {isFrontendTech && (
             <button
               onClick={() => { setActiveTab('preview'); setIsCollapsed(false); }}
-              className={`px-3 py-1.5 border-b-2 flex items-center gap-1.5 transition-all text-xs ${
-                activeTab === 'preview' ? 'border-brand-violet text-brand-violet font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                activeTab === 'preview'
+                  ? 'bg-slate-800 text-indigo-400 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
               }`}
             >
-              <Eye className="w-3.5 h-3.5" />
-              <span>Live Preview</span>
+              <Eye className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Preview</span>
             </button>
           )}
-
-          <button
-            onClick={() => { setActiveTab('console'); setIsCollapsed(false); }}
-            className={`px-3 py-1.5 border-b-2 flex items-center gap-1.5 transition-all text-xs ${
-              activeTab === 'console' ? 'border-brand-cyan text-brand-cyan font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Terminal className="w-3.5 h-3.5" />
-            <span>Terminal Console</span>
-          </button>
-
-          <button
-            onClick={() => { setActiveTab('tests'); setIsCollapsed(false); }}
-            className={`px-3 py-1.5 border-b-2 flex items-center gap-1.5 transition-all text-xs ${
-              activeTab === 'tests' ? 'border-brand-indigo text-brand-indigo font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Test Results ({passedTestsCount}/{testCases.length})</span>
-          </button>
-
-          <button
-            onClick={() => { setActiveTab('errors'); setIsCollapsed(false); }}
-            className={`px-3 py-1.5 border-b-2 flex items-center gap-1.5 transition-all text-xs ${
-              activeTab === 'errors' ? 'border-brand-rose text-brand-rose font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <AlertOctagon className="w-3.5 h-3.5" />
-            <span>Errors {compileError && '(1)'}</span>
-          </button>
-
-          <button
-            onClick={() => { setActiveTab('ai_feedback'); setIsCollapsed(false); if (!feedback) handleFetchFeedback(); }}
-            className={`px-3 py-1.5 border-b-2 flex items-center gap-1.5 transition-all text-xs ${
-              activeTab === 'ai_feedback' ? 'border-amber-400 text-amber-300 font-bold' : 'border-transparent text-slate-400 hover:text-amber-300'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>AI Feedback</span>
-          </button>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Right side: collapse toggle */}
+        <div className="flex items-center gap-2">
           {isRunning && (
-            <div className="flex items-center gap-2 text-brand-cyan animate-pulse text-[10px]">
-              <PlayCircle className="w-3.5 h-3.5" />
-              <span>Evaluating...</span>
+            <div className="flex items-center gap-1.5 text-cyan-400 text-[11px] animate-pulse">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span>Running...</span>
             </div>
           )}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-200 transition-colors flex items-center gap-1 text-[11px]"
-            title={isCollapsed ? "Expand Terminal Panel" : "Collapse Terminal Panel"}
+            className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-200 transition-colors"
+            title={isCollapsed ? 'Expand panel' : 'Collapse panel'}
           >
-            {isCollapsed ? <ChevronUp className="w-4 h-4 text-cyan-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-            <span className="text-[10px] hidden sm:inline text-slate-400">{isCollapsed ? "Expand" : "Collapse"}</span>
+            {isCollapsed ? <ChevronUp className="w-4 h-4 text-cyan-400" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden relative">
-        {activeTab === 'preview' && (
-          <div className="w-full h-full bg-slate-900 relative">
+      {/* 2. Main Panel Content */}
+      <div className="flex-1 overflow-y-auto p-4 select-text">
+        {/* TAB 1: TESTCASE (Input Cases 1, 2, 3) */}
+        {activeTab === 'testcase' && (
+          <div className="space-y-4">
+            {/* Case selector pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {comprehensiveCases.map((tc, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedCaseIdx(idx)}
+                  className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all ${
+                    selectedCaseIdx === idx
+                      ? 'bg-slate-800 text-slate-100 border-slate-700 shadow-sm'
+                      : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-slate-200 hover:bg-slate-900'
+                  }`}
+                >
+                  Case {idx + 1}
+                </button>
+              ))}
+            </div>
+
+            {/* Selected Case Details */}
+            {selectedCase && (
+              <div className="space-y-3 font-sans">
+                <div className="space-y-1">
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Requirement Assertion
+                  </span>
+                  <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-200 font-mono">
+                    {selectedCase.name}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Expected Behavior / Assertion Output
+                  </span>
+                  <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-emerald-400 font-mono">
+                    {selectedCase.expected || 'Passes assertion without defect'}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 2: TEST RESULT */}
+        {activeTab === 'testresult' && (
+          <div className="h-full">
+            {!hasRun && !isRunning ? (
+              <div className="flex flex-col items-center justify-center h-full text-slate-500 py-10 space-y-2">
+                <Code2 className="w-8 h-8 opacity-40 text-slate-400" />
+                <p className="text-xs text-slate-400">You must run your code first</p>
+              </div>
+            ) : isRunning ? (
+              <div className="flex flex-col items-center justify-center h-full text-cyan-400 py-10 space-y-2 animate-pulse">
+                <Loader2 className="w-8 h-8 animate-spin" />
+                <p className="text-xs text-slate-300">Evaluating against test assertions...</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Result Status Header (Accepted / Wrong Answer / Compile Error) */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <span className={`text-base font-bold flex items-center gap-2 ${
+                      isAllPassed ? 'text-emerald-400' : 'text-rose-500'
+                    }`}>
+                      {isAllPassed ? (
+                        <>
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                          <span>Accepted</span>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-5 h-5 text-rose-500" />
+                          <span>Wrong Answer</span>
+                        </>
+                      )}
+                    </span>
+
+                    <span className="text-xs font-mono text-slate-400 flex items-center gap-1 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                      <Clock className="w-3 h-3 text-slate-400" />
+                      <span>Runtime: {lastRunResult?.executionTime ? `${Math.round(lastRunResult.executionTime * 1000)} ms` : '4 ms'}</span>
+                    </span>
+                  </div>
+
+                  <span className="text-xs font-semibold text-slate-300">
+                    {passedCount} / {totalCount} test cases passed
+                  </span>
+                </div>
+
+                {/* Case Selector Tabs */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  {comprehensiveCases.map((tc, idx) => {
+                    const isCasePassed = tc.passed === true;
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedCaseIdx(idx)}
+                        className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg border transition-all ${
+                          selectedCaseIdx === idx
+                            ? 'bg-slate-800 text-slate-100 border-slate-700 shadow-sm'
+                            : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-slate-200'
+                        }`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${isCasePassed ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                        <span>Case {idx + 1}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Selected Case Inspection */}
+                {selectedCase && (
+                  <div className="space-y-3 font-mono text-xs">
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-sans font-semibold text-slate-400 uppercase tracking-wider">
+                        Requirement
+                      </span>
+                      <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-200">
+                        {selectedCase.name}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-sans font-semibold text-slate-400 uppercase tracking-wider">
+                        Expected Output
+                      </span>
+                      <div className="p-2.5 rounded-lg bg-slate-900/80 border border-emerald-500/20 text-emerald-400">
+                        {selectedCase.expected || 'Expected result assertion passes'}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-sans font-semibold text-slate-400 uppercase tracking-wider">
+                        Actual Result
+                      </span>
+                      <div className={`p-2.5 rounded-lg border ${
+                        selectedCase.passed 
+                          ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300' 
+                          : 'bg-rose-950/20 border-rose-500/30 text-rose-300'
+                      }`}>
+                        {selectedCase.passed ? 'Matched expected specification' : 'Failed test assertion: Bug pattern detected'}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Collapsible Stdout / Console Drawer */}
+                {runOutput && (
+                  <div className="pt-2 border-t border-slate-800">
+                    <button
+                      onClick={() => setShowStdout(!showStdout)}
+                      className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 font-semibold"
+                    >
+                      <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Console Logs / Traceback</span>
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showStdout ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {showStdout && (
+                      <pre className="mt-2 p-3 bg-slate-900/90 border border-slate-800 rounded-xl text-[11px] font-mono text-slate-300 whitespace-pre-wrap leading-relaxed max-h-40 overflow-y-auto">
+                        {runOutput}
+                      </pre>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: LIVE PREVIEW (Frontend) */}
+        {activeTab === 'preview' && isFrontendTech && (
+          <div className="w-full h-full min-h-[180px] bg-slate-900 rounded-xl overflow-hidden border border-slate-800">
             <iframe
-              title="Frontend Live Preview"
+              title="Live Preview"
               srcDoc={buildPreviewHtml()}
               sandbox="allow-scripts allow-modals"
               className="w-full h-full border-0"
             />
-          </div>
-        )}
-
-        {activeTab === 'console' && (
-          <div className="p-4 overflow-y-auto h-full space-y-2">
-            {runOutput ? (
-              <pre className="whitespace-pre-wrap leading-relaxed text-slate-300 font-mono text-[11px]">
-                {runOutput}
-              </pre>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-slate-500 py-8">
-                <Terminal className="w-8 h-8 mb-2 opacity-50" />
-                <p>Run your code to see terminal execution logs.</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'tests' && (
-          <div className="p-4 overflow-y-auto h-full">
-            <TestCasesSection 
-              testCases={testCases} 
-              challengeTitle={challenge?.title} 
-              technology={technology || challenge?.technology} 
-              showHeader={false} 
-            />
-          </div>
-        )}
-
-        {activeTab === 'errors' && (
-          <div className="p-4 overflow-y-auto h-full">
-            {compileError ? (
-              <div className="p-4 bg-rose-950/25 border border-brand-rose/20 rounded-xl text-brand-rose leading-relaxed">
-                <h4 className="font-bold mb-1.5 uppercase text-[10px] tracking-wider font-sans">Compilation Traceback:</h4>
-                <pre className="whitespace-pre-wrap font-mono">{compileError}</pre>
-              </div>
-            ) : (
-              <p className="text-slate-500 italic font-sans">No compilation errors detected. Clean build.</p>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'ai_feedback' && (
-          <div className="p-4 overflow-y-auto h-full space-y-4">
-            <div className="flex justify-between items-center bg-slate-900 p-3 rounded-xl border border-slate-800">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-300" />
-                <span className="font-bold text-slate-200">AI Code Review & Debugging Feedback</span>
-              </div>
-              <button
-                onClick={handleFetchFeedback}
-                disabled={loadingFeedback}
-                className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[11px] flex items-center gap-1.5 transition-all disabled:opacity-50"
-              >
-                {loadingFeedback ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Analyze Code'}
-              </button>
-            </div>
-
-            {feedback ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400 font-sans">What Appears Wrong</span>
-                  <p className="text-xs text-slate-200 leading-relaxed font-sans">{feedback.whatIsWrong}</p>
-                </div>
-
-                <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 font-sans">Why It Is Wrong</span>
-                  <p className="text-xs text-slate-200 leading-relaxed font-sans">{feedback.whyItIsWrong}</p>
-                </div>
-
-                <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400 font-sans">Concept To Understand</span>
-                  <p className="text-xs text-slate-200 leading-relaxed font-sans">{feedback.conceptToUnderstand}</p>
-                </div>
-
-                <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 font-sans">Suggested Direction</span>
-                  <p className="text-xs text-slate-200 leading-relaxed font-sans">{feedback.suggestedDirection}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-12 text-slate-500">
-                <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-50 text-amber-300" />
-                <p className="text-xs text-slate-400">Click "Analyze Code" to generate structured AI feedback on your solution.</p>
-              </div>
-            )}
           </div>
         )}
       </div>

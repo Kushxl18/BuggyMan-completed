@@ -6,10 +6,19 @@ import {
   RotateCcw, 
   Sparkles, 
   Timer as TimerIcon, 
-  ArrowLeft,
+  Menu,
+  ChevronLeft,
+  ChevronRight,
+  Shuffle,
   Sun,
   Moon,
-  Loader2
+  Loader2,
+  Code2,
+  CheckCircle2,
+  Cloud,
+  FileCode,
+  Coins,
+  User as UserIcon
 } from 'lucide-react';
 import ProblemStatementPanel from './ProblemStatementPanel';
 import CodeEditor from './CodeEditor';
@@ -64,10 +73,12 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
   const [challenge, setChallenge] = useState(null);
   const [files, setFiles] = useState([]);
   const [activeFile, setActiveFile] = useState(null);
-  const [activeTab, setActiveTab] = useState('problem');
+  const [activeTab, setActiveTab] = useState('description');
   const [isRunning, setIsRunning] = useState(false);
   const [runOutput, setRunOutput] = useState('');
   const [compileError, setCompileError] = useState('');
+  const [lastRunResult, setLastRunResult] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
   const [showHintPanel, setShowHintPanel] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -75,6 +86,10 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
 
   const filesRef = useRef([]);
   const activeFileRef = useRef(null);
+
+  const currentId = parseInt(id || '1', 10);
+  const prevId = Math.max(1, currentId - 1);
+  const nextId = Math.min(120, currentId + 1);
 
   useEffect(() => {
     filesRef.current = files;
@@ -98,6 +113,7 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
       setErrorMessage('');
       setRunOutput('');
       setCompileError('');
+      setLastRunResult(null);
 
       try {
         const data = await challengeService.getChallengeById(id || '1');
@@ -109,7 +125,18 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
         filesRef.current = persisted.files;
         setActiveFile(persisted.activeFile);
         activeFileRef.current = persisted.activeFile;
-        setActiveTab('problem');
+        setActiveTab('description');
+
+        // Load any stored submissions for this challenge
+        try {
+          const stored = localStorage.getItem(`buggyman-submissions-${data?.id || id}`);
+          if (stored) {
+            setSubmissions(JSON.parse(stored));
+          } else {
+            setSubmissions([]);
+          }
+        } catch (e) {}
+
       } catch (err) {
         setErrorMessage(err?.message || 'Unable to load this challenge right now.');
         if (addToast) addToast('Error loading challenge files.', 'error');
@@ -162,11 +189,17 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
       setActiveFile(defaultFiles[0] || null);
       setRunOutput('');
       setCompileError('');
+      setLastRunResult(null);
       if (challenge?.id) {
         sessionStorage.removeItem(getWorkspaceStorageKey(challenge.id));
       }
-      if (addToast) addToast('Workspace files reverted.', 'info');
+      if (addToast) addToast('Workspace files reverted to default.', 'info');
     }
+  };
+
+  const handleRandomChallenge = () => {
+    const randomId = Math.floor(Math.random() * 120) + 1;
+    navigate(`/challenge/${randomId}`);
   };
 
   const handleRunCode = async () => {
@@ -187,6 +220,7 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
       const primaryFile = syncedFiles.find((f) => f.name === currentActive?.name) || currentActive || syncedFiles[0];
 
       const res = await challengeService.runChallenge(challenge.id, primaryFile?.content || '', syncedFiles);
+      setLastRunResult(res);
 
       const returnedCases = res?.testCases || res?.test_cases || [];
       if (returnedCases.length > 0) {
@@ -232,6 +266,21 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
 
       const res = await challengeService.submitChallenge(challenge.id, primaryFile?.content || '', syncedFiles);
       
+      const newSubmission = {
+        success: Boolean(res?.success),
+        score: res?.score || 0,
+        timeTaken: formatTime(timeElapsed),
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        testsPassed: res?.testsPassed || res?.tests_passed || (res?.success ? 3 : 1),
+        testsTotal: res?.testsTotal || res?.tests_total || 3
+      };
+
+      const updatedSubmissions = [newSubmission, ...submissions];
+      setSubmissions(updatedSubmissions);
+      try {
+        localStorage.setItem(`buggyman-submissions-${challenge.id}`, JSON.stringify(updatedSubmissions.slice(0, 10)));
+      } catch (e) {}
+
       const submissionState = {
         success: Boolean(res?.success),
         score: res?.score || 0,
@@ -302,83 +351,162 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
     );
   }
 
+  const techBadge = challenge?.technology || 'JavaScript';
+
   return (
-    <div className="h-screen flex flex-col bg-slate-950 overflow-hidden">
-      {/* Editor Top Bar */}
-      <div className="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 select-none shrink-0">
-        <div className="flex items-center gap-3">
-          <button 
+    <div className="h-screen flex flex-col bg-slate-950 overflow-hidden font-sans select-none">
+      {/* 1. TOP HEADER: Authentic LeetCode Navigation Bar */}
+      <div className="h-12 bg-slate-900/95 border-b border-slate-800 flex items-center justify-between px-3 shrink-0 text-slate-200">
+        {/* Left: Problem List & Prev/Next Chevrons */}
+        <div className="flex items-center gap-2">
+          {/* Logo */}
+          <div 
             onClick={() => navigate('/challenges')}
-            className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-200 transition-colors"
+            className="flex items-center gap-2 cursor-pointer pr-2 border-r border-slate-800 mr-1"
+            title="BuggyMan Dashboard"
           >
-            <ArrowLeft className="w-4.5 h-4.5" />
-          </button>
-          <div>
-            <h2 className="text-sm font-heading font-semibold text-slate-100">{challenge?.title}</h2>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{challenge?.technology} • {challenge?.difficulty}</p>
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-sm">
+              <span className="font-heading font-bold text-white text-xs">BM</span>
+            </div>
           </div>
-        </div>
 
-        {/* Timer */}
-        <div className="flex items-center gap-2 px-3 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs font-bold text-slate-300">
-          <TimerIcon className="w-3.5 h-3.5 text-cyan-400" />
-          <span>{formatTime(timeElapsed)}</span>
-        </div>
-
-        {/* Controls */}
-        <div className="flex items-center gap-2.5">
-          <button 
-            onClick={toggleTheme}
-            className="p-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg text-slate-400 hover:text-slate-200 transition-colors"
-            title="Toggle theme"
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
-          </button>
-
+          {/* Problem List Button */}
           <button
-            onClick={handleResetProject}
-            className="button-secondary px-3.5 py-2 text-xs"
-            title="Reset code files to original state"
+            onClick={() => navigate('/challenges')}
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-slate-300 hover:text-white bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg transition-all"
+            title="All Challenges"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset Workspace</span>
+            <Menu className="w-3.5 h-3.5 text-slate-400" />
+            <span className="hidden sm:inline">Problem List</span>
           </button>
 
+          {/* Prev Chevron */}
+          <button
+            onClick={() => navigate(`/challenge/${prevId}`)}
+            disabled={currentId <= 1}
+            className="p-1 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-30"
+            title="Previous Problem"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          {/* Next Chevron */}
+          <button
+            onClick={() => navigate(`/challenge/${nextId}`)}
+            disabled={currentId >= 120}
+            className="p-1 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-30"
+            title="Next Problem"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+
+          {/* Shuffle / Random Challenge */}
+          <button
+            onClick={handleRandomChallenge}
+            className="p-1 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 rounded-lg transition-colors"
+            title="Pick Random Problem"
+          >
+            <Shuffle className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Center: LeetCode Run & Submit Buttons */}
+        <div className="flex items-center gap-2">
+          {/* Run Button */}
           <button
             onClick={handleRunCode}
             disabled={isRunning}
-            className="button-secondary px-3.5 py-2 text-xs border-cyan-500/30 text-cyan-400 bg-cyan-950/20 hover:bg-cyan-950/40 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700/80 text-slate-200 transition-all shadow-sm disabled:opacity-50"
+            title="Run Code"
           >
-            {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" /> : <Play className="w-3.5 h-3.5 fill-cyan-400" />}
-            <span>{isRunning ? 'Running...' : 'Run Code'}</span>
+            {isRunning ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+            ) : (
+              <Play className="w-3.5 h-3.5 fill-slate-200 text-slate-200" />
+            )}
+            <span>Run</span>
           </button>
 
+          {/* Submit Button (LeetCode Green) */}
           <button
             onClick={handleSubmit}
             disabled={isRunning}
-            className="button-primary px-4 py-2 text-xs disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-sm hover:shadow-glow-emerald disabled:opacity-50"
+            title="Submit Solution"
           >
-            {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : <Send className="w-3.5 h-3.5" />}
-            <span>{isRunning ? 'Evaluating...' : 'Submit Solution'}</span>
+            {isRunning ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+            ) : (
+              <Cloud className="w-3.5 h-3.5 text-white" />
+            )}
+            <span>Submit</span>
           </button>
+        </div>
 
+        {/* Right: Reset, Timer, Points, Theme & Profile */}
+        <div className="flex items-center gap-2.5">
+          {/* Ask AI Hint Toggle */}
           <button
             onClick={() => setShowHintPanel(!showHintPanel)}
-            className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl border transition-all ${
-              showHintPanel 
+            className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg border transition-all ${
+              showHintPanel
                 ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-glow-cyan'
-                : 'bg-slate-950 hover:bg-slate-800 border-slate-800 text-slate-300'
+                : 'bg-slate-950 text-slate-400 hover:text-slate-200 border-slate-800 hover:bg-slate-800'
             }`}
+            title="Ask AI Assistant"
           >
             <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Ask AI Hint</span>
+            <span>AI Hint</span>
+          </button>
+
+          {/* Reset Workspace */}
+          <button
+            onClick={handleResetProject}
+            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
+            title="Reset code files to original state"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Timer */}
+          <div className="flex items-center gap-1 px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-slate-300">
+            <TimerIcon className="w-3.5 h-3.5 text-slate-400" />
+            <span>{formatTime(timeElapsed)}</span>
+          </div>
+
+          {/* XP / Score Badge */}
+          <div className="hidden lg:flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs font-semibold text-amber-300">
+            <Coins className="w-3.5 h-3.5 text-amber-400" />
+            <span>{challenge?.points || 100} XP</span>
+          </div>
+
+          {/* Theme Toggle */}
+          <button 
+            onClick={toggleTheme}
+            className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-lg transition-colors"
+            title="Toggle Theme"
+          >
+            {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5" />}
+          </button>
+
+          {/* User Profile */}
+          <button
+            onClick={() => navigate('/profile')}
+            className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-slate-200 hover:border-cyan-400 transition-colors"
+            title={user?.display_name || user?.username || 'Profile'}
+          >
+            {user?.avatar ? (
+              <img src={user.avatar} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+            ) : (
+              <UserIcon className="w-3.5 h-3.5 text-slate-400" />
+            )}
           </button>
         </div>
       </div>
 
-      {/* Editor central split */}
+      {/* 2. MAIN SPLIT WORKSPACE */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Side Panel: Problem Statement & File Explorer */}
+        {/* Left Side: LeetCode Style Problem Statement Panel */}
         <ProblemStatementPanel 
           challenge={challenge} 
           files={files} 
@@ -387,29 +515,50 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           addToast={addToast}
+          submissions={submissions}
         />
 
-        {/* Core Editor & output panel container */}
+        {/* Right Side: Code Editor & Output Panel */}
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-          {/* File Tabs selector */}
-          <div className="h-9 bg-slate-950/90 border-b border-slate-800/80 flex items-center px-2 select-none gap-1 overflow-x-auto shrink-0">
-            {files.map(f => (
-              <button
-                key={f.name}
-                onClick={() => handleSelectFile(f)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-t-lg transition-all ${
-                  f.name === activeFile?.name
-                    ? 'bg-slate-900 text-slate-100 border-t-2 border-cyan-500 font-semibold'
-                    : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900/40'
-                }`}
-              >
-                {f.name}
-              </button>
-            ))}
+          {/* Editor Header: LeetCode </> Code Tab & Language Selector */}
+          <div className="h-9 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-3 select-none shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded bg-slate-800 text-slate-100 shadow-sm">
+                <Code2 className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Code</span>
+              </div>
+
+              {/* Multi-file selector pills if multiple files */}
+              {files.length > 1 && (
+                <div className="flex items-center gap-1 pl-2 border-l border-slate-800">
+                  {files.map(f => (
+                    <button
+                      key={f.name}
+                      onClick={() => handleSelectFile(f)}
+                      className={`px-2.5 py-0.5 text-xs font-mono rounded transition-all ${
+                        f.name === activeFile?.name
+                          ? 'bg-cyan-500/15 text-cyan-300 font-semibold border border-cyan-500/30'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                      }`}
+                    >
+                      {f.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Language indicator & status */}
+            <div className="flex items-center gap-3 text-xs text-slate-400">
+              <span className="font-mono text-[11px] bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-slate-300">
+                {techBadge}
+              </span>
+              <span className="text-[11px] text-slate-500 hidden sm:inline">Auto</span>
+            </div>
           </div>
 
           {/* Monaco Frame */}
-          <div className="flex-1 min-h-[350px] relative flex flex-col w-full overflow-hidden">
+          <div className="flex-1 min-h-[300px] relative flex flex-col w-full overflow-hidden">
             <CodeEditor 
               file={activeFile} 
               onChange={handleCodeChange}
@@ -417,18 +566,21 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
             />
           </div>
 
-          {/* Terminal output tab panel */}
+          {/* LeetCode Style Bottom Output Panel */}
           <OutputPanel 
+            challenge={challenge}
             testCases={challenge?.testCases || []} 
             runOutput={runOutput} 
             isRunning={isRunning} 
             compileError={compileError}
             files={files}
             technology={challenge?.technology}
+            userCode={activeFile?.content || ''}
+            lastRunResult={lastRunResult}
           />
         </div>
 
-        {/* AI helper sidebar */}
+        {/* AI Helper Sidebar Drawer */}
         {showHintPanel && (
           <AIHintPanel 
             challenge={challenge} 

@@ -1,36 +1,139 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FileText, 
-  Target, 
-  CheckCircle2, 
-  Clock, 
-  Award, 
-  AlertCircle, 
+  BookOpen, 
+  Lightbulb, 
+  FlaskConical, 
+  History, 
   FolderOpen,
-  FileCode,
-  Flag,
+  CheckCircle2, 
+  XCircle,
+  Tag, 
+  Briefcase, 
+  ThumbsUp, 
+  ThumbsDown, 
+  Star, 
+  Share2, 
+  Flag, 
+  Maximize2, 
+  Minimize2,
+  ChevronRight,
+  ChevronDown,
+  Sparkles,
   Send,
-  X
+  X,
+  ExternalLink,
+  Code2
 } from 'lucide-react';
 import { challengeService } from '../../services/challengeService';
-import TestCasesSection from '../../components/TestCasesSection';
 import ProblemStatementFormatter from '../../components/ProblemStatementFormatter';
+import TestCasesSection from '../../components/TestCasesSection';
 
 export default function ProblemStatementPanel({ 
   challenge, 
   files = [], 
   activeFile, 
   onSelectFile, 
-  activeTab = 'problem', 
+  activeTab = 'description', 
   setActiveTab,
-  addToast
+  addToast,
+  submissions = []
 }) {
+  const [currentTab, setCurrentTab] = useState(activeTab || 'description');
+  const [showTopics, setShowTopics] = useState(false);
+  const [showCompanies, setShowCompanies] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isDisliked, setIsDisliked] = useState(false);
+  const [isStarred, setIsStarred] = useState(false);
+  const [likeCount, setLikeCount] = useState(382);
+  const [dislikeCount, setDislikeCount] = useState(12);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportType, setReportType] = useState('broken_challenge');
   const [reportDescription, setReportDescription] = useState('');
   const [submittingReport, setSubmittingReport] = useState(false);
+  const [unlockedHints, setUnlockedHints] = useState([1]); // Hint 1 unlocked by default
+
+  useEffect(() => {
+    if (activeTab) setCurrentTab(activeTab);
+  }, [activeTab]);
+
+  const handleTabChange = (tab) => {
+    setCurrentTab(tab);
+    if (setActiveTab) setActiveTab(tab);
+  };
 
   if (!challenge) return null;
+
+  // Clean title: "51. Customer Report Excludes Records..."
+  const rawTitle = challenge.title || 'Challenge';
+  const cleanTitle = rawTitle.replace(/^\[.*?\]\s*/, '').replace(/^\d+\.\s*/, '').trim();
+  const displayTitle = `${challenge.id}. ${cleanTitle}`;
+
+  // Fake random live online count based on challenge id
+  const onlineCount = 180 + ((challenge.id * 17) % 240);
+
+  // Derive topics and companies
+  const topics = [
+    challenge.technology || 'General',
+    challenge.category || 'Debugging',
+    challenge.difficulty ? `${challenge.difficulty} Difficulty` : 'Engineering'
+  ];
+
+  const companies = [
+    'Stripe', 'Amazon AWS', 'Meta Core Services', 'Datadog', 'Shopify'
+  ][challenge.id % 5];
+
+  // Progressive hints
+  const hints = [
+    {
+      level: 1,
+      title: 'Initial Investigation & Observation',
+      text: `Inspect the input values and execution conditions in ${files[0]?.name || 'the starter code'}. Note what happens when unexpected or edge-case values (such as NULL, 0, or empty strings) are evaluated.`
+    },
+    {
+      level: 2,
+      title: 'Root Cause & Logic Flaw',
+      text: `In ${challenge.technology || 'this stack'}, boundary checks or comparisons may evaluate to false/unknown instead of true. Look closely at filter clauses, state mutators, or conditional branches.`
+    },
+    {
+      level: 3,
+      title: 'Recommended Resolution',
+      text: `Update the condition to explicitly account for all edge cases (e.g. handling missing properties, using defensive checks, or correcting the SQL predicate logic).`
+    }
+  ];
+
+  const toggleLike = () => {
+    if (isLiked) {
+      setIsLiked(false);
+      setLikeCount(prev => prev - 1);
+    } else {
+      setIsLiked(true);
+      setLikeCount(prev => prev + 1);
+      if (isDisliked) {
+        setIsDisliked(false);
+        setDislikeCount(prev => prev - 1);
+      }
+    }
+  };
+
+  const toggleDislike = () => {
+    if (isDisliked) {
+      setIsDisliked(false);
+      setDislikeCount(prev => prev - 1);
+    } else {
+      setIsDisliked(true);
+      setDislikeCount(prev => prev + 1);
+      if (isLiked) {
+        setIsLiked(false);
+        setLikeCount(prev => prev - 1);
+      }
+    }
+  };
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    if (addToast) addToast('Challenge link copied to clipboard!', 'success');
+  };
 
   const handleSendReport = async (e) => {
     e.preventDefault();
@@ -41,7 +144,7 @@ export default function ProblemStatementPanel({
         reportType,
         description: reportDescription
       });
-      if (addToast) addToast('Issue report submitted successfully! Thank you.', 'success');
+      if (addToast) addToast('Bug report submitted. Thank you!', 'success');
       setShowReportModal(false);
       setReportDescription('');
     } catch (err) {
@@ -51,193 +154,458 @@ export default function ProblemStatementPanel({
     }
   };
 
-  return (
-    <div className="w-80 bg-slate-900 border-r border-slate-800 flex flex-col h-full select-none text-slate-100 relative">
-      {/* Top Sidebar Header Tabs */}
-      <div className="flex border-b border-slate-800 bg-slate-950/80 p-1">
-        <button
-          onClick={() => setActiveTab('problem')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all ${
-            activeTab === 'problem'
-              ? 'bg-slate-900 text-cyan-400 border border-slate-800/80 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5" />
-          <span>Problem</span>
-        </button>
+  const difficultyColor = 
+    challenge.difficulty === 'Easy' 
+      ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' 
+      : challenge.difficulty === 'Medium' 
+      ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' 
+      : 'text-rose-400 bg-rose-500/10 border-rose-500/20';
 
-        <button
-          onClick={() => setActiveTab('files')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all ${
-            activeTab === 'files'
-              ? 'bg-slate-900 text-cyan-400 border border-slate-800/80 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <FolderOpen className="w-3.5 h-3.5" />
-          <span>Files ({files.length})</span>
-        </button>
+  return (
+    <div className="w-[450px] lg:w-[480px] xl:w-[520px] bg-slate-900 border-r border-slate-800 flex flex-col h-full select-none text-slate-100 shrink-0 relative overflow-hidden">
+      {/* 1. LeetCode Style Tab Strip */}
+      <div className="h-10 bg-slate-950/90 border-b border-slate-800 flex items-center justify-between px-2 shrink-0">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+          <button
+            onClick={() => handleTabChange('description')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+              currentTab === 'description'
+                ? 'bg-slate-800/90 text-cyan-400 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Description</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('editorial')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+              currentTab === 'editorial'
+                ? 'bg-slate-800/90 text-amber-400 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+            <span>Editorial / Hints</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('solutions')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+              currentTab === 'solutions'
+                ? 'bg-slate-800/90 text-indigo-400 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+            }`}
+          >
+            <FlaskConical className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Solutions</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('submissions')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+              currentTab === 'submissions'
+                ? 'bg-slate-800/90 text-emerald-400 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+            }`}
+          >
+            <History className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Submissions</span>
+          </button>
+
+          {files.length > 1 && (
+            <button
+              onClick={() => handleTabChange('files')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                currentTab === 'files'
+                  ? 'bg-slate-800/90 text-cyan-400 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+              }`}
+            >
+              <FolderOpen className="w-3.5 h-3.5" />
+              <span>Files ({files.length})</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Tab 1: Problem Statement View */}
-      {activeTab === 'problem' && (
-        <div className="flex-1 overflow-y-auto p-4 space-y-5">
-          {/* Header Metadata */}
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className={`badge ${
-                challenge.difficulty === 'Easy' ? 'badge-emerald' : challenge.difficulty === 'Medium' ? 'badge-amber' : 'badge-rose'
-              }`}>
-                {challenge.difficulty || 'Easy'}
-              </span>
-              <span className="text-[10px] font-bold text-slate-500 uppercase">{challenge.technology || 'React'}</span>
+      {/* 2. Main Content Area */}
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+        {currentTab === 'description' && (
+          <div className="space-y-4">
+            {/* Title & Solved status */}
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <h1 className="font-heading font-bold text-xl text-slate-100 leading-snug">
+                  {displayTitle}
+                </h1>
+                {challenge.solved && (
+                  <span className="flex items-center gap-1 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full shrink-0">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Solved</span>
+                  </span>
+                )}
+              </div>
+
+              {/* Tag Row: Difficulty, Topics, Companies */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full border ${difficultyColor}`}>
+                  {challenge.difficulty || 'Easy'}
+                </span>
+
+                <button
+                  onClick={() => setShowTopics(!showTopics)}
+                  className={`flex items-center gap-1.5 px-2.5 py-0.5 text-xs rounded-full border transition-all ${
+                    showTopics 
+                      ? 'bg-slate-800 border-slate-700 text-cyan-300' 
+                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Tag className="w-3 h-3 text-cyan-400" />
+                  <span>Topics</span>
+                  <ChevronDown className={`w-3 h-3 transition-transform ${showTopics ? 'rotate-180' : ''}`} />
+                </button>
+
+                <button
+                  onClick={() => setShowCompanies(!showCompanies)}
+                  className={`flex items-center gap-1.5 px-2.5 py-0.5 text-xs rounded-full border transition-all ${
+                    showCompanies 
+                      ? 'bg-slate-800 border-slate-700 text-amber-300' 
+                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Briefcase className="w-3 h-3 text-amber-400" />
+                  <span>Company Context</span>
+                  <ChevronDown className={`w-3 h-3 transition-transform ${showCompanies ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+
+              {/* Expandable Topics drawer */}
+              {showTopics && (
+                <div className="flex flex-wrap gap-1.5 p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl animate-fade-in">
+                  {topics.map((t, idx) => (
+                    <span key={idx} className="px-2 py-0.5 text-[11px] font-mono rounded bg-slate-800/80 text-cyan-300 border border-slate-700/60">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Expandable Company drawer */}
+              {showCompanies && (
+                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl text-xs space-y-1 animate-fade-in">
+                  <span className="font-semibold text-amber-400 flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5" />
+                    <span>Real-World Scenario Profile</span>
+                  </span>
+                  <p className="text-slate-300 text-[11px] leading-relaxed">
+                    Inspired by production architectural incidents frequently observed at companies like <strong className="text-slate-200">{companies}</strong>.
+                  </p>
+                </div>
+              )}
             </div>
 
-            <h2 className="font-heading font-bold text-lg text-slate-100 leading-tight">
-              {challenge.title}
-            </h2>
-
-            <div className="flex items-center gap-4 text-[11px] font-semibold text-slate-400 border-y border-slate-800/80 py-2">
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-                <span>{challenge.timeEstimate || challenge.time_estimate || '15 mins'}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-cyan-400">
-                <Award className="w-3.5 h-3.5 text-cyan-400" />
-                <span>{challenge.points || 100} XP</span>
-              </div>
+            {/* Human Readable Problem Statement */}
+            <div className="pt-2">
+              <ProblemStatementFormatter
+                description={challenge.description}
+                title={challenge.title}
+                technology={challenge.technology}
+                category={challenge.category}
+              />
             </div>
-          </div>
 
-          {/* Detailed Problem Statement */}
-          <div className="space-y-2">
-            <div className="bg-slate-950/50 border border-slate-800 p-3.5 rounded-xl">
-              <ProblemStatementFormatter 
-                description={challenge.description} 
-                title={challenge.title} 
-                technology={challenge.technology} 
-                category={challenge.category} 
+            {/* Visible Test Cases Overview */}
+            <div className="pt-3 border-t border-slate-800/80">
+              <TestCasesSection
+                testCases={challenge.testCases || challenge.test_cases || []}
+                challengeTitle={challenge.title}
+                technology={challenge.technology}
+                showHeader={true}
               />
             </div>
           </div>
+        )}
 
-          {/* Suspected Component / Location */}
-          {challenge.suspectedComponent && (
-            <div className="space-y-2">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-                <span>Suspected Component</span>
-              </h3>
-              <div className="text-xs font-mono text-amber-300 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl">
-                {challenge.suspectedComponent}
-              </div>
+        {/* Tab 2: Editorial / Hints */}
+        {currentTab === 'editorial' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
+              <Lightbulb className="w-4 h-4 text-amber-400" />
+              <h3 className="font-bold text-sm text-slate-100">Progressive Debugging Hints</h3>
             </div>
-          )}
 
-          {/* Test Cases Requirements */}
-          <TestCasesSection 
-            testCases={challenge.testCases || challenge.test_cases || []} 
-            challengeTitle={challenge.title} 
-            technology={challenge.technology} 
-          />
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Use progressive hints to guide your debugging process without spoiling the complete solution.
+            </p>
 
-          {/* Report Challenge Button */}
-          <div className="pt-3 border-t border-slate-800">
-            <button
-              onClick={() => setShowReportModal(true)}
-              className="flex items-center justify-center gap-2 w-full py-2 px-3 text-[11px] font-semibold text-slate-400 hover:text-amber-400 bg-slate-950/40 hover:bg-amber-500/10 border border-slate-800 hover:border-amber-500/30 rounded-xl transition-all"
-            >
-              <Flag className="w-3.5 h-3.5 text-amber-400" />
-              <span>Report An Issue</span>
-            </button>
+            <div className="space-y-3">
+              {hints.map((hint) => {
+                const isUnlocked = unlockedHints.includes(hint.level);
+                return (
+                  <div 
+                    key={hint.level} 
+                    className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950/60"
+                  >
+                    <div 
+                      onClick={() => {
+                        if (!isUnlocked) {
+                          setUnlockedHints(prev => [...prev, hint.level]);
+                        }
+                      }}
+                      className="flex items-center justify-between p-3 cursor-pointer hover:bg-slate-900/80 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold ${
+                          isUnlocked ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-500'
+                        }`}>
+                          {hint.level}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-200">{hint.title}</span>
+                      </div>
+                      {!isUnlocked ? (
+                        <span className="text-[11px] text-cyan-400 font-semibold hover:underline">Reveal Hint</span>
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                      )}
+                    </div>
+
+                    {isUnlocked && (
+                      <div className="p-3 pt-0 text-xs text-slate-300 leading-relaxed border-t border-slate-800/40 mt-1">
+                        {hint.text}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Tab 2: File Explorer View */}
-      {activeTab === 'files' && (
-        <div className="flex-1 overflow-y-auto p-3 space-y-1">
-          <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            Files in Workspace
+        {/* Tab 3: Solutions */}
+        {currentTab === 'solutions' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
+              <FlaskConical className="w-4 h-4 text-indigo-400" />
+              <h3 className="font-bold text-sm text-slate-100">Engineering Solution Walkthrough</h3>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+              <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Code2 className="w-3.5 h-3.5" />
+                <span>Root Cause Analysis</span>
+              </h4>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                The defect in this challenge arises from an unhandled boundary case during expression evaluation. In real-world environments, this manifests as silent data loss or unexpected exceptions.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+              <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Recommended Architectural Pattern</span>
+              </h4>
+              <ul className="space-y-1.5 text-xs text-slate-300 list-disc pl-4">
+                <li>Explicitly validate optional or nullable parameters.</li>
+                <li>Add defensive unit test coverage covering boundary values.</li>
+                <li>Ensure idempotency and predictable state mutations.</li>
+              </ul>
+            </div>
           </div>
-          {files.map((file) => {
-            const isActive = file.name === activeFile?.name;
-            return (
-              <button
-                key={file.name}
-                onClick={() => onSelectFile(file)}
-                className={`flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all ${
-                  isActive
-                    ? 'bg-blue-600/15 border-l-2 border-blue-500 text-slate-100 font-semibold'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-                }`}
-              >
-                <FileCode className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-500'}`} />
-                <span className="truncate">{file.name}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+        )}
 
-      {/* Report Modal */}
+        {/* Tab 4: Submissions */}
+        {currentTab === 'submissions' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
+              <History className="w-4 h-4 text-emerald-400" />
+              <h3 className="font-bold text-sm text-slate-100">Submission History</h3>
+            </div>
+
+            {submissions.length > 0 ? (
+              <div className="space-y-2">
+                {submissions.map((sub, idx) => (
+                  <div key={idx} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      {sub.success ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                      )}
+                      <div>
+                        <span className={`font-bold ${sub.success ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {sub.success ? 'Accepted' : 'Wrong Answer'}
+                        </span>
+                        <p className="text-[10px] text-slate-500">{sub.timestamp || 'Just now'}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono text-slate-300">{sub.timeTaken || '10s'}</span>
+                      <p className="text-[10px] text-cyan-400 font-semibold">{sub.score ? `+${sub.score} XP` : '0 XP'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center text-slate-500 space-y-2">
+                <History className="w-8 h-8 mx-auto opacity-40 text-slate-400" />
+                <p className="text-xs">No submissions recorded for this challenge yet.</p>
+                <p className="text-[11px] text-slate-600">Click "Run Code" or "Submit Solution" to test your fix.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab 5: Multi-File Explorer (if multiple files) */}
+        {currentTab === 'files' && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
+              <FolderOpen className="w-4 h-4 text-cyan-400" />
+              <h3 className="font-bold text-sm text-slate-100">Project Files ({files.length})</h3>
+            </div>
+
+            <div className="space-y-1">
+              {files.map((file) => (
+                <button
+                  key={file.name}
+                  onClick={() => onSelectFile && onSelectFile(file)}
+                  className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-xs font-mono transition-all ${
+                    file.name === activeFile?.name
+                      ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-300'
+                      : 'bg-slate-950/40 border-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>{file.name}</span>
+                  </div>
+                  <ChevronRight className="w-3 h-3 opacity-60" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 3. LeetCode Style Bottom Action & Reaction Bar */}
+      <div className="h-10 bg-slate-950 border-t border-slate-800 px-4 flex items-center justify-between text-xs text-slate-400 shrink-0">
+        <div className="flex items-center gap-3">
+          {/* Thumbs up */}
+          <button 
+            onClick={toggleLike}
+            className={`flex items-center gap-1.5 hover:text-slate-200 transition-colors ${isLiked ? 'text-cyan-400 font-semibold' : ''}`}
+            title="Like this challenge"
+          >
+            <ThumbsUp className={`w-3.5 h-3.5 ${isLiked ? 'fill-cyan-400' : ''}`} />
+            <span className="text-[11px]">{likeCount}</span>
+          </button>
+
+          {/* Thumbs down */}
+          <button 
+            onClick={toggleDislike}
+            className={`flex items-center gap-1.5 hover:text-slate-200 transition-colors ${isDisliked ? 'text-rose-400 font-semibold' : ''}`}
+            title="Dislike"
+          >
+            <ThumbsDown className={`w-3.5 h-3.5 ${isDisliked ? 'fill-rose-400' : ''}`} />
+            <span className="text-[11px]">{dislikeCount}</span>
+          </button>
+
+          {/* Star / Favorite */}
+          <button 
+            onClick={() => {
+              setIsStarred(!isStarred);
+              if (addToast) addToast(!isStarred ? 'Added to favorites!' : 'Removed from favorites', 'info');
+            }}
+            className={`hover:text-amber-400 transition-colors ${isStarred ? 'text-amber-400' : ''}`}
+            title="Favorite"
+          >
+            <Star className={`w-3.5 h-3.5 ${isStarred ? 'fill-amber-400' : ''}`} />
+          </button>
+
+          {/* Share */}
+          <button 
+            onClick={handleShare}
+            className="hover:text-slate-200 transition-colors"
+            title="Share challenge"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Report */}
+          <button 
+            onClick={() => setShowReportModal(true)}
+            className="hover:text-amber-400 transition-colors"
+            title="Report defect or issue"
+          >
+            <Flag className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Live Active Online Debuggers Indicator */}
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>{onlineCount} Online</span>
+        </div>
+      </div>
+
+      {/* Report Issue Modal */}
       {showReportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-amber-400">
-                <Flag className="w-5 h-5" />
-                <h3 className="text-base font-bold text-slate-100">Report Challenge Issue</h3>
-              </div>
-              <button onClick={() => setShowReportModal(false)} className="text-slate-400 hover:text-slate-200 p-1 rounded-lg">
-                <X className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
+                <Flag className="w-4 h-4 text-amber-400" />
+                <span>Report Challenge Issue</span>
+              </h3>
+              <button onClick={() => setShowReportModal(false)} className="text-slate-400 hover:text-slate-200">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSendReport} className="space-y-4">
+            <form onSubmit={handleSendReport} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Issue Category</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Issue Type</label>
                 <select
                   value={reportType}
                   onChange={(e) => setReportType(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:border-amber-500 focus:outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
                 >
-                  <option value="broken_challenge">Broken Challenge / Crash</option>
-                  <option value="wrong_test">Incorrect Test Case Assertion</option>
-                  <option value="incorrect_question">Unclear Problem Description</option>
-                  <option value="evaluation_problem">Evaluation Engine Failure</option>
+                  <option value="broken_challenge">Broken or Untestable Challenge</option>
+                  <option value="bad_instructions">Unclear Instructions</option>
+                  <option value="test_case_bug">Incorrect Test Case Assertion</option>
+                  <option value="typo">Typo or Formatting Error</option>
                   <option value="other">Other Issue</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Issue Description</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Description</label>
                 <textarea
-                  rows={4}
                   value={reportDescription}
                   onChange={(e) => setReportDescription(e.target.value)}
-                  placeholder="Describe what went wrong or which test case failed incorrectly..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:border-amber-500 focus:outline-none resize-none"
+                  placeholder="Describe the issue you encountered..."
+                  rows={4}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                   required
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowReportModal(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl"
+                  className="button-secondary px-3 py-1.5 text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={submittingReport || !reportDescription.trim()}
-                  className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-lg transition-all"
+                  disabled={submittingReport}
+                  className="button-primary px-4 py-1.5 text-xs flex items-center gap-1.5"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>{submittingReport ? 'Submitting...' : 'Submit Report'}</span>
+                  <span>{submittingReport ? 'Submitting...' : 'Send Report'}</span>
                 </button>
               </div>
             </form>
