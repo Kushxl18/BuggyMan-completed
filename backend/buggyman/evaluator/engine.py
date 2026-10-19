@@ -164,7 +164,7 @@ class EvaluationEngine:
                     'passed': bool(tr.get('passed', False)),
                     'hidden': True,
                     'input': '[Hidden Test Input]',
-                    'expected': '[Hidden Expected Output]',
+                    'expected': 'Validates boundary conditions and edge cases safely.',
                     'actual': 'Matched hidden assertion' if tr.get('passed') else 'Hidden test assertion failed',
                     'error': None if tr.get('passed') else 'Hidden test assertion failed: Boundary condition check did not pass.'
                 })

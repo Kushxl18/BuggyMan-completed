@@ -19,7 +19,7 @@ This guide documents all 120 verified real-world engineering defects across Code
 - **Category:** API & Web
 
 **Bug Description & Root Cause:**
-When users navigate to the final page of audit logs, the last log entry is missing. For example, if there are 25 total entries and page size is 10, page 3 only shows 4 records instead of 5.
+A document portal API slices audit log records into paginated windows. Due to an incorrect upper boundary calculation, the slicing expression terminates one element early, omitting the final record on each page and dropping the last item of the dataset.  For example, when requesting page 3 with 25 total records and a page size of 10, the endpoint returns only 4 records (`[20, 21, 22, 23]`) instead of 5 (`[20, 21, 22, 23, 24]`), dropping record index 24.  Correct `paginate(items, page, page_size)` in `pagination.py` so that full page ranges and partial final pages return all expected records, while handling empty datasets and out-of-bounds page requests safely.
 
 **Reference Solution Implementation:**
 *pagination.py*:

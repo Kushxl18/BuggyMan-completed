@@ -1,19 +1,16 @@
 import React from 'react';
 import { 
-  Building2, 
-  Bug, 
-  ListOrdered, 
   CheckCircle2, 
-  XCircle, 
-  AlertTriangle, 
-  CheckSquare, 
-  Info,
-  Layers,
-  ArrowRight
+  Terminal, 
+  Database, 
+  Layout, 
+  SlidersHorizontal,
+  FileCode2,
+  AlertCircle
 } from 'lucide-react';
 
 /**
- * Helper to render inline markdown like `code`, **bold**, *italic* safely into React elements
+ * Format inline text: backticks to <code>, **bold** to <strong>
  */
 export function formatInlineText(text = '') {
   if (!text) return null;
@@ -50,53 +47,40 @@ export function formatInlineText(text = '') {
 }
 
 /**
- * Parse structured bug report markdown or fallback to clean sections
+ * Parse raw description and test cases into LeetCode-style problem structure
  */
-export function parseProblemStatement(description = '', title = '', technology = '', category = '') {
+export function parseProblemStatement(description = '', title = '', technology = '', category = '', testCases = [], files = []) {
   const raw = (description || '').trim();
   const techLow = (technology || '').toLowerCase();
   const cleanTitle = (title || 'Challenge').replace(/^\[.*?\]\s*/, '').replace(/^\d+\.\s*/, '').trim();
 
   const isFrontend = techLow.includes('react') || techLow.includes('css') || techLow.includes('html') || techLow.includes('frontend') || techLow.includes('web');
-  const isSql = techLow.includes('sql') || techLow.includes('database');
-  const isBackend = techLow.includes('python') || techLow.includes('django') || techLow.includes('node') || techLow.includes('api');
+  const isSql = techLow.includes('sql') || techLow.includes('database') || techLow.includes('sqlite') || techLow.includes('postgresql');
 
-  // Check if text has markdown headings (### )
+  // 1. Parse sections if markdown headers are present
   const sections = {};
-  const currentSection = { name: 'scenario', lines: [] };
-  
   if (raw.includes('###')) {
     const lines = raw.split('\n');
     let currentKey = 'scenario';
 
     for (const line of lines) {
-      const trimmed = line.trim();
-      const lower = trimmed.toLowerCase();
-
+      const lower = line.trim().toLowerCase();
       if (lower.startsWith('### company scenario') || lower.startsWith('### scenario')) {
         currentKey = 'scenario';
-        if (!sections[currentKey]) sections[currentKey] = [];
       } else if (lower.startsWith('### bug report') || lower.startsWith('### current issue') || lower.startsWith('### defect')) {
         currentKey = 'bugReport';
-        if (!sections[currentKey]) sections[currentKey] = [];
       } else if (lower.startsWith('### steps to reproduce')) {
         currentKey = 'reproduce';
-        if (!sections[currentKey]) sections[currentKey] = [];
       } else if (lower.startsWith('### expected behavior') || lower.startsWith('### expected')) {
         currentKey = 'expected';
-        if (!sections[currentKey]) sections[currentKey] = [];
       } else if (lower.startsWith('### actual behavior') || lower.startsWith('### actual')) {
         currentKey = 'actual';
-        if (!sections[currentKey]) sections[currentKey] = [];
       } else if (lower.startsWith('### impact')) {
         currentKey = 'impact';
-        if (!sections[currentKey]) sections[currentKey] = [];
       } else if (lower.startsWith('### requirements') || lower.startsWith('### requirement')) {
         currentKey = 'requirements';
-        if (!sections[currentKey]) sections[currentKey] = [];
       } else if (lower.startsWith('### example') || lower.startsWith('### test case')) {
         currentKey = 'examples';
-        if (!sections[currentKey]) sections[currentKey] = [];
       } else {
         if (!sections[currentKey]) sections[currentKey] = [];
         sections[currentKey].push(line);
@@ -104,103 +88,111 @@ export function parseProblemStatement(description = '', title = '', technology =
     }
   }
 
-  // Helper to join and clean lines
-  const getSectionText = (key) => {
-    if (!sections[key] || sections[key].length === 0) return '';
-    return sections[key].join('\n').trim();
-  };
+  const getSection = (key) => (sections[key] ? sections[key].join('\n').trim() : '');
 
-  let scenario = getSectionText('scenario');
-  let bugReport = getSectionText('bugReport');
-  let reproduceRaw = getSectionText('reproduce');
-  let expected = getSectionText('expected');
-  let actual = getSectionText('actual');
-  let impact = getSectionText('impact');
-  let reqsRaw = getSectionText('requirements');
-  let examplesRaw = getSectionText('examples');
+  const scenarioText = getSection('scenario');
+  const bugReportText = getSection('bugReport');
+  const expectedText = getSection('expected');
 
-  // If not parsed by ### headers, attempt legacy split by "Requirements:"
-  if (!scenario && !bugReport && !expected && !reqsRaw) {
-    if (raw.includes('Requirements:') || raw.includes('Requirements')) {
-      const parts = raw.split(/Requirements:?/i);
-      scenario = parts[0].trim();
-      reqsRaw = parts[1] || '';
-    } else {
-      scenario = raw;
-    }
+  // 2. Synthesize concise 2-4 sentence problem statement
+  let problemStatement = '';
+
+  if (scenarioText || bugReportText) {
+    const scenarioSentences = scenarioText
+      .split(/(?<=[.!?])\s+/)
+      .filter(s => s.trim().length > 0 && !s.includes('###'));
+    const firstScenario = scenarioSentences.slice(0, 2).join(' ').trim();
+
+    const bugSentences = bugReportText
+      .split(/(?<=[.!?])\s+/)
+      .filter(s => s.trim().length > 0 && !s.includes('###'));
+    const bugSummary = bugSentences.slice(0, 2).join(' ').trim();
+
+    const parts = [];
+    if (firstScenario) parts.push(firstScenario);
+    if (bugSummary && !firstScenario.includes(bugSummary)) parts.push(bugSummary);
+
+    // Target goal
+    const targetFile = (files && files[0] && files[0].name) ? files[0].name : 'the starter implementation';
+    parts.push(`Investigate and repair the defect in \`${targetFile}\` so that all expected behavior and boundary assertions are restored.`);
+
+    problemStatement = parts.join(' ');
+  } else {
+    // Already concise prose
+    problemStatement = raw;
   }
 
-  // Parse reproduce steps into array
-  const reproduceSteps = [];
-  if (reproduceRaw) {
-    const lines = reproduceRaw.split('\n');
-    for (const l of lines) {
-      const step = l.trim().replace(/^\d+[\.\)]\s*/, '').replace(/^[-*•]\s*/, '').trim();
-      if (step) reproduceSteps.push(step);
-    }
-  }
+  // 3. Extract compact LeetCode-style Examples from visible test cases
+  const visibleCases = (testCases || []).filter(tc => !tc.hidden);
+  const sampleCases = visibleCases.length > 0 ? visibleCases.slice(0, 2) : (testCases || []).slice(0, 2);
 
-  // Parse requirements into array
-  const requirements = [];
-  if (reqsRaw) {
-    const lines = reqsRaw.split('\n');
-    for (const l of lines) {
-      const req = l.trim().replace(/^[-*•]\s*/, '').trim();
-      if (req && !req.toLowerCase().startsWith('goal:')) {
-        requirements.push(req);
+  const examples = sampleCases.map((tc, idx) => {
+    let cleanName = (tc.name || `Case ${idx + 1}`)
+      .replace(/^(Visible|Hidden):\s*/i, '')
+      .replace(/^Case\s*\d+:\s*/i, '')
+      .trim();
+
+    let inputVal = tc.input || '';
+    let outputVal = tc.expected || '';
+
+    // If input is empty, provide sensible context
+    if (!inputVal) {
+      if (isSql) {
+        inputVal = 'SELECT query execution on sample database tables';
+      } else if (isFrontend) {
+        inputVal = 'Render component and trigger interaction';
+      } else {
+        inputVal = 'Default function arguments';
       }
     }
+
+    return {
+      id: idx + 1,
+      input: inputVal,
+      output: outputVal || 'Passes assertion without defect',
+      explanation: cleanName !== `Case ${idx + 1}` ? cleanName : null
+    };
+  });
+
+  // 4. Derive relevant constraints
+  const constraints = [];
+  if (isSql) {
+    constraints.push('Supported SQL Dialect: SQLite / ANSI SQL standard.');
+    constraints.push('NULL Semantics: NULL denotes missing/unrecorded status; explicit IS NULL / IS NOT NULL handling is required.');
+    constraints.push('Result ordering, aggregate precision, and column names must strictly match requirements.');
+  } else if (isFrontend) {
+    constraints.push('State updates must be immutable without mutating input props or DOM elements directly.');
+    constraints.push('Event listeners, timers, or background subscriptions must be cleaned up on unmount.');
+    constraints.push('Component must render consistently without visual glitches or runtime React errors.');
+  } else {
+    constraints.push('Inputs may include empty collections, zero values, or boundary indices; handle defensively.');
+    constraints.push('Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.');
+    constraints.push('Return types and error boundaries must conform to the expected module contract.');
   }
 
-  // Fallbacks if missing
-  if (!scenario) {
-    if (isFrontend) {
-      scenario = `In a production client application, users interact with the ${cleanTitle} component to view and manage state dynamically.`;
-    } else if (isSql) {
-      scenario = `A production analytics and reporting pipeline relies on ${cleanTitle} queries to extract accurate records from the database.`;
-    } else {
-      scenario = `A core production service executes ${cleanTitle} logic to handle critical request payloads and data transactions.`;
-    }
+  // 5. Derive concise Expected Behavior summary
+  let cleanExpected = '';
+  if (expectedText) {
+    cleanExpected = expectedText
+      .split('\n')[0]
+      .replace(/`.*=.*`/g, '')
+      .trim();
   }
-
-  if (!bugReport && !actual) {
-    if (isFrontend) {
-      bugReport = `The component fails to update or render expected state under specific interaction flows or boundary conditions.`;
-    } else if (isSql) {
-      bugReport = `The query returns incorrect results due to improper filtering, join conditions, or handling of NULL values.`;
-    } else {
-      bugReport = `The implementation produces incorrect outputs or throws unexpected exceptions under edge case inputs.`;
-    }
-  }
-
-  if (requirements.length === 0) {
-    if (isFrontend) {
-      requirements.push(
-        `Ensure ${cleanTitle} renders correctly and updates state dynamically upon user interaction.`,
-        `Handle boundary inputs and edge cases without runtime errors.`
-      );
-    } else if (isSql) {
-      requirements.push(
-        `Update the SQL query to return the exact columns and rows required.`,
-        `Ensure proper filtering, joins, and correct handling of NULL values.`
-      );
-    } else {
-      requirements.push(
-        `Identify and fix the defect in ${cleanTitle} logic.`,
-        `Ensure all visible and hidden evaluation test assertions pass cleanly.`
-      );
-    }
+  if (!cleanExpected) {
+    cleanExpected = isSql
+      ? 'The query must return the exact matching rows and columns according to relational criteria and NULL constraints.'
+      : isFrontend
+      ? 'The component must render expected UI states dynamically and handle user interactions predictably.'
+      : 'The function must compute and return expected values across all standard and boundary test scenarios.';
   }
 
   return {
-    scenario,
-    bugReport,
-    reproduceSteps,
-    expected,
-    actual,
-    impact,
-    requirements,
-    examplesRaw
+    problemStatement,
+    examples,
+    constraints,
+    expectedBehavior: cleanExpected,
+    isSql,
+    isFrontend
   };
 }
 
@@ -208,111 +200,105 @@ export default function ProblemStatementFormatter({
   description = '', 
   title = '', 
   technology = '', 
-  category = '' 
+  category = '',
+  testCases = [],
+  files = []
 }) {
-  const parsed = parseProblemStatement(description, title, technology, category);
+  const {
+    problemStatement,
+    examples,
+    constraints,
+    expectedBehavior,
+    isSql,
+    isFrontend
+  } = parseProblemStatement(description, title, technology, category, testCases, files);
 
   return (
     <div className="space-y-5 text-slate-300 text-[13px] leading-relaxed font-sans select-text">
-      {/* 1. Company Scenario / Problem Introduction (LeetCode Style prose) */}
-      {parsed.scenario && (
-        <div className="space-y-1.5 text-slate-200">
-          <p className="leading-relaxed">
-            {formatInlineText(parsed.scenario)}
-          </p>
-        </div>
-      )}
+      {/* A. Problem Statement (LeetCode Style Prose) */}
+      <div className="space-y-2 text-slate-200">
+        <p className="leading-relaxed text-[13px]">
+          {formatInlineText(problemStatement)}
+        </p>
+      </div>
 
-      {/* 2. Bug Report / Defect Description */}
-      {parsed.bugReport && (
-        <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/90 shadow-sm space-y-1.5">
-          <div className="flex items-center gap-2 text-amber-400 font-semibold text-xs uppercase tracking-wider">
-            <Bug className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span>Defect Observed</span>
-          </div>
-          <p className="text-slate-300 text-xs leading-normal">
-            {formatInlineText(parsed.bugReport)}
-          </p>
-        </div>
-      )}
-
-      {/* 3. Steps to Reproduce */}
-      {parsed.reproduceSteps.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-slate-400 font-semibold text-xs uppercase tracking-wider">
-            <ListOrdered className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            <span>Steps to Reproduce</span>
-          </div>
-          <ol className="space-y-1.5 pl-1">
-            {parsed.reproduceSteps.map((step, idx) => (
-              <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-300">
-                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-slate-800 text-cyan-400 text-[10px] font-mono font-bold shrink-0 mt-0.5">
-                  {idx + 1}
-                </span>
-                <span className="leading-normal">{formatInlineText(step)}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
-
-      {/* 4. Expected vs Actual Comparison (LeetCode Contrast Cards) */}
-      {(parsed.expected || parsed.actual) && (
-        <div className="grid grid-cols-1 gap-2.5 pt-1">
-          {parsed.expected && (
-            <div className="p-3 rounded-xl bg-emerald-950/15 border border-emerald-500/25 space-y-1">
-              <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-xs">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>Expected Behavior</span>
+      {/* B. Examples (Compact LeetCode Cards) */}
+      {examples.length > 0 && (
+        <div className="space-y-3 pt-1">
+          {examples.map((ex) => (
+            <div 
+              key={ex.id}
+              className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl space-y-2 font-mono text-xs"
+            >
+              <div className="font-sans font-bold text-slate-200 text-xs flex items-center justify-between">
+                <span>Example {ex.id}:</span>
               </div>
-              <p className="text-slate-300 text-xs leading-normal pl-5">
-                {formatInlineText(parsed.expected)}
-              </p>
-            </div>
-          )}
 
-          {parsed.actual && (
-            <div className="p-3 rounded-xl bg-rose-950/15 border border-rose-500/25 space-y-1">
-              <div className="flex items-center gap-1.5 text-rose-400 font-semibold text-xs">
-                <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                <span>Actual Behavior (Defect)</span>
+              <div className="space-y-1.5 pl-1">
+                <div className="flex items-start gap-2">
+                  <span className="font-sans font-semibold text-slate-400 shrink-0 select-none">
+                    {isSql ? 'Input Query:' : isFrontend ? 'Action:' : 'Input:'}
+                  </span>
+                  <span className="text-cyan-300 break-all whitespace-pre-wrap">
+                    {ex.input}
+                  </span>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <span className="font-sans font-semibold text-slate-400 shrink-0 select-none">
+                    {isSql ? 'Expected Rows:' : isFrontend ? 'UI State:' : 'Output:'}
+                  </span>
+                  <span className="text-emerald-400 break-all whitespace-pre-wrap">
+                    {ex.output}
+                  </span>
+                </div>
+
+                {ex.explanation && (
+                  <div className="flex items-start gap-2 pt-1 font-sans text-[11px] text-slate-400 border-t border-slate-800/60">
+                    <span className="font-semibold text-slate-300 shrink-0 select-none">
+                      Explanation:
+                    </span>
+                    <span className="text-slate-300 leading-normal">
+                      {ex.explanation}
+                    </span>
+                  </div>
+                )}
               </div>
-              <p className="text-slate-300 text-xs leading-normal pl-5">
-                {formatInlineText(parsed.actual)}
-              </p>
             </div>
-          )}
+          ))}
         </div>
       )}
 
-      {/* 5. Business / System Impact */}
-      {parsed.impact && (
-        <div className="p-3 rounded-xl bg-amber-950/15 border border-amber-500/20 text-xs space-y-1">
-          <div className="flex items-center gap-1.5 text-amber-400 font-semibold text-[11px] uppercase tracking-wider">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span>Production Impact</span>
-          </div>
-          <p className="text-slate-300 leading-normal pl-5">
-            {formatInlineText(parsed.impact)}
-          </p>
-        </div>
-      )}
-
-      {/* 6. Requirements */}
-      {parsed.requirements.length > 0 && (
-        <div className="space-y-2 pt-1 border-t border-slate-800/80">
-          <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-xs uppercase tracking-wider">
-            <CheckSquare className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            <span>Requirements</span>
-          </div>
+      {/* C. Constraints */}
+      {constraints.length > 0 && (
+        <div className="space-y-2 pt-2">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Constraints</span>
+          </h4>
           <ul className="space-y-1.5 pl-1">
-            {parsed.requirements.map((req, idx) => (
+            {constraints.map((c, idx) => (
               <li key={idx} className="flex items-start gap-2 text-xs text-slate-300">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
-                <span className="leading-normal">{formatInlineText(req)}</span>
+                <span className="leading-normal font-sans">
+                  {formatInlineText(c)}
+                </span>
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* D. Expected Behavior */}
+      {expectedBehavior && (
+        <div className="p-3 rounded-xl bg-emerald-950/15 border border-emerald-500/25 space-y-1">
+          <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-xs">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span>Expected Behavior</span>
+          </div>
+          <p className="text-slate-300 text-xs leading-normal pl-5">
+            {formatInlineText(expectedBehavior)}
+          </p>
         </div>
       )}
     </div>

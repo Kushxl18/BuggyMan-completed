@@ -6,11 +6,11 @@
     "technology": "Python",
     "category": "API & Web",
     "points": 100,
-    "bug_signature": "end = min(len(items), (page * page_size) - 1)",
+    "bug_signature": "end = min(len(items), page * page_size) - 1",
     "starter_files": [
       {
         "name": "pagination.py",
-        "content": "def paginate(items, page=1, page_size=10):\n    if not items or page < 1 or page_size < 1:\n        return []\n    start = (page - 1) * page_size\n    end = min(len(items), (page * page_size) - 1)\n    if start >= len(items):\n        return []\n    return items[start:end]"
+        "content": "def paginate(items, page=1, page_size=10):\n    if not items or page < 1 or page_size < 1:\n        return []\n    start = (page - 1) * page_size\n    end = min(len(items), page * page_size) - 1\n    if start >= len(items) or start > end:\n        return []\n    return items[start:end]"
       }
     ],
     "solution_files": [

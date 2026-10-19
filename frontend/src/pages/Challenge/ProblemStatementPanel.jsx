@@ -28,7 +28,6 @@ import {
 } from 'lucide-react';
 import { challengeService } from '../../services/challengeService';
 import ProblemStatementFormatter from '../../components/ProblemStatementFormatter';
-import TestCasesSection from '../../components/TestCasesSection';
 
 export default function ProblemStatementPanel({ 
   challenge, 
@@ -399,23 +398,15 @@ export default function ProblemStatementPanel({
               )}
             </div>
 
-            {/* Human Readable Problem Statement (without answer leakage) */}
+            {/* Concise LeetCode Style Problem Statement (Problem Statement, Examples, Constraints, Expected Behavior) */}
             <div className="pt-2">
               <ProblemStatementFormatter
                 description={challenge.description}
                 title={challenge.title}
                 technology={challenge.technology}
                 category={challenge.category}
-              />
-            </div>
-
-            {/* Visible Test Cases Overview */}
-            <div className="pt-3 border-t border-slate-800/80">
-              <TestCasesSection
                 testCases={challenge.testCases || challenge.test_cases || []}
-                challengeTitle={challenge.title}
-                technology={challenge.technology}
-                showHeader={true}
+                files={files}
               />
             </div>
           </div>

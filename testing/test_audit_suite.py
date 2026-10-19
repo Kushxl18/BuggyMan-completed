@@ -157,7 +157,7 @@ class BuggyManAuditTestSuite(TestCase):
 
         for hc in hidden_cases:
             self.assertEqual(hc['input'], '[Hidden Test Input]', "Hidden test raw input leaked")
-            self.assertEqual(hc['expected'], '[Hidden Expected Output]', "Hidden test expected output leaked")
+            self.assertEqual(hc['expected'], 'Validates boundary conditions and edge cases safely.', "Hidden test expected output leaked")
             self.assertEqual(hc['actual'], 'Hidden test assertion failed')
             self.assertIn('Hidden test assertion failed', hc['error'])
 
@@ -176,7 +176,7 @@ class BuggyManAuditTestSuite(TestCase):
         passing_hidden = [tr for tr in passing_res['test_results'] if tr.get('hidden')]
         for hc in passing_hidden:
             self.assertEqual(hc['input'], '[Hidden Test Input]')
-            self.assertEqual(hc['expected'], '[Hidden Expected Output]')
+            self.assertEqual(hc['expected'], 'Validates boundary conditions and edge cases safely.')
             self.assertEqual(hc['actual'], 'Matched hidden assertion')
             self.assertIsNone(hc['error'])
 

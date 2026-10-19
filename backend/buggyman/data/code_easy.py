@@ -14,43 +14,20 @@ def get_code_easy():
         'category': 'API & Web',
         'time_estimate': '10 mins',
         'points': 100,
-        'description': """### Company Scenario
-A customer-facing document portal processes paginated API requests from mobile apps and web clients to retrieve audit log entries.
+        'description': """A document portal API slices audit log records into paginated windows.
+Due to an incorrect upper boundary calculation, the slicing expression terminates one element early, omitting the final record on each page and dropping the last item of the dataset.
 
-### Bug Report
-When users navigate to the final page of audit logs, the last log entry is missing. For example, if there are 25 total entries and page size is 10, page 3 only shows 4 records instead of 5.
+For example, when requesting page 3 with 25 total records and a page size of 10, the endpoint returns only 4 records (`[20, 21, 22, 23]`) instead of 5 (`[20, 21, 22, 23, 24]`), dropping record index 24.
 
-### Steps to Reproduce
-1. Query `/api/logs?page=3&page_size=10` with a dataset containing 25 records.
-2. Observe that only indices 20-23 (4 records) are returned.
-3. Record index 24 is omitted from the response.
-
-### Expected Behavior
-`paginate(items, page, page_size)` should return all records belonging to the requested page window: `(page - 1) * page_size` through `page * page_size`.
-
-### Actual Behavior
-The slicing boundary stops at `page * page_size - 1`, skipping the final item on every page.
-
-### Impact
-Critical audit events and compliance logs are missing from user-facing screens and automated exports.
-
-### Requirements
-- Correct the slice indices in `pagination.py` to include the final item of the page.
-- Safely handle out-of-bounds page requests by returning an empty list.
-- Handle empty input lists without throwing exceptions.
-
-### Learning Objectives
-- Zero-indexed vs 1-indexed pagination boundaries.
-- Safe list slicing in Python API endpoints.
-""",
+Correct `paginate(items, page, page_size)` in `pagination.py` so that full page ranges and partial final pages return all expected records, while handling empty datasets and out-of-bounds page requests safely.""",
         'files': [{
             'name': 'pagination.py',
             'content': '''def paginate(items, page=1, page_size=10):
     if not items or page < 1 or page_size < 1:
         return []
     start = (page - 1) * page_size
-    end = min(len(items), (page * page_size) - 1)
-    if start >= len(items):
+    end = min(len(items), page * page_size) - 1
+    if start >= len(items) or start > end:
         return []
     return items[start:end]'''
         }],
@@ -60,7 +37,7 @@ Critical audit events and compliance logs are missing from user-facing screens a
             {'id': 3, 'name': 'Hidden: Out of bounds page returns empty list', 'input': 'paginate(list(range(5)), page=4, page_size=5)', 'expected': '[]', 'hidden': True},
             {'id': 4, 'name': 'Hidden: Empty dataset handling', 'input': 'paginate([], page=1, page_size=10)', 'expected': '[]', 'hidden': True}
         ],
-        'bug_signature': 'end = min(len(items), (page * page_size) - 1)',
+        'bug_signature': 'end = min(len(items), page * page_size) - 1',
         'suspected_component': 'pagination.py',
         'ai_suggestions': [
             'Notice that Python slice syntax `items[start:end]` is exclusive of `end`.',

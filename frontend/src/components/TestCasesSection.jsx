@@ -59,7 +59,7 @@ export const deriveComprehensiveTestCases = (rawCases = [], challengeTitle = '',
       id: tc.id || idx + 1,
       name: tc.name || `Requirement ${idx + 1}`,
       expected: isHidden 
-        ? '[Hidden Expected Output - Secret test case assertion]' 
+        ? 'Validates boundary conditions and edge cases safely.' 
         : sanitizeExpectedText(tc.expected, tc.name || challengeTitle, technology),
       passed: tc.passed,
       input: tc.input,

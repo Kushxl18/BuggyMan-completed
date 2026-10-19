@@ -257,7 +257,7 @@ export default function OutputPanel({
                   </span>
                   <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-emerald-400 font-mono">
                     {selectedCase.hidden 
-                      ? '[Hidden Expected Output - Verifies edge-case behavior without revealing solution]'
+                      ? 'Validates boundary conditions and edge cases safely without errors.'
                       : (selectedCase.expected || 'Passes assertion without defect')}
                   </div>
                 </div>
@@ -365,7 +365,7 @@ export default function OutputPanel({
                       </span>
                       <div className="p-2.5 rounded-lg bg-slate-900/80 border border-emerald-500/20 text-emerald-400">
                         {selectedCase.hidden
-                          ? '[Hidden Expected Output - Secret assertion]'
+                          ? 'Validates boundary conditions and edge cases safely without errors.'
                           : (selectedCase.expected || 'Expected result assertion passes')}
                       </div>
                     </div>
