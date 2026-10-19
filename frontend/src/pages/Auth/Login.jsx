@@ -287,7 +287,7 @@ export default function Login({ setUser, addToast }) {
                   </div>
                   <input
                     type="email"
-                    placeholder="name@gmail.com"
+                    placeholder="Enter your email address"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     disabled={otpSent}

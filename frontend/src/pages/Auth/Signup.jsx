@@ -327,7 +327,7 @@ export default function Signup({ setUser, addToast }) {
                       <User className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
                       <input
                         type="text"
-                        placeholder="kushalkumar"
+                        placeholder="Enter your username"
                         value={account.username}
                         onChange={(e) => setAccount((prev) => ({ ...prev, username: e.target.value }))}
                         className="w-full rounded-2xl border border-slate-800 bg-slate-950 py-3 pl-10 pr-4 text-sm text-slate-100 outline-none focus:border-cyan-400"
@@ -342,7 +342,7 @@ export default function Signup({ setUser, addToast }) {
                       <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
                       <input
                         type="email"
-                        placeholder="name@gmail.com"
+                        placeholder="Enter your email address"
                         value={account.email}
                         onChange={(e) => setAccount((prev) => ({ ...prev, email: e.target.value }))}
                         className="w-full rounded-2xl border border-slate-800 bg-slate-950 py-3 pl-10 pr-4 text-sm text-slate-100 outline-none focus:border-cyan-400"
@@ -498,7 +498,7 @@ export default function Signup({ setUser, addToast }) {
                     <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 mb-1.5 font-bold">Display Name</label>
                     <input
                       type="text"
-                      placeholder="Kushal Kumar"
+                      placeholder="e.g. Alex Smith"
                       value={profile.displayName}
                       onChange={(e) => setProfile((prev) => ({ ...prev, displayName: e.target.value }))}
                       className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
