@@ -2088,7 +2088,7 @@ def health_check_view(request):
         'database': db_status,
         'evaluator': 'ready',
         'cache': cache_status,
-        'version': '1.0.0',
+        'version': '1.0.1-smtp-fix',
         'timestamp': timezone.now().isoformat()
     }
 
@@ -3688,11 +3688,10 @@ def send_otp_view(request):
     Sends a 6-digit OTP code to the provided email or phone number.
     Works for both registration verification and OTP instant login.
     """
-    lim = apply_rate_limit(request, 'otp_send', limit=20, window_seconds=60)
-    if lim:
-        return lim
-
     try:
+        lim = apply_rate_limit(request, 'otp_send', limit=20, window_seconds=60)
+        if lim:
+            return lim
         identifier = (request.data.get('identifier') or request.data.get('email') or request.data.get('phone') or '').strip()
         purpose = (request.data.get('purpose') or 'login').strip().lower()
 
