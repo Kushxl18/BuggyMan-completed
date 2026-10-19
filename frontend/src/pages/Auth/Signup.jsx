@@ -722,8 +722,17 @@ export default function Signup({ setUser, addToast }) {
                     disabled={loading}
                     className="button-primary w-full sm:w-auto py-3 flex items-center justify-center gap-2"
                   >
-                    <span>{step === 1 ? 'Verify Email & Continue' : 'Continue'}</span>
-                    <ArrowRight className="w-4 h-4" />
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Sending verification code...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>{step === 1 ? 'Verify Email & Continue' : 'Continue'}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
                   </button>
                 ) : (
                   <button
