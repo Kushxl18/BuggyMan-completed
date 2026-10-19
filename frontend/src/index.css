@@ -256,6 +256,42 @@
   color: var(--text-secondary) !important;
 }
 
+:root:not(.dark) .theme-adaptive-page .text-cyan-300,
+:root:not(.dark) .theme-adaptive-page .text-cyan-400 {
+  color: var(--brand-cyan) !important;
+}
+
+:root:not(.dark) .theme-adaptive-page .text-emerald-300,
+:root:not(.dark) .theme-adaptive-page .text-emerald-400 {
+  color: var(--color-success) !important;
+}
+
+:root:not(.dark) .theme-adaptive-page .text-amber-300,
+:root:not(.dark) .theme-adaptive-page .text-amber-400 {
+  color: var(--color-warning) !important;
+}
+
+:root:not(.dark) .theme-adaptive-page .text-rose-300,
+:root:not(.dark) .theme-adaptive-page .text-rose-400 {
+  color: var(--color-error) !important;
+}
+
+:root:not(.dark) .theme-adaptive-page .text-purple-300,
+:root:not(.dark) .theme-adaptive-page .text-indigo-400 {
+  color: var(--brand-cyan) !important;
+}
+
+:root:not(.dark) .theme-adaptive-page .bg-emerald-950\/20,
+:root:not(.dark) .theme-adaptive-page .bg-emerald-500\/10,
+:root:not(.dark) .theme-adaptive-page .bg-emerald-500\/20 {
+  background-color: var(--color-success-bg) !important;
+}
+
+:root:not(.dark) .theme-adaptive-page .bg-cyan-500\/15,
+:root:not(.dark) .theme-adaptive-page .bg-cyan-500\/20 {
+  background-color: var(--brand-cyan-bg) !important;
+}
+
 :root:not(.dark) .theme-adaptive-page .hover\:bg-slate-800:hover,
 :root:not(.dark) .theme-adaptive-page .hover\:bg-slate-900:hover,
 :root:not(.dark) .theme-adaptive-page .hover\:bg-slate-800\/40:hover {
