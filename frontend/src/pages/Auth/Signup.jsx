@@ -457,18 +457,7 @@ export default function Signup({ setUser, addToast }) {
                     </div>
                   </div>
 
-                  {devOtpHint && (
-                    <div className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-xs text-cyan-300 flex items-center justify-between">
-                      <span>Dev environment code: <span className="font-mono font-bold tracking-widest">{devOtpHint}</span></span>
-                      <button
-                        type="button"
-                        onClick={() => setOtp(devOtpHint)}
-                        className="text-[11px] underline font-semibold hover:text-cyan-200"
-                      >
-                        Auto-fill
-                      </button>
-                    </div>
-                  )}
+
 
                   <div className="flex items-center justify-between text-xs pt-1">
                     <span className="text-slate-400">Didn't receive the code?</span>

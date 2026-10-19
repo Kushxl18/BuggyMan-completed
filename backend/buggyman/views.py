@@ -3768,9 +3768,6 @@ def send_otp_view(request):
         'userExists': bool(user),
         'emailDelivered': email_delivered
     }
-    # Only expose otpCode in response if SMTP is NOT configured (dev fallback)
-    if not email_user:
-        response_data['otpCode'] = otp
 
     return Response(response_data, status=status.HTTP_200_OK)
 
