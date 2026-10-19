@@ -272,40 +272,40 @@ export default function PvPBattle({ user, addToast }) {
   return (
     <div className="space-y-8 animate-fade-in pb-12">
       {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 border border-slate-800/80 p-8 shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-white via-slate-50 to-cyan-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-950 border border-slate-200 dark:border-slate-800/80 p-8 shadow-sm dark:shadow-xl">
         <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 -mb-12 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold tracking-wide uppercase">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold tracking-wide uppercase">
               <Swords className="w-3.5 h-3.5 animate-pulse" />
               Live Multiplayer Arena
             </div>
-            <h1 className="text-3xl md:text-4xl font-heading font-extrabold text-slate-100 tracking-tight flex items-center gap-3">
+            <h1 className="text-3xl md:text-4xl font-heading font-extrabold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-3">
               <span>⚔️</span> PvP Debugging Battle
             </h1>
-            <p className="text-slate-400 text-sm md:text-base leading-relaxed">
+            <p className="text-slate-600 dark:text-slate-400 text-sm md:text-base leading-relaxed">
               Race in real-time against another developer to diagnose, isolate, and fix broken code first. All players receive the exact same bug!
             </p>
           </div>
 
           {/* Quick Stats Pill Header */}
-          <div className="flex items-center gap-3 bg-slate-950/70 border border-slate-800/80 p-2 rounded-2xl shrink-0 backdrop-blur-sm">
-            <div className="px-4 py-2 text-center border-r border-slate-800">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Win Rate</p>
-              <p className="text-xl font-heading font-extrabold text-cyan-400">{winRate}%</p>
+          <div className="flex items-center gap-3 bg-white/90 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 p-2 rounded-2xl shrink-0 backdrop-blur-sm shadow-sm">
+            <div className="px-4 py-2 text-center border-r border-slate-200 dark:border-slate-800">
+              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Win Rate</p>
+              <p className="text-xl font-heading font-extrabold text-cyan-600 dark:text-cyan-400">{winRate}%</p>
             </div>
-            <div className="px-4 py-2 text-center border-r border-slate-800">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Win Streak</p>
-              <p className="text-xl font-heading font-extrabold text-amber-400 flex items-center justify-center gap-1">
-                <Flame className="w-4 h-4 fill-amber-400" />
+            <div className="px-4 py-2 text-center border-r border-slate-200 dark:border-slate-800">
+              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Win Streak</p>
+              <p className="text-xl font-heading font-extrabold text-amber-500 dark:text-amber-400 flex items-center justify-center gap-1">
+                <Flame className="w-4 h-4 fill-amber-500 dark:fill-amber-400 text-amber-500 dark:text-amber-400" />
                 {currentStreak}
               </p>
             </div>
             <div className="px-4 py-2 text-center">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rating</p>
-              <p className="text-xl font-heading font-extrabold text-rose-400">1,480</p>
+              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Rating</p>
+              <p className="text-xl font-heading font-extrabold text-rose-500 dark:text-rose-400">1,480</p>
             </div>
           </div>
         </div>
@@ -315,32 +315,32 @@ export default function PvPBattle({ user, addToast }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* CARD 1: Quick Match */}
-        <div className="relative group rounded-2xl bg-gradient-to-b from-cyan-950/30 to-slate-900/60 border border-cyan-500/30 hover:border-cyan-500/60 p-6 transition-all duration-300 shadow-lg flex flex-col justify-between">
+        <div className="relative group rounded-2xl bg-white dark:bg-gradient-to-b dark:from-cyan-950/30 dark:to-slate-900/60 border border-cyan-500/30 hover:border-cyan-500/60 p-6 transition-all duration-300 shadow-sm dark:shadow-lg flex flex-col justify-between">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <div className="p-3 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 shadow-inner">
+              <div className="p-3 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 dark:border-cyan-500/30 shadow-inner">
                 <Zap className="w-6 h-6" />
               </div>
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
                 Instant Queue
               </span>
             </div>
 
             <div>
-              <h2 className="text-lg font-heading font-bold text-slate-100 group-hover:text-cyan-300 transition-colors">
+              <h2 className="text-lg font-heading font-bold text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors">
                 Quick Match
               </h2>
-              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
                 Find an available opponent at your skill rating instantly with random challenge selection.
               </p>
             </div>
 
             {/* Quick Match Options */}
             <div className="space-y-2 pt-2">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 block">
                 Target Difficulty
               </label>
-              <div className="grid grid-cols-4 gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+              <div className="grid grid-cols-4 gap-1.5 bg-slate-100 dark:bg-slate-950/80 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
                 {['All', 'Easy', 'Medium', 'Hard'].map((diff) => (
                   <button
                     key={diff}
@@ -349,7 +349,7 @@ export default function PvPBattle({ user, addToast }) {
                     className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
                       selectedDifficulty === diff
                         ? 'bg-cyan-500 text-white shadow-sm'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-900'
                     }`}
                   >
                     {diff}
@@ -378,36 +378,36 @@ export default function PvPBattle({ user, addToast }) {
                 </>
               )}
             </button>
-            <p className="text-[10px] text-center text-slate-500 mt-2 font-medium">
+            <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 mt-2 font-medium">
               Average queue time: ~5 seconds
             </p>
           </div>
         </div>
 
         {/* CARD 2: Create Custom Room */}
-        <div className="relative group rounded-2xl bg-slate-900/50 border border-slate-800/60 hover:border-slate-700/80 p-6 transition-all duration-300 shadow-lg flex flex-col justify-between">
+        <div className="relative group rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/60 hover:border-purple-400/50 dark:hover:border-slate-700/80 p-6 transition-all duration-300 shadow-sm dark:shadow-lg flex flex-col justify-between">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              <div className="p-3 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
                 <Users className="w-6 h-6" />
               </div>
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
                 Friendly Duel
               </span>
             </div>
 
             <div>
-              <h2 className="text-lg font-heading font-bold text-slate-100 group-hover:text-purple-300 transition-colors">
+              <h2 className="text-lg font-heading font-bold text-slate-900 dark:text-slate-100 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors">
                 Create Room
               </h2>
-              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
                 Configure match rules, generate an invite code, and invite a friend or teammate to battle.
               </p>
             </div>
 
             {/* Time Limit Selector */}
             <div className="space-y-2 pt-2">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 block">
                 Time Limit
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -422,8 +422,8 @@ export default function PvPBattle({ user, addToast }) {
                     onClick={() => setSelectedTimeLimit(t.val)}
                     className={`py-2 px-3 text-xs font-semibold rounded-xl border transition-all ${
                       selectedTimeLimit === t.val
-                        ? 'bg-purple-500/20 border-purple-500/50 text-purple-300 font-bold'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                        ? 'bg-purple-500/15 dark:bg-purple-500/20 border-purple-500/50 text-purple-700 dark:text-purple-300 font-bold'
+                        : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-400 hover:border-purple-300 dark:hover:border-slate-700'
                     }`}
                   >
                     {t.label}
@@ -437,50 +437,50 @@ export default function PvPBattle({ user, addToast }) {
             <button
               onClick={handleCreateRoom}
               disabled={isCreatingRoom}
-              className="w-full button-secondary py-3 px-4 rounded-xl text-slate-200 hover:text-white border-purple-500/30 hover:border-purple-500/50 bg-purple-950/20 hover:bg-purple-950/40 font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+              className="w-full button-secondary py-3 px-4 rounded-xl text-slate-800 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white border-purple-400/40 dark:border-purple-500/30 hover:border-purple-500 bg-purple-50 dark:bg-purple-950/20 hover:bg-purple-100 dark:hover:bg-purple-950/40 font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
             >
               {isCreatingRoom ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                  <Loader2 className="w-4 h-4 animate-spin text-purple-600 dark:text-purple-400" />
                   <span>Generating Room...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 text-purple-400" />
+                  <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   <span>Create Battle Room</span>
                 </>
               )}
             </button>
-            <p className="text-[10px] text-center text-slate-500 mt-2 font-medium">
+            <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 mt-2 font-medium">
               Produces a 6-character room code
             </p>
           </div>
         </div>
 
         {/* CARD 3: Join Private Room */}
-        <div className="relative group rounded-2xl bg-slate-900/50 border border-slate-800/60 hover:border-slate-700/80 p-6 transition-all duration-300 shadow-lg flex flex-col justify-between">
+        <div className="relative group rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/60 hover:border-rose-400/50 dark:hover:border-slate-700/80 p-6 transition-all duration-300 shadow-sm dark:shadow-lg flex flex-col justify-between">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <div className="p-3 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+              <div className="p-3 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                 <Swords className="w-6 h-6" />
               </div>
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20">
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                 Direct Code
               </span>
             </div>
 
             <div>
-              <h2 className="text-lg font-heading font-bold text-slate-100 group-hover:text-rose-300 transition-colors">
+              <h2 className="text-lg font-heading font-bold text-slate-900 dark:text-slate-100 group-hover:text-rose-600 dark:group-hover:text-rose-300 transition-colors">
                 Join Room
               </h2>
-              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
                 Have a battle code from a friend? Paste it below to jump directly into their lobby arena.
               </p>
             </div>
 
             {/* Room Code Input Form */}
             <form onSubmit={handleJoinRoom} className="space-y-2 pt-2">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 block">
                 Enter Room Code
               </label>
               <div className="relative">
@@ -490,7 +490,7 @@ export default function PvPBattle({ user, addToast }) {
                   value={customRoomCode}
                   onChange={(e) => setCustomRoomCode(e.target.value.toUpperCase())}
                   placeholder="e.g. ROOM-8492"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm font-mono font-bold tracking-widest text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 uppercase transition-all"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm font-mono font-bold tracking-widest text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 uppercase transition-all"
                 />
               </div>
             </form>
@@ -514,7 +514,7 @@ export default function PvPBattle({ user, addToast }) {
                 </>
               )}
             </button>
-            <p className="text-[10px] text-center text-slate-500 mt-2 font-medium">
+            <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 mt-2 font-medium">
               Case insensitive code
             </p>
           </div>
@@ -523,48 +523,48 @@ export default function PvPBattle({ user, addToast }) {
       </div>
 
       {/* Rules & How PvP Works Banner */}
-      <div className="bg-slate-900/40 border border-slate-800/60 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 shrink-0">
+          <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 dark:text-amber-400 shrink-0">
             <Shield className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-heading font-bold text-slate-200">How PvP Battles Work</h3>
-            <p className="text-xs text-slate-400">
+            <h3 className="text-sm font-heading font-bold text-slate-900 dark:text-slate-200">How PvP Battles Work</h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               Both developers get the same challenge files. Run tests anytime. The first to pass 100% of the test suite or score highest before time expires wins!
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-4 text-xs font-semibold text-slate-400 shrink-0">
-          <span className="flex items-center gap-1.5"><Crown className="w-3.5 h-3.5 text-amber-400" /> +150 XP on Win</span>
-          <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-cyan-400" /> Real-time Timer</span>
+        <div className="flex items-center gap-4 text-xs font-semibold text-slate-600 dark:text-slate-400 shrink-0">
+          <span className="flex items-center gap-1.5"><Crown className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> +150 XP on Win</span>
+          <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" /> Real-time Timer</span>
         </div>
       </div>
 
       {/* Battle History Section */}
-      <div className="bg-slate-900/40 border border-slate-800/60 rounded-2xl p-6 space-y-6">
+      <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-2xl p-6 space-y-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-heading font-bold text-slate-100 flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-400" />
+            <h2 className="text-lg font-heading font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-500 dark:text-amber-400" />
               Recent Battle History
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
               Review your past head-to-head debugging matches and rating progress.
             </p>
           </div>
 
           {/* Filter Pills */}
           <div className="flex items-center gap-2">
-            <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
               {['All', 'Won', 'Lost'].map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setHistoryFilter(filter)}
                   className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                     historyFilter === filter
-                      ? 'bg-slate-800 text-slate-100 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
                   {filter}
@@ -574,26 +574,26 @@ export default function PvPBattle({ user, addToast }) {
 
             <button
               onClick={fetchHistory}
-              className="p-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl text-slate-400 hover:text-slate-200 transition-colors"
+              className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
               title="Refresh history"
             >
-              <RefreshCw className={`w-4 h-4 ${historyLoading ? 'animate-spin text-cyan-400' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${historyLoading ? 'animate-spin text-cyan-500' : ''}`} />
             </button>
           </div>
         </div>
 
         {/* History Table */}
         {historyLoading ? (
-          <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-400">
+          <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
             <Loader2 className="w-6 h-6 animate-spin text-cyan-500" />
             <p className="text-xs">Loading battle archives...</p>
           </div>
         ) : filteredHistory.length === 0 ? (
           <div className="py-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-slate-800/50 flex items-center justify-center mx-auto text-slate-500">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center mx-auto text-slate-400 dark:text-slate-500">
               <Swords className="w-6 h-6" />
             </div>
-            <p className="text-sm font-semibold text-slate-300">No battles recorded yet</p>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">No battles recorded yet</p>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
               Jump into a Quick Match or challenge a teammate to record your first competitive debugging battle!
             </p>
@@ -602,7 +602,7 @@ export default function PvPBattle({ user, addToast }) {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-800 text-[11px] uppercase tracking-wider font-bold text-slate-400">
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">
                   <th className="py-3 px-4">Result</th>
                   <th className="py-3 px-4">Opponent</th>
                   <th className="py-3 px-4">Challenge</th>
@@ -612,23 +612,23 @@ export default function PvPBattle({ user, addToast }) {
                   <th className="py-3 px-4 text-right">Date</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-xs">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-xs">
                 {filteredHistory.map((item) => {
                   const isWin = item.result === 'Won';
                   const isLoss = item.result === 'Lost';
                   return (
                     <tr 
                       key={item.id || item.battleId} 
-                      className="hover:bg-slate-800/30 transition-colors group"
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group"
                     >
                       {/* Result Pill */}
                       <td className="py-3.5 px-4 font-bold">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider ${
                           isWin 
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                             : isLoss
-                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                            : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30'
                         }`}>
                           {isWin ? <Trophy className="w-3 h-3" /> : isLoss ? <X className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
                           {item.result}
@@ -642,15 +642,15 @@ export default function PvPBattle({ user, addToast }) {
                             <img 
                               src={item.opponentAvatar} 
                               alt={item.opponentName} 
-                              className="w-7 h-7 rounded-full object-cover border border-slate-700 shrink-0" 
+                              className="w-7 h-7 rounded-full object-cover border border-slate-300 dark:border-slate-700 shrink-0" 
                             />
                           ) : (
-                            <div className="w-7 h-7 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center font-bold text-[10px] shrink-0">
+                            <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold text-[10px] shrink-0">
                               {item.opponentName?.slice(0, 2).toUpperCase() || 'OP'}
                             </div>
                           )}
                           <div>
-                            <p className="font-semibold text-slate-200 group-hover:text-cyan-300 transition-colors">
+                            <p className="font-semibold text-slate-900 dark:text-slate-200 group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors">
                               {item.opponentName}
                             </p>
                             {item.opponentRating && (
@@ -665,19 +665,19 @@ export default function PvPBattle({ user, addToast }) {
                       {/* Challenge Title */}
                       <td className="py-3.5 px-4">
                         <div>
-                          <p className="font-medium text-slate-200 truncate max-w-xs">
+                          <p className="font-medium text-slate-900 dark:text-slate-200 truncate max-w-xs">
                             {item.challengeTitle}
                           </p>
                           <div className="flex items-center gap-2 mt-0.5">
                             {item.technology && (
-                              <span className="text-[10px] font-bold text-slate-400 uppercase">
+                              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
                                 {item.technology}
                               </span>
                             )}
                             {item.difficulty && (
                               <span className={`text-[10px] font-bold ${
-                                item.difficulty === 'Easy' ? 'text-emerald-400' :
-                                item.difficulty === 'Medium' ? 'text-amber-400' : 'text-rose-400'
+                                item.difficulty === 'Easy' ? 'text-emerald-600 dark:text-emerald-400' :
+                                item.difficulty === 'Medium' ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'
                               }`}>
                                 • {item.difficulty}
                               </span>
@@ -687,7 +687,7 @@ export default function PvPBattle({ user, addToast }) {
                       </td>
 
                       {/* Score comparison */}
-                      <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-300">
+                      <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800 dark:text-slate-300">
                         <span>{item.testsPassed}</span>
                         {item.opponentTestsPassed && (
                           <span className="text-slate-500 font-normal"> vs {item.opponentTestsPassed}</span>
@@ -695,13 +695,13 @@ export default function PvPBattle({ user, addToast }) {
                       </td>
 
                       {/* Solve Time */}
-                      <td className="py-3.5 px-4 text-center font-mono text-slate-400">
+                      <td className="py-3.5 px-4 text-center font-mono text-slate-600 dark:text-slate-400">
                         {item.solveTime || '--'}
                       </td>
 
                       {/* XP Earned */}
                       <td className="py-3.5 px-4 text-right font-bold">
-                        <span className={isWin ? 'text-emerald-400' : 'text-slate-400'}>
+                        <span className={isWin ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}>
                           +{item.xpEarned || 0} XP
                         </span>
                       </td>
@@ -721,8 +721,8 @@ export default function PvPBattle({ user, addToast }) {
 
       {/* WAITING ROOM & MATCHMAKING MODAL */}
       {isWaitingModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
             
             {/* Background glow orb */}
             <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
@@ -731,29 +731,29 @@ export default function PvPBattle({ user, addToast }) {
             {matchFoundCountdown !== null ? (
               // STATE A: Opponent Found & Countdown
               <div className="text-center space-y-6 animate-fade-in py-4">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/10">
                   <Swords className="w-8 h-8 animate-bounce" />
                 </div>
 
                 <div className="space-y-1">
-                  <h3 className="text-2xl font-heading font-extrabold text-slate-100">
+                  <h3 className="text-2xl font-heading font-extrabold text-slate-900 dark:text-slate-100">
                     Opponent Found!
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
                     Match ready. Entering the arena in...
                   </p>
                 </div>
 
                 {/* Big Countdown Number */}
                 <div className="py-2">
-                  <span className="text-6xl font-heading font-extrabold text-cyan-400 animate-pulse tracking-tight">
+                  <span className="text-6xl font-heading font-extrabold text-cyan-600 dark:text-cyan-400 animate-pulse tracking-tight">
                     {matchFoundCountdown}
                   </span>
                 </div>
 
                 {/* Opponent Card Preview */}
                 {matchedOpponent && (
-                  <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center gap-3 text-left">
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center gap-3 text-left">
                     {matchedOpponent.avatar ? (
                       <img 
                         src={matchedOpponent.avatar} 
@@ -761,19 +761,19 @@ export default function PvPBattle({ user, addToast }) {
                         className="w-10 h-10 rounded-full object-cover border border-rose-500/50" 
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-rose-500/20 text-rose-300 font-bold flex items-center justify-center border border-rose-500/40">
+                      <div className="w-10 h-10 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-300 font-bold flex items-center justify-center border border-rose-500/30">
                         {matchedOpponent.name?.slice(0, 2).toUpperCase() || 'OP'}
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold text-slate-200 truncate">
+                      <p className="text-sm font-bold text-slate-900 dark:text-slate-200 truncate">
                         {matchedOpponent.name}
                       </p>
-                      <p className="text-[11px] text-slate-400 font-mono">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                         Challenger • Rating {matchedOpponent.rating || 1420}
                       </p>
                     </div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30">
                       VS
                     </span>
                   </div>
@@ -786,42 +786,42 @@ export default function PvPBattle({ user, addToast }) {
                 {/* Radar Pulse Animation */}
                 <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
                   <div className="absolute inset-0 rounded-full bg-cyan-500/20 animate-ping opacity-75" />
-                  <div className="relative w-16 h-16 rounded-full bg-slate-950 border-2 border-cyan-500/50 flex items-center justify-center text-cyan-400 shadow-glow-cyan">
+                  <div className="relative w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-950 border-2 border-cyan-500/50 flex items-center justify-center text-cyan-600 dark:text-cyan-400 shadow-glow-cyan">
                     <Swords className="w-7 h-7" />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <h3 className="text-xl font-heading font-extrabold text-slate-100 flex items-center justify-center gap-2">
+                  <h3 className="text-xl font-heading font-extrabold text-slate-900 dark:text-slate-100 flex items-center justify-center gap-2">
                     <span>Waiting for Opponent</span>
                     <span className="flex gap-1">
-                      <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                      <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                      <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce"></span>
+                      <span className="w-1.5 h-1.5 bg-cyan-500 dark:bg-cyan-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                      <span className="w-1.5 h-1.5 bg-cyan-500 dark:bg-cyan-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                      <span className="w-1.5 h-1.5 bg-cyan-500 dark:bg-cyan-400 rounded-full animate-bounce"></span>
                     </span>
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
                     Matchmaking in progress. Share the room code below with a friend.
                   </p>
                 </div>
 
                 {/* Room Code Display Box */}
                 {activeBattle?.roomCode && (
-                  <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-2">
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-2">
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                       Battle Room Code
                     </p>
-                    <div className="flex items-center justify-between gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5">
-                      <span className="font-mono text-xl font-extrabold text-cyan-400 tracking-wider">
+                    <div className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 shadow-sm">
+                      <span className="font-mono text-xl font-extrabold text-cyan-600 dark:text-cyan-400 tracking-wider">
                         {activeBattle.roomCode}
                       </span>
                       <button
                         onClick={handleCopyRoomCode}
-                        className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-200 transition-colors"
+                        className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
                         title="Copy code"
                       >
                         {copiedCode ? (
-                          <Check className="w-4 h-4 text-emerald-400" />
+                          <Check className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
                         ) : (
                           <Copy className="w-4 h-4" />
                         )}
@@ -834,7 +834,7 @@ export default function PvPBattle({ user, addToast }) {
                 <div className="pt-2">
                   <button
                     onClick={handleCancelBattle}
-                    className="w-full button-secondary py-2.5 text-xs text-rose-400 hover:text-rose-300 border-rose-500/30 hover:border-rose-500/60 bg-rose-950/20"
+                    className="w-full button-secondary py-2.5 text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 border-rose-300 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-950/20"
                   >
                     Cancel Matchmaking
                   </button>

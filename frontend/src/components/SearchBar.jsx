@@ -17,7 +17,7 @@ export default function SearchBar({ value, onChange, placeholder = 'Search chall
       {value && onClear && (
         <button
           onClick={onClear}
-          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 transition-colors"
+          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
         >
           <X className="h-4 w-4" />
         </button>

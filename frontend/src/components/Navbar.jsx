@@ -41,22 +41,22 @@ export default function Navbar({ user, theme, toggleTheme, notifications = [], o
         {user && (
           <div className="hidden sm:flex items-center gap-2.5 text-xs font-semibold">
             {/* Streak */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-amber-400">
-              <Flame className="w-4 h-4 fill-amber-400" />
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-amber-600 dark:text-amber-400">
+              <Flame className="w-4 h-4 fill-amber-500 dark:fill-amber-400 text-amber-500 dark:text-amber-400" />
               <span>{user.streak} Day Streak</span>
             </div>
             {/* BugBytes Store Link */}
             <Link 
               to="/store" 
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-amber-500 hover:border-amber-500/50 hover:bg-amber-500/10 font-bold transition-all" 
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-amber-700 dark:text-amber-400 hover:border-amber-500/50 hover:bg-amber-500/10 font-bold transition-all" 
               title="Visit BugBytes Store — Purchase credits & earn money back"
             >
-              <Bug className="w-4 h-4 text-amber-400" />
+              <Bug className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <span>{user.bugbytes_balance ?? user.bugbytesBalance ?? 50} BugBytes</span>
             </Link>
             {/* Points */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-cyan-400">
-              <Award className="w-4 h-4 text-cyan-400" />
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-cyan-700 dark:text-cyan-400">
+              <Award className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
               <span>{user.totalScore} XP</span>
             </div>
           </div>
@@ -65,21 +65,21 @@ export default function Navbar({ user, theme, toggleTheme, notifications = [], o
         {/* Theme Switcher */}
         <button
           onClick={toggleTheme}
-          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-all active:scale-95"
+          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-all active:scale-95"
           title="Toggle Theme"
         >
-          {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400 animate-pulse-glow" /> : <Moon className="w-4 h-4" />}
+          {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400 animate-pulse-glow" /> : <Moon className="w-4 h-4 text-slate-700" />}
         </button>
 
         {/* Notifications Icon */}
         <Link
           to="/settings?tab=notifications"
-          className="relative p-2 hover:bg-slate-100 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-all active:scale-95"
+          className="relative p-2 hover:bg-slate-100 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-all active:scale-95"
           title="Notifications Inbox"
         >
           <Bell className="w-4 h-4" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 border border-slate-950 text-white rounded-full flex items-center justify-center text-[9px] font-bold">
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 border border-white dark:border-slate-950 text-white rounded-full flex items-center justify-center text-[9px] font-bold">
               {unreadCount}
             </span>
           )}

@@ -70,7 +70,7 @@ export default function FilterPanel({
       {hasActiveFilters && (
         <button
           onClick={onReset}
-          className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors font-medium border border-slate-800 px-3 py-1.5 rounded-lg bg-slate-950/20"
+          className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors font-medium border border-slate-300 dark:border-slate-800 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-950/20"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           <span>Reset Filters</span>
