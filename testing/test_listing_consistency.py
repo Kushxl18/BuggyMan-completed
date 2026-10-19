@@ -145,6 +145,32 @@ def test_detail_page_title_consistency():
         "ProblemStatementPanel does not check challenge.displayTitle!"
     print("    [PASSED] ProblemStatementPanel aligns with authoritative displayTitle.")
 
+def test_no_expected_behavior_and_no_editorial_solutions():
+    print("--> Test 5: Verifying Expected Behavior, Editorial/Hints, and Solutions are completely removed...")
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    formatter_path = os.path.join(project_root, 'frontend', 'src', 'components', 'ProblemStatementFormatter.jsx')
+    panel_path = os.path.join(project_root, 'frontend', 'src', 'pages', 'Challenge', 'ProblemStatementPanel.jsx')
+
+    with open(formatter_path, 'r', encoding='utf-8') as f:
+        fmt_code = f.read()
+
+    assert '<span>Expected Behavior</span>' not in fmt_code, \
+        "Expected Behavior section is still present in ProblemStatementFormatter.jsx!"
+    print("    [PASSED] ProblemStatementFormatter: Verified 'Expected Behavior' section is completely removed.")
+
+    with open(panel_path, 'r', encoding='utf-8') as f:
+        panel_code = f.read()
+
+    assert '<span>Editorial / Hints</span>' not in panel_code, \
+        "Editorial / Hints tab is still present in ProblemStatementPanel.jsx!"
+    assert '<span>Solutions</span>' not in panel_code, \
+        "Solutions tab is still present in ProblemStatementPanel.jsx!"
+    assert "handleTabChange('editorial')" not in panel_code, \
+        "Editorial tab handler still referenced in ProblemStatementPanel.jsx!"
+    assert "handleTabChange('solutions')" not in panel_code, \
+        "Solutions tab handler still referenced in ProblemStatementPanel.jsx!"
+    print("    [PASSED] ProblemStatementPanel: Verified Editorial/Hints and Solutions tabs are completely removed.")
+
 if __name__ == '__main__':
     print("=" * 70)
     print("RUNNING LISTING METADATA CONSISTENCY & UI AUDIT TEST SUITE")
@@ -153,6 +179,7 @@ if __name__ == '__main__':
     test_recommender_arena_counts()
     test_ui_listing_cards_no_descriptions()
     test_detail_page_title_consistency()
+    test_no_expected_behavior_and_no_editorial_solutions()
     print("=" * 70)
     print("ALL TESTS PASSED SUCCESSFULLY! (100% COMPLIANT)")
     print("=" * 70)

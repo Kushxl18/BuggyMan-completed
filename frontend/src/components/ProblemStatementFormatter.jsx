@@ -190,7 +190,6 @@ export function parseProblemStatement(description = '', title = '', technology =
     problemStatement,
     examples,
     constraints,
-    expectedBehavior: cleanExpected,
     isSql,
     isFrontend
   };
@@ -208,7 +207,6 @@ export default function ProblemStatementFormatter({
     problemStatement,
     examples,
     constraints,
-    expectedBehavior,
     isSql,
     isFrontend
   } = parseProblemStatement(description, title, technology, category, testCases, files);
@@ -286,19 +284,6 @@ export default function ProblemStatementFormatter({
               </li>
             ))}
           </ul>
-        </div>
-      )}
-
-      {/* D. Expected Behavior */}
-      {expectedBehavior && (
-        <div className="p-3 rounded-xl bg-emerald-950/15 border border-emerald-500/25 space-y-1">
-          <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-xs">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span>Expected Behavior</span>
-          </div>
-          <p className="text-slate-300 text-xs leading-normal pl-5">
-            {formatInlineText(expectedBehavior)}
-          </p>
         </div>
       )}
     </div>

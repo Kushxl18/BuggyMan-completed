@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FileText, 
-  BookOpen, 
-  Lightbulb, 
-  FlaskConical, 
   History, 
   FolderOpen,
   CheckCircle2, 
@@ -19,10 +16,6 @@ import {
   Sparkles,
   Send,
   X,
-  Code2,
-  Lock,
-  Eye,
-  AlertTriangle,
   Loader2,
   Clock
 } from 'lucide-react';
@@ -55,19 +48,11 @@ export default function ProblemStatementPanel({
   const [realSubmissions, setRealSubmissions] = useState([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
-  // Solutions Tab State
-  const [solutionData, setSolutionData] = useState(null);
-  const [solutionRevealed, setSolutionRevealed] = useState(false);
-  const [loadingSolution, setLoadingSolution] = useState(false);
-
   // Report Modal State
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportType, setReportType] = useState('broken_challenge');
   const [reportDescription, setReportDescription] = useState('');
   const [submittingReport, setSubmittingReport] = useState(false);
-
-  // Progressive Hints (Level 1 unlocked by default, 2 and 3 unlocked on click)
-  const [unlockedHints, setUnlockedHints] = useState([1]);
 
   useEffect(() => {
     if (activeTab) setCurrentTab(activeTab);
@@ -76,9 +61,6 @@ export default function ProblemStatementPanel({
   // Load actual persistent engagement on challenge mount
   useEffect(() => {
     if (!challenge?.id) return;
-    setSolutionRevealed(false);
-    setSolutionData(null);
-    setUnlockedHints([1]);
 
     challengeService.getEngagement(challenge.id)
       .then(res => {
@@ -127,31 +109,6 @@ export default function ProblemStatementPanel({
   const topics = challenge.topics && challenge.topics.length > 0 
     ? challenge.topics 
     : [challenge.technology || 'Engineering', challenge.category || 'Debugging'];
-
-  // Progressive hints tailored to challenge without answer leaks
-  const hints = [
-    {
-      level: 1,
-      title: 'Symptom & Edge Case Observation',
-      text: challenge.aiSuggestions && challenge.aiSuggestions[0] 
-        ? challenge.aiSuggestions[0] 
-        : `Inspect the boundary conditions in ${files[0]?.name || 'the implementation'}. Observe how edge cases (such as NULL, 0, or empty inputs) affect evaluation.`
-    },
-    {
-      level: 2,
-      title: 'Underlying Mechanism & Architecture',
-      text: challenge.aiSuggestions && challenge.aiSuggestions[1]
-        ? challenge.aiSuggestions[1]
-        : `Review the execution lifecycle in ${challenge.technology || 'the system'}. Check how state mutations, comparisons, or filter predicates are structured.`
-    },
-    {
-      level: 3,
-      title: 'Debugging & Investigation Direction',
-      text: challenge.aiSuggestions && challenge.aiSuggestions[2]
-        ? challenge.aiSuggestions[2]
-        : `Trace the exact control flow for the failing test case. Verify that all records satisfy the required specification before returning output.`
-    }
-  ];
 
   // Persistent Reaction Toggle
   const handleToggleReaction = async (reaction) => {
@@ -229,21 +186,6 @@ export default function ProblemStatementPanel({
     }
   };
 
-  const handleRevealSolution = async () => {
-    if (solutionRevealed && solutionData) return;
-    setLoadingSolution(true);
-    try {
-      const res = await challengeService.getSolution(challenge.id);
-      setSolutionData(res);
-      setSolutionRevealed(true);
-      if (addToast) addToast('Official solution unlocked.', 'info');
-    } catch (err) {
-      if (addToast) addToast('Failed to load reference solution.', 'error');
-    } finally {
-      setLoadingSolution(false);
-    }
-  };
-
   const difficultyColor = 
     challenge.difficulty === 'Easy' 
       ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' 
@@ -268,30 +210,6 @@ export default function ProblemStatementPanel({
           >
             <FileText className="w-3.5 h-3.5 text-cyan-400" />
             <span>Description</span>
-          </button>
-
-          <button
-            onClick={() => handleTabChange('editorial')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-              currentTab === 'editorial'
-                ? 'bg-slate-800/90 text-amber-400 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-            }`}
-          >
-            <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-            <span>Editorial / Hints</span>
-          </button>
-
-          <button
-            onClick={() => handleTabChange('solutions')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-              currentTab === 'solutions'
-                ? 'bg-slate-800/90 text-indigo-400 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-            }`}
-          >
-            <FlaskConical className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Solutions</span>
           </button>
 
           <button
@@ -398,7 +316,7 @@ export default function ProblemStatementPanel({
               )}
             </div>
 
-            {/* Concise LeetCode Style Problem Statement (Problem Statement, Examples, Constraints, Expected Behavior) */}
+            {/* Concise LeetCode Style Problem Statement (Problem Statement, Examples, Constraints) */}
             <div className="pt-2">
               <ProblemStatementFormatter
                 description={challenge.description}
@@ -412,153 +330,7 @@ export default function ProblemStatementPanel({
           </div>
         )}
 
-        {/* TAB 2: EDITORIAL / HINTS */}
-        {currentTab === 'editorial' && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
-              <Lightbulb className="w-4 h-4 text-amber-400" />
-              <h3 className="font-bold text-sm text-slate-100">Progressive Debugging Hints</h3>
-            </div>
-
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Use progressive hints to guide your investigation without spoiling the defect or solution code.
-            </p>
-
-            <div className="space-y-3">
-              {hints.map((hint) => {
-                const isUnlocked = unlockedHints.includes(hint.level);
-                return (
-                  <div 
-                    key={hint.level} 
-                    className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950/60"
-                  >
-                    <div 
-                      onClick={() => {
-                        if (!isUnlocked) {
-                          setUnlockedHints(prev => [...prev, hint.level]);
-                        }
-                      }}
-                      className="flex items-center justify-between p-3 cursor-pointer hover:bg-slate-900/80 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold ${
-                          isUnlocked ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-500'
-                        }`}>
-                          {hint.level}
-                        </span>
-                        <span className="text-xs font-semibold text-slate-200">{hint.title}</span>
-                      </div>
-                      {!isUnlocked ? (
-                        <span className="text-[11px] text-cyan-400 font-semibold hover:underline">Reveal Hint</span>
-                      ) : (
-                        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                      )}
-                    </div>
-
-                    {isUnlocked && (
-                      <div className="p-3 pt-0 text-xs text-slate-300 leading-relaxed border-t border-slate-800/40 mt-1">
-                        {hint.text}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: SOLUTIONS */}
-        {currentTab === 'solutions' && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
-              <FlaskConical className="w-4 h-4 text-indigo-400" />
-              <h3 className="font-bold text-sm text-slate-100">Official Solution & Root Cause Walkthrough</h3>
-            </div>
-
-            {!solutionRevealed ? (
-              <div className="p-6 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-4">
-                <div className="w-12 h-12 rounded-full bg-indigo-500/10 border border-indigo-500/20 mx-auto flex items-center justify-center">
-                  <Lock className="w-6 h-6 text-indigo-400" />
-                </div>
-                <div className="space-y-1">
-                  <h4 className="font-bold text-sm text-slate-200">Reference Solution Guard</h4>
-                  <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
-                    Try solving the defect using progressive hints first. Revealing the solution displays the root-cause analysis and reference implementation.
-                  </p>
-                </div>
-                <button
-                  onClick={handleRevealSolution}
-                  disabled={loadingSolution}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition-all shadow-sm flex items-center gap-2 mx-auto disabled:opacity-50"
-                >
-                  {loadingSolution ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
-                  <span>Reveal Reference Solution</span>
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4 animate-fade-in">
-                {/* Root Cause Analysis */}
-                <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
-                  <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Root Cause Analysis</span>
-                  </h4>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    {solutionData?.rootCause || 'The defect occurred due to an unhandled boundary condition during input evaluation.'}
-                  </p>
-                </div>
-
-                {/* Explanation */}
-                <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
-                  <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Fix Explanation</span>
-                  </h4>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    {solutionData?.explanation || 'The reference fix restores expected behavior by applying defensive validation.'}
-                  </p>
-                </div>
-
-                {/* Reference Implementation Code */}
-                {solutionData?.files && solutionData.files.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <Code2 className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Reference Fix Implementation</span>
-                    </h4>
-                    {solutionData.files.map((file, idx) => (
-                      <div key={idx} className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950">
-                        <div className="px-3 py-1.5 bg-slate-900 border-b border-slate-800 text-[11px] font-mono text-slate-300">
-                          {file.name}
-                        </div>
-                        <pre className="p-3 text-[11px] font-mono text-emerald-300 overflow-x-auto leading-relaxed">
-                          {file.content}
-                        </pre>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Prevention Patterns */}
-                {solutionData?.prevention && (
-                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
-                    <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Production Prevention Guidelines</span>
-                    </h4>
-                    <ul className="space-y-1.5 text-xs text-slate-300 list-disc pl-4">
-                      {solutionData.prevention.map((item, idx) => (
-                        <li key={idx} className="leading-relaxed">{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 4: SUBMISSIONS */}
+        {/* TAB 2: SUBMISSIONS */}
         {currentTab === 'submissions' && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
