@@ -713,16 +713,18 @@ export default function Signup({ setUser, addToast }) {
               </div>
             )}
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-8">
-              <button
-                type="button"
-                onClick={handleBack}
-                disabled={step === 1 || loading}
-                className="button-secondary w-full sm:w-auto py-3 flex items-center justify-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back</span>
-              </button>
+            <div className={`flex flex-col gap-3 sm:flex-row sm:items-center ${step === 1 ? 'sm:justify-end' : 'sm:justify-between'} mt-8`}>
+              {step > 1 && (
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  disabled={loading}
+                  className="button-secondary w-full sm:w-auto py-3 flex items-center justify-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Back</span>
+                </button>
+              )}
               <div className="flex gap-3 w-full sm:w-auto">
                 {step < 5 ? (
                   <button
