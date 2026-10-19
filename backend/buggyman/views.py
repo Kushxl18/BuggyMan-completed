@@ -2088,7 +2088,7 @@ def health_check_view(request):
         'database': db_status,
         'evaluator': 'ready',
         'cache': cache_status,
-        'version': '1.0.1-smtp-fix',
+        'version': '1.0.2-diag-500',
         'timestamp': timezone.now().isoformat()
     }
 
