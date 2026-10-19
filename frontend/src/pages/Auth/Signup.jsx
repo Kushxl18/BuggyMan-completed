@@ -78,7 +78,7 @@ export default function Signup({ setUser, addToast }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [account, setAccount] = useState({ username: '', email: '', password: '', confirmPassword: '', showPassword: false });
+  const [account, setAccount] = useState({ username: '', email: '', password: '', confirmPassword: '', showPassword: false, showConfirmPassword: false });
   const [otp, setOtp] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
   const [devOtpHint, setDevOtpHint] = useState('');
@@ -381,13 +381,20 @@ export default function Signup({ setUser, addToast }) {
                       <div className="relative">
                         <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
                         <input
-                          type={account.showPassword ? 'text' : 'password'}
+                          type={account.showConfirmPassword ? 'text' : 'password'}
                           placeholder="••••••••"
                           value={account.confirmPassword}
                           onChange={(e) => setAccount((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                          className="w-full rounded-2xl border border-slate-800 bg-slate-950 py-3 pl-10 pr-4 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                          className="w-full rounded-2xl border border-slate-800 bg-slate-950 py-3 pl-10 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-400"
                           required
                         />
+                        <button
+                          type="button"
+                          onClick={() => setAccount((prev) => ({ ...prev, showConfirmPassword: !prev.showConfirmPassword }))}
+                          className="absolute right-3.5 top-3.5 text-slate-500 hover:text-slate-300"
+                        >
+                          {account.showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
                       </div>
                     </div>
                   </div>
