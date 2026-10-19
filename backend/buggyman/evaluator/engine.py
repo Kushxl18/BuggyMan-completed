@@ -153,32 +153,57 @@ class EvaluationEngine:
         tests_total = len(test_results)
         tests_passed = len([t for t in test_results if t.get('passed')])
 
-        # Sanitize hidden test results for secure client delivery
+        # Sanitize test results for secure client delivery
         sanitized_results = []
-        for tr in test_results:
+        chal_title = challenge.get('title', '') if isinstance(challenge, dict) else (getattr(challenge, 'title', '') or '')
+        chal_title_lower = str(chal_title).lower()
+
+        chal_tech = challenge.get('technology', '') if isinstance(challenge, dict) else (getattr(challenge, 'technology', '') or '')
+        tech_lower = str(chal_tech).lower()
+
+        for idx, tr in enumerate(test_results):
             is_hidden = bool(tr.get('hidden', False))
-            if is_hidden:
-                sanitized_results.append({
-                    'id': tr.get('id'),
-                    'name': tr.get('name') or f"Hidden Test {tr.get('id', '')}",
-                    'passed': bool(tr.get('passed', False)),
-                    'hidden': True,
-                    'input': '[Hidden Test Input]',
-                    'expected': 'Validates boundary conditions and edge cases safely.',
-                    'actual': 'Matched hidden assertion' if tr.get('passed') else 'Hidden test assertion failed',
-                    'error': None if tr.get('passed') else 'Hidden test assertion failed: Boundary condition check did not pass.'
-                })
-            else:
-                sanitized_results.append({
-                    'id': tr.get('id'),
-                    'name': tr.get('name', 'Test Case'),
-                    'passed': bool(tr.get('passed', False)),
-                    'hidden': False,
-                    'input': tr.get('input', ''),
-                    'expected': tr.get('expected', ''),
-                    'actual': tr.get('actual', ''),
-                    'error': tr.get('error')
-                })
+            is_passed = bool(tr.get('passed', False))
+            test_name = f"Test Case {idx + 1}"
+
+            # Provide helpful, non-revealing feedback when failed
+            hint = None
+            if not is_passed:
+                raw_err = tr.get('error') or tr.get('actual') or ''
+                # Syntax or runtime errors can be reported cleanly
+                if any(err_type in str(raw_err) for err_type in ['SyntaxError', 'OperationalError', 'TypeError', 'ReferenceError', 'IndexError', 'KeyError', 'NameError']):
+                    hint = str(raw_err).strip().split('\n')[-1]
+                else:
+                    if 'null' in chal_title_lower:
+                        hint = "Check how NULL values are handled."
+                    elif 'where' in chal_title_lower or 'filter' in chal_title_lower:
+                        hint = "The result set does not match the required filter conditions."
+                    elif 'order' in chal_title_lower or 'sort' in chal_title_lower:
+                        hint = "Check record ordering and sorting criteria."
+                    elif 'join' in chal_title_lower:
+                        hint = "Check join relationships and matching key conditions."
+                    elif 'group' in chal_title_lower or 'aggregate' in chal_title_lower:
+                        hint = "Check aggregation logic and grouping columns."
+                    elif 'duplicate' in chal_title_lower or 'distinct' in chal_title_lower or 'unique' in chal_title_lower:
+                        hint = "Check handling of duplicate records or unique constraints."
+                    elif 'pagination' in chal_title_lower or 'boundary' in chal_title_lower or 'limit' in chal_title_lower:
+                        hint = "Check boundary conditions and indexing."
+                    elif 'state' in chal_title_lower or 'react' in tech_lower:
+                        hint = "The component state or event handler did not produce the expected interaction result."
+                    else:
+                        hint = "The result does not match the required behavior."
+
+            sanitized_results.append({
+                'id': idx + 1,
+                'name': test_name,
+                'passed': is_passed,
+                'hidden': is_hidden,
+                'input': tr.get('input', '') if not is_hidden else '',
+                'expected': None,
+                'actual': None,
+                'error': hint if not is_passed else None,
+                'hint': hint if not is_passed else None
+            })
 
         timed_out = res.get('timed_out', False)
         exit_code = res.get('exit_code', -1)

@@ -753,7 +753,7 @@ class SQLRuntimeAdapter(BaseRuntimeAdapter):
 
                 if has_bug:
                     passed = False
-                    actual_output = f"Bug signature still detected in query: '{bug_sig}'"
+                    actual_output = "Defect pattern still detected in query."
                     err_detail = actual_output
                 elif expected_rows or expected_columns:
                     cols_ok = True
@@ -773,24 +773,24 @@ class SQLRuntimeAdapter(BaseRuntimeAdapter):
                             rows_ok = (set(tuple(r) for r in last_rows) == set(tuple(r) for r in expected_rows))
 
                     passed = cols_ok and rows_ok
-                    actual_output = stdout if passed else f"Returned {len(last_rows)} rows (Expected {len(expected_rows)} matching rows)."
+                    actual_output = stdout if passed else f"Returned {len(last_rows)} rows."
                     if not passed:
                         if not cols_ok:
-                            err_detail = f"Column schema mismatch. Expected columns: {expected_columns}, Got: {last_columns}"
+                            err_detail = "Column schema mismatch. Returned columns do not match expected result schema."
                         elif not rows_ok and ordered_comparison:
-                            err_detail = f"Row order mismatch. Expected:\n{expected_table_str}\nGot:\n{stdout}"
+                            err_detail = "Row ordering mismatch. Records are not sorted in the expected order."
                         elif not rows_ok:
-                            err_detail = f"Result set mismatch. Expected rows:\n{expected_table_str}\nGot:\n{stdout}"
+                            err_detail = "Result set mismatch. Query returned unexpected row values or record count."
                 else:
                     if expected_str:
                         norm_expected = re.sub(r'\s+', ' ', expected_str).strip().lower()
                         norm_stdout = re.sub(r'\s+', ' ', stdout).strip().lower()
                         if norm_expected in norm_stdout:
                             passed = True
-                            actual_output = expected_str
+                            actual_output = "Assertion passed."
                         else:
                             passed = False
-                            actual_output = f"Result did not satisfy assertion: '{expected_str}'"
+                            actual_output = "Result does not match the required behavior."
                             err_detail = actual_output
                     else:
                         passed = False

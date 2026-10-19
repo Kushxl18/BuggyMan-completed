@@ -183,6 +183,33 @@ class Challenge(models.Model):
                     preview_target = f"{clean_name} Component"
                     break
 
+        # Sanitize test cases for client delivery:
+        # Completely exclude hidden tests and remove internal assertions/solution conditions
+        client_test_cases = []
+        raw_cases = self.test_cases or []
+        for idx, tc in enumerate(raw_cases):
+            is_hidden = bool(tc.get('hidden') or tc.get('is_hidden') or 'hidden' in str(tc.get('name', '')).lower())
+            if is_hidden:
+                continue
+
+            client_test_cases.append({
+                'id': idx + 1,
+                'name': f"Sample Case {len(client_test_cases) + 1}",
+                'input': tc.get('input', ''),
+                'expected': "Validates core functional behavior and expected output structure.",
+                'hidden': False
+            })
+
+        if not client_test_cases and raw_cases:
+            first_tc = raw_cases[0]
+            client_test_cases.append({
+                'id': 1,
+                'name': "Sample Case 1",
+                'input': first_tc.get('input', ''),
+                'expected': "Validates core functional behavior and expected output structure.",
+                'hidden': False
+            })
+
         return {
             'id': str(self.id),
             'title': self.title,
@@ -214,14 +241,16 @@ class Challenge(models.Model):
             'tables': tables,
             'previewTarget': preview_target,
             'files': self.files or [],
-            'testCases': self.test_cases or [],
-            'test_cases': self.test_cases or [],
-            'bugSignature': self.bug_signature,
-            'bug_signature': self.bug_signature,
+            'testCases': client_test_cases,
+            'test_cases': client_test_cases,
+            'totalTests': len(raw_cases),
+            'total_tests': len(raw_cases),
+            'bugSignature': '',
+            'bug_signature': '',
             'suspectedComponent': self.suspected_component,
             'suspected_component': self.suspected_component,
-            'aiSuggestions': self.ai_suggestions or [],
-            'ai_suggestions': self.ai_suggestions or []
+            'aiSuggestions': [],
+            'ai_suggestions': []
         }
 
 class Notification(models.Model):

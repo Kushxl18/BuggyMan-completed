@@ -7,7 +7,6 @@ import {
   AlertOctagon, 
   Clock, 
   Eye, 
-  Sparkles, 
   Loader2, 
   ChevronDown, 
   ChevronUp,
@@ -36,8 +35,9 @@ export default function OutputPanel({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showStdout, setShowStdout] = useState(false);
 
-  // Derive structured test cases
-  const comprehensiveCases = deriveComprehensiveTestCases(testCases, challenge?.title, technology);
+  // Active cases: prioritize evaluated results from lastRunResult if available
+  const activeCasesSource = (lastRunResult?.testCases || lastRunResult?.test_results || testCases || []);
+  const comprehensiveCases = deriveComprehensiveTestCases(activeCasesSource, challenge?.title, technology);
 
   // When run completes, automatically switch to Test Result tab
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function OutputPanel({
   const passedCount = comprehensiveCases.filter(t => t.passed === true).length;
   const totalCount = comprehensiveCases.length;
   const isAllPassed = totalCount > 0 && passedCount === totalCount;
-  const hasRun = lastRunResult !== null || runOutput.length > 0 || compileError.length > 0 || (testCases.length > 0 && testCases.some(t => t.passed !== undefined));
+  const hasRun = lastRunResult !== null || runOutput.length > 0 || compileError.length > 0 || (comprehensiveCases.length > 0 && comprehensiveCases.some(t => t.passed !== undefined));
 
   const selectedCase = comprehensiveCases[selectedCaseIdx] || comprehensiveCases[0] || null;
 
@@ -242,23 +242,25 @@ export default function OutputPanel({
                   )}
                 </div>
 
-                <div className="space-y-1">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Requirement Assertion
-                  </span>
-                  <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-200 font-mono">
-                    {selectedCase.name}
+                {selectedCase.input && (
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                      Input
+                    </span>
+                    <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-cyan-300 font-mono whitespace-pre-wrap">
+                      {selectedCase.input}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="space-y-1">
                   <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Expected Behavior / Assertion Output
+                    Description
                   </span>
-                  <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-emerald-400 font-mono">
-                    {selectedCase.hidden 
-                      ? 'Validates boundary conditions and edge cases safely without errors.'
-                      : (selectedCase.expected || 'Passes assertion without defect')}
+                  <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-300 font-sans">
+                    {selectedCase.hidden
+                      ? 'Hidden evaluation test. Validates boundary conditions and edge cases during execution.'
+                      : 'Sample case verification. Validates core functional requirements against sample input data.'}
                   </div>
                 </div>
               </div>
@@ -311,24 +313,27 @@ export default function OutputPanel({
                   </span>
                 </div>
 
-                {/* Case Selector Tabs */}
+                {/* Scannable Case Selector: Test Case 1 — Passed / Failed */}
                 <div className="flex items-center gap-2 overflow-x-auto pb-1">
                   {comprehensiveCases.map((tc, idx) => {
                     const isCasePassed = tc.passed === true;
+                    const isCaseFailed = tc.passed === false;
                     return (
                       <button
                         key={idx}
                         onClick={() => setSelectedCaseIdx(idx)}
-                        className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg border transition-all ${
+                        className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all shrink-0 ${
                           selectedCaseIdx === idx
                             ? 'bg-slate-800 text-slate-100 border-slate-700 shadow-sm'
                             : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-slate-200'
                         }`}
                       >
-                        <span className={`w-1.5 h-1.5 rounded-full ${isCasePassed ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-                        <span>Case {idx + 1}</span>
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${
+                          isCasePassed ? 'bg-emerald-400' : isCaseFailed ? 'bg-rose-500' : 'bg-slate-500'
+                        }`} />
+                        <span>Test Case {idx + 1} — {isCasePassed ? 'Passed' : isCaseFailed ? 'Failed' : 'Pending'}</span>
                         {tc.hidden && (
-                          <span className="text-[10px] text-purple-400" title="Hidden Test Case">🔒</span>
+                          <span className="text-[10px] text-purple-400 ml-0.5" title="Hidden Test Case">🔒</span>
                         )}
                       </button>
                     );
@@ -337,55 +342,38 @@ export default function OutputPanel({
 
                 {/* Selected Case Inspection */}
                 {selectedCase && (
-                  <div className="space-y-3 font-mono text-xs">
-                    <div className="flex items-center gap-2">
-                      {selectedCase.hidden ? (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 flex items-center gap-1">
-                          <span>🔒</span> Hidden Evaluation Test
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1">
-                          <span>👁️</span> Visible Sample Test
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="space-y-1">
-                      <span className="text-[11px] font-sans font-semibold text-slate-400 uppercase tracking-wider">
-                        Requirement
+                  <div className="space-y-3 font-sans text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-200 text-sm">
+                        Test Case {selectedCaseIdx + 1}
                       </span>
-                      <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-200">
-                        {selectedCase.name}
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <span className="text-[11px] font-sans font-semibold text-slate-400 uppercase tracking-wider">
-                        Expected Output
-                      </span>
-                      <div className="p-2.5 rounded-lg bg-slate-900/80 border border-emerald-500/20 text-emerald-400">
-                        {selectedCase.hidden
-                          ? 'Validates boundary conditions and edge cases safely without errors.'
-                          : (selectedCase.expected || 'Expected result assertion passes')}
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <span className="text-[11px] font-sans font-semibold text-slate-400 uppercase tracking-wider">
-                        Actual Result
-                      </span>
-                      <div className={`p-2.5 rounded-lg border ${
-                        selectedCase.passed 
-                          ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300' 
-                          : 'bg-rose-950/20 border-rose-500/30 text-rose-300'
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+                        selectedCase.passed === true
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                          : selectedCase.passed === false
+                          ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                          : 'bg-slate-800 text-slate-400'
                       }`}>
-                        {selectedCase.passed 
-                          ? 'Matched expected specification' 
-                          : selectedCase.hidden
-                            ? 'Hidden test assertion failed: The solution produced an incorrect result or encountered an unhandled edge case on this hidden test case.'
-                            : (selectedCase.actual || selectedCase.error || 'Failed test assertion: Bug pattern detected')}
-                      </div>
+                        {selectedCase.passed === true ? 'PASSED' : selectedCase.passed === false ? 'FAILED' : 'PENDING'}
+                      </span>
                     </div>
+
+                    {selectedCase.passed === true && (
+                      <div className="p-3 rounded-lg bg-emerald-950/20 border border-emerald-500/30 text-emerald-300">
+                        Test Case {selectedCaseIdx + 1} passed successfully.
+                      </div>
+                    )}
+
+                    {selectedCase.passed === false && (
+                      <div className="p-3 rounded-lg bg-rose-950/20 border border-rose-500/30 text-rose-300 space-y-1.5">
+                        <div className="font-semibold text-rose-400 text-xs">
+                          Feedback:
+                        </div>
+                        <div className="text-slate-300 text-xs leading-relaxed">
+                          {selectedCase.hint || selectedCase.error || "The result does not match the required behavior."}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

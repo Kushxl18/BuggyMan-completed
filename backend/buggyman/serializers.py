@@ -19,10 +19,10 @@ class UserSerializer(serializers.ModelSerializer):
 
 class ChallengeSerializer(serializers.ModelSerializer):
     timeEstimate = serializers.CharField(source='time_estimate')
-    testCases = serializers.JSONField(source='test_cases')
-    bugSignature = serializers.CharField(source='bug_signature', required=False, allow_blank=True)
+    testCases = serializers.SerializerMethodField()
+    bugSignature = serializers.SerializerMethodField()
     suspectedComponent = serializers.CharField(source='suspected_component', required=False, allow_blank=True)
-    aiSuggestions = serializers.JSONField(source='ai_suggestions', required=False)
+    aiSuggestions = serializers.SerializerMethodField()
 
     class Meta:
         model = Challenge
@@ -31,6 +31,15 @@ class ChallengeSerializer(serializers.ModelSerializer):
             'timeEstimate', 'points', 'files', 'testCases', 'bugSignature',
             'suspectedComponent', 'aiSuggestions'
         ]
+
+    def get_testCases(self, obj):
+        return obj.to_dict().get('testCases', [])
+
+    def get_bugSignature(self, obj):
+        return ""
+
+    def get_aiSuggestions(self, obj):
+        return []
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:

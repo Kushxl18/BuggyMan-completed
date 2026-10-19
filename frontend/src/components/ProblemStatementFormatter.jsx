@@ -132,8 +132,35 @@ export function parseProblemStatement(description = '', title = '', technology =
       .replace(/^Case\s*\d+:\s*/i, '')
       .trim();
 
+    // Clean explanation from any leaked SQL clauses or solution logic
+    if (
+      cleanName.includes('WHERE') ||
+      cleanName.includes('SELECT') ||
+      cleanName.includes('opt_out') ||
+      cleanName.includes('IS NULL') ||
+      cleanName.includes('return')
+    ) {
+      cleanName = `Sample Case ${idx + 1} verification`;
+    }
+
     let inputVal = tc.input || '';
     let outputVal = tc.expected || '';
+
+    // If outputVal contains raw code or SQL clauses, sanitize to clean high-level behavior
+    if (
+      outputVal.includes('WHERE') ||
+      outputVal.includes('SELECT') ||
+      outputVal.includes('opt_out') ||
+      outputVal.includes('IS NULL') ||
+      outputVal.includes('return') ||
+      outputVal.includes('=>')
+    ) {
+      outputVal = isSql
+        ? 'Filtered and ordered query result set matching target criteria'
+        : isFrontend
+        ? 'Component UI state updates without visual defects'
+        : 'Target function returns expected value';
+    }
 
     // If input is empty, provide sensible context
     if (!inputVal) {
@@ -150,7 +177,7 @@ export function parseProblemStatement(description = '', title = '', technology =
       id: idx + 1,
       input: inputVal,
       output: outputVal || 'Passes assertion without defect',
-      explanation: cleanName !== `Case ${idx + 1}` ? cleanName : null
+      explanation: (cleanName && !cleanName.startsWith('Case') && !cleanName.startsWith('Sample Case')) ? cleanName : null
     };
   });
 
