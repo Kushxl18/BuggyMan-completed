@@ -193,6 +193,17 @@ export default function OutputPanel({
 
       {/* 2. Main Panel Content */}
       <div className="flex-1 overflow-y-auto p-4 select-text">
+        {/* Compile / Execution Error Banner */}
+        {compileError && (
+          <div className="p-3 bg-rose-950/30 border border-rose-500/40 rounded-xl text-rose-300 text-xs font-mono mb-4">
+            <div className="flex items-center gap-2 font-bold mb-1 text-rose-400">
+              <AlertOctagon className="w-4 h-4" />
+              <span>Execution / Syntax Error</span>
+            </div>
+            <pre className="whitespace-pre-wrap text-[11px] leading-relaxed">{compileError}</pre>
+          </div>
+        )}
+
         {/* TAB 1: TESTCASE (Input Cases 1, 2, 3) */}
         {activeTab === 'testcase' && (
           <div className="space-y-4">
@@ -202,13 +213,16 @@ export default function OutputPanel({
                 <button
                   key={idx}
                   onClick={() => setSelectedCaseIdx(idx)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-lg border transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg border transition-all ${
                     selectedCaseIdx === idx
                       ? 'bg-slate-800 text-slate-100 border-slate-700 shadow-sm'
                       : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
-                  Case {idx + 1}
+                  <span>Case {idx + 1}</span>
+                  {tc.hidden && (
+                    <span className="text-[10px] text-purple-400" title="Hidden Test Case">🔒</span>
+                  )}
                 </button>
               ))}
             </div>
@@ -216,6 +230,18 @@ export default function OutputPanel({
             {/* Selected Case Details */}
             {selectedCase && (
               <div className="space-y-3 font-sans">
+                <div className="flex items-center gap-2">
+                  {selectedCase.hidden ? (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 flex items-center gap-1">
+                      <span>🔒</span> Hidden Evaluation Test
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1">
+                      <span>👁️</span> Visible Sample Test
+                    </span>
+                  )}
+                </div>
+
                 <div className="space-y-1">
                   <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                     Requirement Assertion
@@ -230,7 +256,9 @@ export default function OutputPanel({
                     Expected Behavior / Assertion Output
                   </span>
                   <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-emerald-400 font-mono">
-                    {selectedCase.expected || 'Passes assertion without defect'}
+                    {selectedCase.hidden 
+                      ? '[Hidden Expected Output - Verifies edge-case behavior without revealing solution]'
+                      : (selectedCase.expected || 'Passes assertion without defect')}
                   </div>
                 </div>
               </div>
@@ -274,7 +302,7 @@ export default function OutputPanel({
 
                     <span className="text-xs font-mono text-slate-400 flex items-center gap-1 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
                       <Clock className="w-3 h-3 text-slate-400" />
-                      <span>Runtime: {lastRunResult?.executionTime ? `${Math.round(lastRunResult.executionTime * 1000)} ms` : '4 ms'}</span>
+                      <span>Runtime: {lastRunResult?.executionTime ? `${Math.round(lastRunResult.executionTime * 1000)} ms` : '5 ms'}</span>
                     </span>
                   </div>
 
@@ -299,6 +327,9 @@ export default function OutputPanel({
                       >
                         <span className={`w-1.5 h-1.5 rounded-full ${isCasePassed ? 'bg-emerald-400' : 'bg-rose-400'}`} />
                         <span>Case {idx + 1}</span>
+                        {tc.hidden && (
+                          <span className="text-[10px] text-purple-400" title="Hidden Test Case">🔒</span>
+                        )}
                       </button>
                     );
                   })}
@@ -307,6 +338,18 @@ export default function OutputPanel({
                 {/* Selected Case Inspection */}
                 {selectedCase && (
                   <div className="space-y-3 font-mono text-xs">
+                    <div className="flex items-center gap-2">
+                      {selectedCase.hidden ? (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 flex items-center gap-1">
+                          <span>🔒</span> Hidden Evaluation Test
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1">
+                          <span>👁️</span> Visible Sample Test
+                        </span>
+                      )}
+                    </div>
+
                     <div className="space-y-1">
                       <span className="text-[11px] font-sans font-semibold text-slate-400 uppercase tracking-wider">
                         Requirement
@@ -321,7 +364,9 @@ export default function OutputPanel({
                         Expected Output
                       </span>
                       <div className="p-2.5 rounded-lg bg-slate-900/80 border border-emerald-500/20 text-emerald-400">
-                        {selectedCase.expected || 'Expected result assertion passes'}
+                        {selectedCase.hidden
+                          ? '[Hidden Expected Output - Secret assertion]'
+                          : (selectedCase.expected || 'Expected result assertion passes')}
                       </div>
                     </div>
 
@@ -334,7 +379,11 @@ export default function OutputPanel({
                           ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300' 
                           : 'bg-rose-950/20 border-rose-500/30 text-rose-300'
                       }`}>
-                        {selectedCase.passed ? 'Matched expected specification' : 'Failed test assertion: Bug pattern detected'}
+                        {selectedCase.passed 
+                          ? 'Matched expected specification' 
+                          : selectedCase.hidden
+                            ? 'Hidden test assertion failed: The solution produced an incorrect result or encountered an unhandled edge case on this hidden test case.'
+                            : (selectedCase.actual || selectedCase.error || 'Failed test assertion: Bug pattern detected')}
                       </div>
                     </div>
                   </div>

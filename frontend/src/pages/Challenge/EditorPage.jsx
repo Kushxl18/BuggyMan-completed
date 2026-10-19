@@ -80,7 +80,14 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
   const [lastRunResult, setLastRunResult] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [showHintPanel, setShowHintPanel] = useState(false);
-  const [timeElapsed, setTimeElapsed] = useState(0);
+  const [timeElapsed, setTimeElapsed] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(`buggyman-timer-${id || '1'}`);
+      return saved ? parseInt(saved, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -99,13 +106,27 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
     activeFileRef.current = activeFile;
   }, [activeFile]);
 
-  // Timer counting up in seconds
+  // Timer counting up in seconds with persistence
   useEffect(() => {
+    const currentTimerId = id || '1';
+    try {
+      const saved = sessionStorage.getItem(`buggyman-timer-${currentTimerId}`);
+      setTimeElapsed(saved ? parseInt(saved, 10) : 0);
+    } catch {
+      setTimeElapsed(0);
+    }
+
     const timer = setInterval(() => {
-      setTimeElapsed(prev => prev + 1);
+      setTimeElapsed(prev => {
+        const next = prev + 1;
+        try {
+          sessionStorage.setItem(`buggyman-timer-${currentTimerId}`, next.toString());
+        } catch {}
+        return next;
+      });
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [id]);
 
   useEffect(() => {
     async function fetchChallenge() {
@@ -220,7 +241,7 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
       const primaryFile = syncedFiles.find((f) => f.name === currentActive?.name) || currentActive || syncedFiles[0];
 
       const res = await challengeService.runChallenge(challenge.id, primaryFile?.content || '', syncedFiles);
-      setLastRunResult(res);
+      setLastRunResult({ ...res, isSubmit: false });
 
       const returnedCases = res?.testCases || res?.test_cases || [];
       if (returnedCases.length > 0) {
@@ -295,6 +316,11 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
       };
 
       sessionStorage.setItem('buggyman-last-submission', JSON.stringify(submissionState));
+      if (res?.success) {
+        try {
+          sessionStorage.removeItem(`buggyman-timer-${challenge.id}`);
+        } catch {}
+      }
 
       if (typeof setUser === 'function' && res?.success && !String(res?.aiSummary || '').toLowerCase().includes('already solved')) {
         setUser((prev) => {

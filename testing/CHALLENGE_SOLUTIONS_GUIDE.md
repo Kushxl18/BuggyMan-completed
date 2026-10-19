@@ -381,14 +381,11 @@ When an administrator edits a product price from $100 down to $60, the category 
 **Reference Solution Implementation:**
 *pricing_service.py*:
 ```python
-class ProductPricingService:
-    def __init__(self, db, cache):
-        self.db = db
-        self.cache = cache
-
-    def update_product_price(self, product_id, new_price):
-        self.db.update_price(product_id, new_price)
-        self.cache.delete(f"product:{product_id}")
+def update_product_price(db, cache, product_id, category_id, new_price):
+    db[product_id] = {"price": new_price, "category": category_id}
+    cache.delete(f"product:{product_id}")
+    cache.delete(f"category:{category_id}")
+    return True
 ```
 
 ---

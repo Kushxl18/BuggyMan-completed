@@ -49,12 +49,10 @@ Critical audit events and compliance logs are missing from user-facing screens a
     if not items or page < 1 or page_size < 1:
         return []
     start = (page - 1) * page_size
-    # BUG: Off-by-one error prematurely cuts off the last record of the page
     end = min(len(items), (page * page_size) - 1)
     if start >= len(items):
         return []
-    return items[start:end]
-'''
+    return items[start:end]'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Full Page Slice Includes Final Record', 'input': 'paginate(list(range(25)), page=3, page_size=10)', 'expected': '[20, 21, 22, 23, 24]', 'hidden': False},
@@ -67,7 +65,7 @@ Critical audit events and compliance logs are missing from user-facing screens a
         'ai_suggestions': [
             'Notice that Python slice syntax `items[start:end]` is exclusive of `end`.',
             'Subtracting 1 from `(page * page_size)` drops the last record.',
-            'Change `end = min(len(items), (page * page_size) - 1)` to `end = min(len(items), page * page_size)`.'
+            'Review Python slice upper bounds: slice ranges items[start:end] are exclusive of end, so subtracting 1 omits the boundary item.'
         ],
         'topics': ['Pagination', 'Slicing', 'APIs', 'Python'],
         'skills_tested': ['Python', 'Backend', 'APIs'],
@@ -120,7 +118,6 @@ International users and regional distribution centers cannot page through wareho
 def encode_cursor(cursor_str):
     if not cursor_str:
         return ""
-    # BUG: Enforcing ascii encoding crashes on Unicode international input
     raw_bytes = cursor_str.encode("ascii")
     return base64.b64encode(raw_bytes).decode("ascii")
 
@@ -128,9 +125,7 @@ def decode_cursor(encoded_cursor):
     if not encoded_cursor:
         return ""
     raw_bytes = base64.b64decode(encoded_cursor.encode("ascii"))
-    # BUG: Decoding as ascii fails for multi-byte sequences
-    return raw_bytes.decode("ascii")
-'''
+    return raw_bytes.decode("ascii")'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Japanese Kanji Location Cursor', 'input': 'decode_cursor(encode_cursor("東京_Warehouse_01"))', 'expected': '東京_Warehouse_01', 'hidden': False},
@@ -142,7 +137,7 @@ def decode_cursor(encoded_cursor):
         'suspected_component': 'cursor_encoder.py',
         'ai_suggestions': [
             'Inspect the encoding argument passed to `.encode()`.',
-            'Replace `"ascii"` with `"utf-8"` in both `encode_cursor` and `decode_cursor`.'
+            'Investigate standard character encodings: multibyte Unicode characters require UTF-8 encoding rather than ASCII.'
         ],
         'topics': ['Unicode', 'Base64', 'Encoding', 'Python'],
         'skills_tested': ['Python', 'Backend', 'APIs'],
@@ -189,11 +184,9 @@ Background pricing daemon crashes, preventing subsequent stock symbols from upda
     if not isinstance(payload, dict):
         return {"price": 0.0, "status": "unavailable"}
     
-    # BUG: Direct indexing throws IndexError if items is empty list
     items = payload.get("items", [])
     first_item = items[0]
-    return {"price": first_item.get("price", 0.0), "status": "active"}
-'''
+    return {"price": first_item.get("price", 0.0), "status": "active"}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Normal active payload', 'input': 'extract_latest_price({"items": [{"price": 142.5}]})', 'expected': "{'price': 142.5, 'status': 'active'}", 'hidden': False},
@@ -253,10 +246,8 @@ Financial quarterly reconciliation fails audit compliance due to misdated revenu
 def parse_transaction_date(date_str):
     if not date_str or not isinstance(date_str, str):
         return None
-    # BUG: Uses US Month/Day format %m/%d/%Y instead of European %d/%m/%Y
     dt = datetime.strptime(date_str.strip(), "%m/%d/%Y")
-    return dt.strftime("%Y-%m-%d")
-'''
+    return dt.strftime("%Y-%m-%d")'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: 5th of November', 'input': 'parse_transaction_date("05/11/2026")', 'expected': '2026-11-05', 'hidden': False},
@@ -268,7 +259,7 @@ def parse_transaction_date(date_str):
         'suspected_component': 'date_parser.py',
         'ai_suggestions': [
             'Look at the date format directives: `%m` is month, `%d` is day.',
-            'Change `"%m/%d/%Y"` to `"%d/%m/%Y"`.'
+            'Check the date format directive: European format places day before month (%d/%m/%Y).'
         ],
         'topics': ['Datetime', 'Parsing', 'Data Processing'],
         'skills_tested': ['Python', 'Backend'],
@@ -313,15 +304,13 @@ Transient network blips cause premature shipment creation failures and manual su
             'name': 'retry_handler.py',
             'content': '''def execute_with_retry(operation, max_retries=3):
     attempt = 0
-    # BUG: Stops one attempt too early
     while attempt < max_retries - 1:
         attempt += 1
         try:
             return operation(attempt)
         except Exception:
             continue
-    return None
-'''
+    return None'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Succeeds on attempt 3', 'input': 'execute_with_retry(lambda a: "OK" if a == 3 else (_ for _ in ()).throw(ValueError("transient error")), max_retries=3)', 'expected': 'OK', 'hidden': False},
@@ -332,7 +321,7 @@ Transient network blips cause premature shipment creation failures and manual su
         'suspected_component': 'retry_handler.py',
         'ai_suggestions': [
             'Notice the condition `attempt < max_retries - 1`. If max_retries is 3, when attempt is 1, 1 < 2 is True (attempt 2). Next, 2 < 2 is False, so attempt 3 is never run.',
-            'Change `while attempt < max_retries - 1:` to `while attempt < max_retries:`.'
+            'Trace the iteration count: a loop condition comparing against max_retries - 1 terminates one iteration early.'
         ],
         'topics': ['Retries', 'Resilience', 'Loops'],
         'skills_tested': ['Python', 'Backend', 'Error Handling'],
@@ -379,13 +368,11 @@ Critical patient diagnostic records are silently overwritten and lost.
     seen = set()
     result = []
     for r in records:
-        # BUG: Keys only on record["id"], colliding across clinic_ids
         key = r.get("id")
         if key not in seen:
             seen.add(key)
             result.append(r)
-    return result
-'''
+    return result'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Different clinics with same local ID', 'input': 'len(deduplicate_records([{"clinic_id": 1, "id": 101, "name": "Alice"}, {"clinic_id": 2, "id": 101, "name": "Bob"}]))', 'expected': '2', 'hidden': False},
@@ -442,12 +429,10 @@ Engineers cannot disable timeouts for batch data migrations, causing repeated pi
             'content': '''def get_timeout_seconds(env_dict=None):
     env = env_dict if env_dict is not None else {}
     val = env.get("TIMEOUT_SECONDS")
-    # BUG: "or 30" treats valid 0 as falsy and overwrites it with 30
     if not val:
         return 30
     parsed = int(val)
-    return parsed or 30
-'''
+    return parsed or 30'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Valid zero timeout', 'input': 'get_timeout_seconds({"TIMEOUT_SECONDS": "0"})', 'expected': '0', 'hidden': False},
@@ -501,9 +486,7 @@ Severe data leak and financial loss from unauthorized discounts applied across s
         'files': [{
             'name': 'cache_manager.py',
             'content': '''def generate_cache_key(store_id, user_id):
-    # BUG: Omits store_id, causing cross-merchant cache collisions
-    return f"user_profile:{user_id}"
-'''
+    return f"user_profile:{user_id}"'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Different stores produce different keys', 'input': 'generate_cache_key("store_a", "42") != generate_cache_key("store_b", "42")', 'expected': 'True', 'hidden': False},
@@ -560,13 +543,11 @@ Warehouse staff cannot zero out out-of-stock items, resulting in false inventory
             'content': '''def validate_inventory_update(item_id, quantity):
     if not item_id:
         return (False, "Item ID is required")
-    # BUG: Falsy check rejects valid zero quantity
     if not quantity:
         return (False, "Quantity is required")
     if quantity < 0:
         return (False, "Quantity cannot be negative")
-    return (True, "Valid")
-'''
+    return (True, "Valid")'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Zero quantity accepted', 'input': 'validate_inventory_update("SKU-1", 0)', 'expected': '(True, \'Valid\')', 'hidden': False},
@@ -578,7 +559,7 @@ Warehouse staff cannot zero out out-of-stock items, resulting in false inventory
         'suspected_component': 'validator.py',
         'ai_suggestions': [
             'In Python, `not 0` is `True`. To check for absence, check `quantity is None`.',
-            'Replace `if not quantity:` with `if quantity is None:`.'
+            'Remember that 0 evaluates to falsy in boolean contexts; check whether 0 is a valid value for this field.'
         ],
         'topics': ['Validation', 'Boolean Logic', 'APIs'],
         'skills_tested': ['Python', 'Validation', 'Backend'],
@@ -622,9 +603,7 @@ Customer database is populated with malformed addresses and broken postal data.
             'content': '''def parse_csv_row(row_str):
     if not row_str:
         return []
-    # BUG: Naive split on comma breaks when fields contain quoted commas
-    return [field.strip().strip('"') for field in row_str.split(",")]
-'''
+    return [field.strip().strip('"') for field in row_str.split(",")]'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Quoted field with embedded comma', 'input': 'parse_csv_row(\'"John Doe","123 Maple St, Suite 4","Springfield"\')', 'expected': '[\'John Doe\', \'123 Maple St, Suite 4\', \'Springfield\']', 'hidden': False},
@@ -677,9 +656,7 @@ High-priority alerts (level 10) are processed after lower-priority alerts (level
         'files': [{
             'name': 'sorter.py',
             'content': '''def sort_priority_levels(levels):
-    # BUG: Lexicographical sort instead of numeric sort
-    return sorted(levels)
-'''
+    return sorted(levels)'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Numeric magnitude order', 'input': 'sort_priority_levels(["10", "2", "1", "20", "100"])', 'expected': "['1', '2', '10', '20', '100']", 'hidden': False},
@@ -735,13 +712,11 @@ Client applications crash across iOS and Android on login.
             'content': '''def serialize_user_profile(user_model):
     if not user_model:
         return {}
-    # BUG: Missing required field "created_at" in output dictionary
     return {
         "id": user_model.get("id"),
         "username": user_model.get("username"),
         "email": user_model.get("email")
-    }
-'''
+    }'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Serializer output includes created_at', 'input': '"created_at" in serialize_user_profile({"id": 1, "username": "alice", "email": "a@test.com", "created_at": "2026-01-01T00:00:00Z"})', 'expected': 'True', 'hidden': False},
@@ -793,9 +768,7 @@ Mass user session disconnection and login loops across the production website.
         'files': [{
             'name': 'token_service.py',
             'content': '''def calculate_expiration(current_timestamp, seconds_to_live=3600):
-    # BUG: Premature expiration: divides seconds by 1000
-    return current_timestamp + int(seconds_to_live / 1000)
-'''
+    return current_timestamp + int(seconds_to_live / 1000)'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: 1 hour token expiration', 'input': 'calculate_expiration(1700000000, 3600)', 'expected': '1700003600', 'hidden': False},
@@ -848,9 +821,7 @@ Worker processes exit, triggering alerting noise and leaving system in degraded 
         'files': [{
             'name': 'queue_processor.py',
             'content': '''def peek_next_job(jobs):
-    # BUG: Crashes on empty list
-    return jobs[0]
-'''
+    return jobs[0]'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Non-empty queue returns first job', 'input': 'peek_next_job(["job_1", "job_2"])', 'expected': 'job_1', 'hidden': False},
@@ -905,10 +876,8 @@ Discrepancies in billing reconciliation cause automated bank audit rejections.
             'content': '''def calculate_total_tax(line_items, tax_rate=0.0825):
     if not line_items:
         return 0.0
-    # BUG: Premature rounding of individual items causes 1-cent discrepancy
     tax_sum = sum(round(item * tax_rate, 2) for item in line_items)
-    return round(tax_sum, 2)
-'''
+    return round(tax_sum, 2)'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Total tax calculation without intermediate rounding', 'input': 'calculate_total_tax([10.04, 10.04, 10.04], 0.0825)', 'expected': '2.48', 'hidden': False},

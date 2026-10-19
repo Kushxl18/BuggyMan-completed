@@ -232,14 +232,11 @@ def charge_with_retry(gateway, order_id, amount, max_attempts=3):
 # 17. pricing_service.py
 solutions[17] = [{
     'name': 'pricing_service.py',
-    'content': '''class ProductPricingService:
-    def __init__(self, db, cache):
-        self.db = db
-        self.cache = cache
-
-    def update_product_price(self, product_id, new_price):
-        self.db.update_price(product_id, new_price)
-        self.cache.delete(f"product:{product_id}")
+    'content': '''def update_product_price(db, cache, product_id, category_id, new_price):
+    db[product_id] = {"price": new_price, "category": category_id}
+    cache.delete(f"product:{product_id}")
+    cache.delete(f"category:{category_id}")
+    return True
 '''
 }]
 

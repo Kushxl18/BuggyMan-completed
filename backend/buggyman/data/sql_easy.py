@@ -29,13 +29,14 @@ Customers whose opt-out preference is unset (stored as `NULL` in the database) a
 Include both `opt_out = 0` and `opt_out IS NULL`.
 
 ### Actual Behavior
-The condition `WHERE opt_out != 1` evaluates to `UNKNOWN` (falsy) for `NULL` values in SQL three-valued logic.
+Clients whose opt-out preference is unset evaluate to UNKNOWN under direct inequality comparisons and are omitted.
 
 ### Impact
 Over 40% of the customer base is omitted from critical service announcements.
 
 ### Requirements
-- Update `query.sql` to select `id`, `name`, `email` where `opt_out = 0 OR opt_out IS NULL` (or `COALESCE(opt_out, 0) = 0`).
+- Update `query.sql` to select `id`, `name`, and `email` for all clients who have not explicitly chosen to opt out of marketing updates.
+- Clients whose preference is unset (NULL) must be included in the export.
 """,
         'files': [
             {
@@ -51,18 +52,15 @@ INSERT INTO customers VALUES
 (1, 'Alice', 'alice@test.com', 0),
 (2, 'Bob', 'bob@test.com', 1),
 (3, 'Charlie', 'charlie@test.com', NULL),
-(4, 'Diana', 'diana@test.com', 0);
-"""
+(4, 'Diana', 'diana@test.com', 0);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Evaluates to UNKNOWN for NULL values, excluding Charlie
-SELECT id, name, email FROM customers WHERE opt_out != 1;
-"""
+                'content': """SELECT id, name, email FROM customers WHERE opt_out != 1;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Includes NULL and 0 opt-out records', 'input': '', 'expected': 'SELECT id, name, email FROM customers WHERE opt_out = 0 OR opt_out IS NULL ORDER BY id;'}
+            {'id': 1, 'name': 'Visible: Includes NULL and 0 opt-out records', 'input': '', 'expected': 'Customers including opt_out=0 and opt_out IS NULL'}
         ],
         'bug_signature': 'WHERE opt_out != 1',
         'suspected_component': 'query.sql',
@@ -98,7 +96,7 @@ Transactions processed on October 31st at 18:30 are missing from the report, und
 3. Datetime values on October 31st (e.g. `'2026-10-31 18:30:00'`) are excluded because `'2026-10-31'` evaluates to `'2026-10-31 00:00:00'`.
 
 ### Expected Behavior
-Include all transactions from October 1st up to strictly before November 1st: `order_date >= '2026-10-01' AND order_date < '2026-11-01'`.
+Include all transactions belonging to the calendar month of October 2026, including orders placed on October 31st with non-zero timestamps.
 
 ### Actual Behavior
 BETWEEN with date-only string cuts off the final day at midnight.
@@ -107,7 +105,7 @@ BETWEEN with date-only string cuts off the final day at midnight.
 Incorrect revenue reported to investors and fiscal regulators.
 
 ### Requirements
-- Use half-open range: `order_date >= '2026-10-01' AND order_date < '2026-11-01'`.
+- Ensure query.sql includes all orders placed within the calendar month of October 2026, capturing transactions through the end of October 31st.
 """,
         'files': [
             {
@@ -122,24 +120,21 @@ INSERT INTO orders VALUES
 (1, 100.00, '2026-10-01 10:00:00'),
 (2, 250.00, '2026-10-15 14:00:00'),
 (3, 150.00, '2026-10-31 18:30:00'),
-(4, 300.00, '2026-11-01 09:00:00');
-"""
+(4, 300.00, '2026-11-01 09:00:00');"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Excludes afternoon orders on October 31st
-SELECT SUM(amount) AS total_revenue FROM orders WHERE order_date BETWEEN '2026-10-01' AND '2026-10-31';
-"""
+                'content': """SELECT SUM(amount) AS total_revenue FROM orders WHERE order_date BETWEEN '2026-10-01' AND '2026-10-31';"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Total includes October 31st afternoon order', 'input': '', 'expected': "SELECT SUM(amount) AS total_revenue FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01';"}
+            {'id': 1, 'name': 'Visible: Total includes October 31st afternoon order', 'input': '', 'expected': 'Total revenue sum including October 31st afternoon transactions'}
         ],
         'bug_signature': "BETWEEN '2026-10-01' AND '2026-10-31'",
         'suspected_component': 'query.sql',
         'ai_suggestions': [
             'Avoid `BETWEEN` for datetimes.',
-            'Use half-open interval: `WHERE order_date >= \'2026-10-01\' AND order_date < \'2026-11-01\'`.'
+            'Consider using half-open time intervals to ensure all timestamps on the terminal day are captured.'
         ],
         'topics': ['SQL', 'Dates', 'Half-Open Intervals'],
         'skills_tested': ['SQL', 'Database'],
@@ -177,7 +172,8 @@ Filters for `status = 'archived'`.
 Customers cannot purchase active inventory; archived obsolete items are erroneously ordered.
 
 ### Requirements
-- Update filter to `WHERE status = 'active'` and sort by `name ASC`.
+- Ensure query.sql filters exclusively for active catalog products.
+- Sort active products in ascending alphabetical order by product name.
 """,
         'files': [
             {
@@ -192,23 +188,20 @@ Customers cannot purchase active inventory; archived obsolete items are erroneou
 INSERT INTO products VALUES
 (1, 'Laptop Pro', 1200.00, 'active'),
 (2, 'Legacy Phone', 150.00, 'archived'),
-(3, 'Wireless Mouse', 25.00, 'active');
-"""
+(3, 'Wireless Mouse', 25.00, 'active');"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Selects archived products instead of active products
-SELECT id, name, price FROM products WHERE status = 'archived' ORDER BY name ASC;
-"""
+                'content': """SELECT id, name, price FROM products WHERE status = 'archived' ORDER BY name ASC;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Returns active products ordered by name', 'input': '', 'expected': "SELECT id, name, price FROM products WHERE status = 'active' ORDER BY name ASC;"}
+            {'id': 1, 'name': 'Visible: Returns active products ordered by name', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': "WHERE status = 'archived'",
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Change `WHERE status = \'archived\'` to `WHERE status = \'active\'`.'
+            'Verify the status predicate in the WHERE clause matches active products rather than archived inventory.'
         ],
         'topics': ['SQL', 'Filtering'],
         'skills_tested': ['SQL', 'Database'],
@@ -264,23 +257,20 @@ CREATE TABLE orders (
 );
 
 INSERT INTO customers VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Charlie');
-INSERT INTO orders VALUES (101, 1, 50.00), (102, 2, 75.00);
-"""
+INSERT INTO orders VALUES (101, 1, 50.00), (102, 2, 75.00);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: INNER JOIN removes Charlie (who has 0 orders)
-SELECT c.id, c.name, o.id AS order_id FROM customers c INNER JOIN orders o ON c.id = o.customer_id ORDER BY c.id;
-"""
+                'content': """SELECT c.id, c.name, o.id AS order_id FROM customers c INNER JOIN orders o ON c.id = o.customer_id ORDER BY c.id;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: LEFT JOIN includes Charlie with NULL order_id', 'input': '', 'expected': 'SELECT c.id, c.name, o.id AS order_id FROM customers c LEFT JOIN orders o ON c.id = o.customer_id ORDER BY c.id;'}
+            {'id': 1, 'name': 'Visible: LEFT JOIN includes Charlie with NULL order_id', 'input': '', 'expected': 'All customers with order IDs or NULL if no orders'}
         ],
         'bug_signature': 'INNER JOIN orders o',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Change `INNER JOIN` to `LEFT JOIN`.'
+            'Consider what join type preserves rows from the left table when no corresponding row exists in the right table.'
         ],
         'topics': ['SQL', 'Joins', 'LEFT JOIN'],
         'skills_tested': ['SQL', 'Database'],
@@ -319,7 +309,7 @@ Filters out 0 values before aggregation.
 HR leadership relies on inflated compensation metrics during budget planning.
 
 ### Requirements
-- Calculate `AVG(COALESCE(bonus, 0))` grouped by `department` without excluding zero-bonus rows.
+- Calculate the true department average bonus across all employees, accounting for employees with no bonus as 0.
 """,
         'files': [
             {
@@ -334,18 +324,15 @@ INSERT INTO employees VALUES
 (1, 'Engineering', 10.0),
 (2, 'Engineering', 0.0),
 (3, 'Sales', 20.0),
-(4, 'Sales', 10.0);
-"""
+(4, 'Sales', 10.0);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: WHERE clause removes 0.0 bonus employees before AVG
-SELECT department, AVG(bonus) AS avg_bonus FROM employees WHERE bonus > 0 GROUP BY department ORDER BY department;
-"""
+                'content': """SELECT department, AVG(bonus) AS avg_bonus FROM employees WHERE bonus > 0 GROUP BY department ORDER BY department;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Department average includes 0% bonus', 'input': '', 'expected': 'SELECT department, AVG(bonus) AS avg_bonus FROM employees GROUP BY department ORDER BY department;'}
+            {'id': 1, 'name': 'Visible: Department average includes 0% bonus', 'input': '', 'expected': 'Average metric correctly computed per group'}
         ],
         'bug_signature': 'WHERE bonus > 0 GROUP BY',
         'suspected_component': 'query.sql',
@@ -403,23 +390,20 @@ Unique accounts are incorrectly flagged for deletion or account merge.
 INSERT INTO users VALUES
 (1, 'Alice', 'dup@test.com'),
 (2, 'Bob', 'unique@test.com'),
-(3, 'Charlie', 'dup@test.com');
-"""
+(3, 'Charlie', 'dup@test.com');"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Uses >= 1 instead of > 1, flagging unique emails
-SELECT email, COUNT(*) AS count FROM users GROUP BY email HAVING COUNT(*) >= 1 ORDER BY email;
-"""
+                'content': """SELECT email, COUNT(*) AS count FROM users GROUP BY email HAVING COUNT(*) >= 1 ORDER BY email;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Only true duplicate emails returned', 'input': '', 'expected': 'SELECT email, COUNT(*) AS count FROM users GROUP BY email HAVING COUNT(*) > 1 ORDER BY email;'}
+            {'id': 1, 'name': 'Visible: Only true duplicate emails returned', 'input': '', 'expected': 'Deduplicated groups satisfying having condition'}
         ],
         'bug_signature': 'HAVING COUNT(*) >= 1',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Change `HAVING COUNT(*) >= 1` to `HAVING COUNT(*) > 1`.'
+            'Review the HAVING threshold: a count >= 1 matches all records, whereas duplicates require a count strictly greater than 1.'
         ],
         'topics': ['SQL', 'Duplicates', 'HAVING'],
         'skills_tested': ['SQL', 'Database'],
@@ -471,18 +455,15 @@ Accounting ledger totals fail to reconcile with stripe merchant payouts.
 
 INSERT INTO invoice_items VALUES
 (1, 10.50, 0.0825),
-(2, 25.20, 0.0825);
-"""
+(2, 25.20, 0.0825);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Rounds to integer dollar instead of 2 decimal places
-SELECT ROUND(SUM(subtotal * tax_rate)) AS total_tax FROM invoice_items;
-"""
+                'content': """SELECT ROUND(SUM(subtotal * tax_rate)) AS total_tax FROM invoice_items;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Monetary total rounded to 2 decimal places', 'input': '', 'expected': 'SELECT ROUND(SUM(subtotal * tax_rate), 2) AS total_tax FROM invoice_items;'}
+            {'id': 1, 'name': 'Visible: Monetary total rounded to 2 decimal places', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': 'ROUND(SUM(subtotal * tax_rate))',
         'suspected_component': 'query.sql',
@@ -525,7 +506,7 @@ Sums all rows in `orders` regardless of status.
 Management bases hiring decisions on inflated gross sales numbers.
 
 ### Requirements
-- Add `WHERE status = 'completed'` to the total revenue query.
+- Filter the total revenue query to include only fulfilled, completed orders.
 """,
         'files': [
             {
@@ -539,18 +520,15 @@ Management bases hiring decisions on inflated gross sales numbers.
 INSERT INTO orders VALUES
 (1, 100.00, 'completed'),
 (2, 50.00, 'cancelled'),
-(3, 200.00, 'completed');
-"""
+(3, 200.00, 'completed');"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Includes cancelled orders in GMV
-SELECT SUM(amount) AS completed_gmv FROM orders;
-"""
+                'content': """SELECT SUM(amount) AS completed_gmv FROM orders;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Total only includes completed orders', 'input': '', 'expected': "SELECT SUM(amount) AS completed_gmv FROM orders WHERE status = 'completed';"}
+            {'id': 1, 'name': 'Visible: Total only includes completed orders', 'input': '', 'expected': 'Sum of GMV for completed orders only'}
         ],
         'bug_signature': 'SELECT SUM(amount) AS completed_gmv FROM orders;',
         'suspected_component': 'query.sql',
@@ -608,18 +586,15 @@ INSERT INTO tasks VALUES
 (1, 'Task A', '10'),
 (2, 'Task B', '2'),
 (3, 'Task C', '100'),
-(4, 'Task D', '20');
-"""
+(4, 'Task D', '20');"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Sorts VARCHAR priority alphabetically
-SELECT id, name, priority_level FROM tasks ORDER BY priority_level ASC;
-"""
+                'content': """SELECT id, name, priority_level FROM tasks ORDER BY priority_level ASC;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Tasks ordered by numerical priority level', 'input': '', 'expected': 'SELECT id, name, priority_level FROM tasks ORDER BY CAST(priority_level AS INTEGER) ASC;'}
+            {'id': 1, 'name': 'Visible: Tasks ordered by numerical priority level', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': 'ORDER BY priority_level ASC;',
         'suspected_component': 'query.sql',
@@ -677,23 +652,20 @@ Factory re-orders large batches of unsold inventory while popular stock runs out
 INSERT INTO product_sales VALUES
 (1, 'Slow Mover', 1),
 (2, 'Hot Item', 500),
-(3, 'Average Seller', 50);
-"""
+(3, 'Average Seller', 50);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Orders ASC instead of DESC
-SELECT id, name, total_sold FROM product_sales ORDER BY total_sold ASC LIMIT 1;
-"""
+                'content': """SELECT id, name, total_sold FROM product_sales ORDER BY total_sold ASC LIMIT 1;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Returns top selling item with highest count', 'input': '', 'expected': 'SELECT id, name, total_sold FROM product_sales ORDER BY total_sold DESC LIMIT 1;'}
+            {'id': 1, 'name': 'Visible: Returns top selling item with highest count', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': 'ORDER BY total_sold ASC LIMIT 1;',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Change `ORDER BY total_sold ASC` to `ORDER BY total_sold DESC`.'
+            'Check the sort direction: ascending order puts the lowest values first, while top sellers require descending order.'
         ],
         'topics': ['SQL', 'Sorting', 'LIMIT'],
         'skills_tested': ['SQL', 'Database'],

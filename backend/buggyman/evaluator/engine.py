@@ -126,16 +126,59 @@ class EvaluationEngine:
         else:
             norm_files = list(chal_files)
 
-        # 3. Select appropriate runtime adapter
+        # 3. Normalize test cases and their hidden property
+        norm_test_cases = []
+        for idx, tc in enumerate(test_cases or []):
+            tc_copy = dict(tc)
+            is_hidden = tc_copy.get('hidden')
+            if is_hidden is None:
+                name_low = (tc_copy.get('name') or '').lower()
+                if 'hidden' in name_low:
+                    is_hidden = True
+                elif len(test_cases) >= 3 and idx >= 2:
+                    is_hidden = True
+                else:
+                    is_hidden = False
+            tc_copy['hidden'] = bool(is_hidden)
+            norm_test_cases.append(tc_copy)
+
+        # 4. Select appropriate runtime adapter
         adapter = self.resolve_adapter(technology, norm_files)
 
-        # 4. Execute evaluation through adapter and sandbox runner
-        res = adapter.evaluate(challenge, norm_files, test_cases, timeout=timeout)
+        # 5. Execute evaluation through adapter and sandbox runner
+        res = adapter.evaluate(challenge, norm_files, norm_test_cases, timeout=timeout)
 
-        # 5. Process test results & backend score calculation
+        # 6. Process test results & backend score calculation
         test_results = res.get('test_results', [])
         tests_total = len(test_results)
         tests_passed = len([t for t in test_results if t.get('passed')])
+
+        # Sanitize hidden test results for secure client delivery
+        sanitized_results = []
+        for tr in test_results:
+            is_hidden = bool(tr.get('hidden', False))
+            if is_hidden:
+                sanitized_results.append({
+                    'id': tr.get('id'),
+                    'name': tr.get('name') or f"Hidden Test {tr.get('id', '')}",
+                    'passed': bool(tr.get('passed', False)),
+                    'hidden': True,
+                    'input': '[Hidden Test Input]',
+                    'expected': '[Hidden Expected Output]',
+                    'actual': 'Matched hidden assertion' if tr.get('passed') else 'Hidden test assertion failed',
+                    'error': None if tr.get('passed') else 'Hidden test assertion failed: Boundary condition check did not pass.'
+                })
+            else:
+                sanitized_results.append({
+                    'id': tr.get('id'),
+                    'name': tr.get('name', 'Test Case'),
+                    'passed': bool(tr.get('passed', False)),
+                    'hidden': False,
+                    'input': tr.get('input', ''),
+                    'expected': tr.get('expected', ''),
+                    'actual': tr.get('actual', ''),
+                    'error': tr.get('error')
+                })
 
         timed_out = res.get('timed_out', False)
         exit_code = res.get('exit_code', -1)
@@ -168,7 +211,7 @@ class EvaluationEngine:
             "score": score,
             "tests_passed": tests_passed,
             "tests_total": tests_total,
-            "test_results": test_results,
+            "test_results": sanitized_results,
             "stdout": res.get('stdout', ''),
             "stderr": res.get('stderr', ''),
             "execution_time": round(total_elapsed, 4),

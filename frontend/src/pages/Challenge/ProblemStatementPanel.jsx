@@ -15,15 +15,16 @@ import {
   Star, 
   Share2, 
   Flag, 
-  Maximize2, 
-  Minimize2,
-  ChevronRight,
   ChevronDown,
   Sparkles,
   Send,
   X,
-  ExternalLink,
-  Code2
+  Code2,
+  Lock,
+  Eye,
+  AlertTriangle,
+  Loader2,
+  Clock
 } from 'lucide-react';
 import { challengeService } from '../../services/challengeService';
 import ProblemStatementFormatter from '../../components/ProblemStatementFormatter';
@@ -42,20 +43,74 @@ export default function ProblemStatementPanel({
   const [currentTab, setCurrentTab] = useState(activeTab || 'description');
   const [showTopics, setShowTopics] = useState(false);
   const [showCompanies, setShowCompanies] = useState(false);
+  
+  // Real Engagement State (backed by PostgreSQL)
   const [isLiked, setIsLiked] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
   const [isStarred, setIsStarred] = useState(false);
-  const [likeCount, setLikeCount] = useState(382);
-  const [dislikeCount, setDislikeCount] = useState(12);
+  const [likeCount, setLikeCount] = useState(0);
+  const [dislikeCount, setDislikeCount] = useState(0);
+  const [isReacting, setIsReacting] = useState(false);
+
+  // Submissions State
+  const [realSubmissions, setRealSubmissions] = useState([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+
+  // Solutions Tab State
+  const [solutionData, setSolutionData] = useState(null);
+  const [solutionRevealed, setSolutionRevealed] = useState(false);
+  const [loadingSolution, setLoadingSolution] = useState(false);
+
+  // Report Modal State
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportType, setReportType] = useState('broken_challenge');
   const [reportDescription, setReportDescription] = useState('');
   const [submittingReport, setSubmittingReport] = useState(false);
-  const [unlockedHints, setUnlockedHints] = useState([1]); // Hint 1 unlocked by default
+
+  // Progressive Hints (Level 1 unlocked by default, 2 and 3 unlocked on click)
+  const [unlockedHints, setUnlockedHints] = useState([1]);
 
   useEffect(() => {
     if (activeTab) setCurrentTab(activeTab);
   }, [activeTab]);
+
+  // Load actual persistent engagement on challenge mount
+  useEffect(() => {
+    if (!challenge?.id) return;
+    setSolutionRevealed(false);
+    setSolutionData(null);
+    setUnlockedHints([1]);
+
+    challengeService.getEngagement(challenge.id)
+      .then(res => {
+        setLikeCount(res?.likes || 0);
+        setDislikeCount(res?.dislikes || 0);
+        setIsLiked(res?.userReaction === 'like');
+        setIsDisliked(res?.userReaction === 'dislike');
+        setIsStarred(Boolean(res?.isStarred));
+      })
+      .catch(() => {
+        // Fallback to neutral if unauthenticated
+        setLikeCount(0);
+        setDislikeCount(0);
+      });
+  }, [challenge?.id]);
+
+  // Load real submission history when submissions tab is activated
+  useEffect(() => {
+    if (!challenge?.id || currentTab !== 'submissions') return;
+    setLoadingSubmissions(true);
+    challengeService.getSubmissions(challenge.id)
+      .then(res => {
+        setRealSubmissions(res?.submissions || []);
+      })
+      .catch(() => {
+        setRealSubmissions(submissions || []);
+      })
+      .finally(() => {
+        setLoadingSubmissions(false);
+      });
+  }, [challenge?.id, currentTab]);
 
   const handleTabChange = (tab) => {
     setCurrentTab(tab);
@@ -64,75 +119,96 @@ export default function ProblemStatementPanel({
 
   if (!challenge) return null;
 
-  // Clean title: "51. Customer Report Excludes Records..."
+  // Title formatting: "51. Customer Report Excludes Records..."
   const rawTitle = challenge.title || 'Challenge';
   const cleanTitle = rawTitle.replace(/^\[.*?\]\s*/, '').replace(/^\d+\.\s*/, '').trim();
   const displayTitle = `${challenge.id}. ${cleanTitle}`;
 
-  // Fake random live online count based on challenge id
-  const onlineCount = 180 + ((challenge.id * 17) % 240);
+  // Derive genuine topics from challenge metadata
+  const topics = challenge.topics && challenge.topics.length > 0 
+    ? challenge.topics 
+    : [challenge.technology || 'Engineering', challenge.category || 'Debugging'];
 
-  // Derive topics and companies
-  const topics = [
-    challenge.technology || 'General',
-    challenge.category || 'Debugging',
-    challenge.difficulty ? `${challenge.difficulty} Difficulty` : 'Engineering'
-  ];
-
-  const companies = [
-    'Stripe', 'Amazon AWS', 'Meta Core Services', 'Datadog', 'Shopify'
-  ][challenge.id % 5];
-
-  // Progressive hints
+  // Progressive hints tailored to challenge without answer leaks
   const hints = [
     {
       level: 1,
-      title: 'Initial Investigation & Observation',
-      text: `Inspect the input values and execution conditions in ${files[0]?.name || 'the starter code'}. Note what happens when unexpected or edge-case values (such as NULL, 0, or empty strings) are evaluated.`
+      title: 'Symptom & Edge Case Observation',
+      text: challenge.aiSuggestions && challenge.aiSuggestions[0] 
+        ? challenge.aiSuggestions[0] 
+        : `Inspect the boundary conditions in ${files[0]?.name || 'the implementation'}. Observe how edge cases (such as NULL, 0, or empty inputs) affect evaluation.`
     },
     {
       level: 2,
-      title: 'Root Cause & Logic Flaw',
-      text: `In ${challenge.technology || 'this stack'}, boundary checks or comparisons may evaluate to false/unknown instead of true. Look closely at filter clauses, state mutators, or conditional branches.`
+      title: 'Underlying Mechanism & Architecture',
+      text: challenge.aiSuggestions && challenge.aiSuggestions[1]
+        ? challenge.aiSuggestions[1]
+        : `Review the execution lifecycle in ${challenge.technology || 'the system'}. Check how state mutations, comparisons, or filter predicates are structured.`
     },
     {
       level: 3,
-      title: 'Recommended Resolution',
-      text: `Update the condition to explicitly account for all edge cases (e.g. handling missing properties, using defensive checks, or correcting the SQL predicate logic).`
+      title: 'Debugging & Investigation Direction',
+      text: challenge.aiSuggestions && challenge.aiSuggestions[2]
+        ? challenge.aiSuggestions[2]
+        : `Trace the exact control flow for the failing test case. Verify that all records satisfy the required specification before returning output.`
     }
   ];
 
-  const toggleLike = () => {
-    if (isLiked) {
-      setIsLiked(false);
-      setLikeCount(prev => prev - 1);
-    } else {
-      setIsLiked(true);
-      setLikeCount(prev => prev + 1);
-      if (isDisliked) {
-        setIsDisliked(false);
-        setDislikeCount(prev => prev - 1);
+  // Persistent Reaction Toggle
+  const handleToggleReaction = async (reaction) => {
+    if (isReacting) return;
+    setIsReacting(true);
+
+    try {
+      const res = await challengeService.toggleReaction(challenge.id, reaction);
+      setLikeCount(res?.likes || 0);
+      setDislikeCount(res?.dislikes || 0);
+      setIsLiked(res?.userReaction === 'like');
+      setIsDisliked(res?.userReaction === 'dislike');
+      if (addToast) {
+        if (res?.userReaction === reaction) {
+          addToast(`Recorded your ${reaction}!`, 'success');
+        } else {
+          addToast('Reaction removed.', 'info');
+        }
       }
+    } catch (err) {
+      if (err?.message?.includes('401') || err?.message?.toLowerCase().includes('authentication')) {
+        if (addToast) addToast('Please sign in to react to challenges.', 'warning');
+      } else {
+        if (addToast) addToast('Unable to update reaction at this time.', 'error');
+      }
+    } finally {
+      setIsReacting(false);
     }
   };
 
-  const toggleDislike = () => {
-    if (isDisliked) {
-      setIsDisliked(false);
-      setDislikeCount(prev => prev - 1);
-    } else {
-      setIsDisliked(true);
-      setDislikeCount(prev => prev + 1);
-      if (isLiked) {
-        setIsLiked(false);
-        setLikeCount(prev => prev - 1);
+  // Persistent Star Toggle
+  const handleToggleStar = async () => {
+    try {
+      const res = await challengeService.toggleStar(challenge.id);
+      setIsStarred(Boolean(res?.isStarred));
+      if (addToast) {
+        addToast(res?.isStarred ? 'Added to favorites!' : 'Removed from favorites', 'info');
       }
+    } catch (err) {
+      if (addToast) addToast('Please sign in to star challenges.', 'warning');
     }
   };
 
   const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    if (addToast) addToast('Challenge link copied to clipboard!', 'success');
+    const url = `${window.location.origin}/challenge/${challenge.id}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url)
+        .then(() => {
+          if (addToast) addToast('Challenge link copied to clipboard!', 'success');
+        })
+        .catch(() => {
+          if (addToast) addToast('URL: ' + url, 'info');
+        });
+    } else {
+      if (addToast) addToast('URL: ' + url, 'info');
+    }
   };
 
   const handleSendReport = async (e) => {
@@ -154,6 +230,21 @@ export default function ProblemStatementPanel({
     }
   };
 
+  const handleRevealSolution = async () => {
+    if (solutionRevealed && solutionData) return;
+    setLoadingSolution(true);
+    try {
+      const res = await challengeService.getSolution(challenge.id);
+      setSolutionData(res);
+      setSolutionRevealed(true);
+      if (addToast) addToast('Official solution unlocked.', 'info');
+    } catch (err) {
+      if (addToast) addToast('Failed to load reference solution.', 'error');
+    } finally {
+      setLoadingSolution(false);
+    }
+  };
+
   const difficultyColor = 
     challenge.difficulty === 'Easy' 
       ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' 
@@ -161,8 +252,10 @@ export default function ProblemStatementPanel({
       ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' 
       : 'text-rose-400 bg-rose-500/10 border-rose-500/20';
 
+  const displayedSubmissions = realSubmissions.length > 0 ? realSubmissions : submissions;
+
   return (
-    <div className="w-[450px] lg:w-[480px] xl:w-[520px] bg-slate-900 border-r border-slate-800 flex flex-col h-full select-none text-slate-100 shrink-0 relative overflow-hidden">
+    <div className="w-[450px] lg:w-[480px] xl:w-[520px] bg-slate-900 border-r border-slate-800 flex flex-col h-full select-none text-slate-100 shrink-0 relative overflow-hidden font-sans">
       {/* 1. LeetCode Style Tab Strip */}
       <div className="h-10 bg-slate-950/90 border-b border-slate-800 flex items-center justify-between px-2 shrink-0">
         <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
@@ -232,9 +325,9 @@ export default function ProblemStatementPanel({
 
       {/* 2. Main Content Area */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+        {/* TAB 1: DESCRIPTION */}
         {currentTab === 'description' && (
           <div className="space-y-4">
-            {/* Title & Solved status */}
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <h1 className="font-heading font-bold text-xl text-slate-100 leading-snug">
@@ -248,7 +341,7 @@ export default function ProblemStatementPanel({
                 )}
               </div>
 
-              {/* Tag Row: Difficulty, Topics, Companies */}
+              {/* Tag Row: Difficulty, Topics, Architecture */}
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full border ${difficultyColor}`}>
                   {challenge.difficulty || 'Easy'}
@@ -275,8 +368,8 @@ export default function ProblemStatementPanel({
                       : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  <Briefcase className="w-3 h-3 text-amber-400" />
-                  <span>Company Context</span>
+                  <Briefcase className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Scenario Profile</span>
                   <ChevronDown className={`w-3 h-3 transition-transform ${showCompanies ? 'rotate-180' : ''}`} />
                 </button>
               </div>
@@ -292,21 +385,21 @@ export default function ProblemStatementPanel({
                 </div>
               )}
 
-              {/* Expandable Company drawer */}
+              {/* Expandable Company / Scenario drawer */}
               {showCompanies && (
                 <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl text-xs space-y-1 animate-fade-in">
                   <span className="font-semibold text-amber-400 flex items-center gap-1.5">
                     <Briefcase className="w-3.5 h-3.5" />
-                    <span>Real-World Scenario Profile</span>
+                    <span>Real-World Engineering Context</span>
                   </span>
                   <p className="text-slate-300 text-[11px] leading-relaxed">
-                    Inspired by production architectural incidents frequently observed at companies like <strong className="text-slate-200">{companies}</strong>.
+                    Defect scenario inspired by real-world production incidents in {challenge.technology || 'software'} distributed systems.
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Human Readable Problem Statement */}
+            {/* Human Readable Problem Statement (without answer leakage) */}
             <div className="pt-2">
               <ProblemStatementFormatter
                 description={challenge.description}
@@ -328,7 +421,7 @@ export default function ProblemStatementPanel({
           </div>
         )}
 
-        {/* Tab 2: Editorial / Hints */}
+        {/* TAB 2: EDITORIAL / HINTS */}
         {currentTab === 'editorial' && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
@@ -337,7 +430,7 @@ export default function ProblemStatementPanel({
             </div>
 
             <p className="text-xs text-slate-400 leading-relaxed">
-              Use progressive hints to guide your debugging process without spoiling the complete solution.
+              Use progressive hints to guide your investigation without spoiling the defect or solution code.
             </p>
 
             <div className="space-y-3">
@@ -383,39 +476,98 @@ export default function ProblemStatementPanel({
           </div>
         )}
 
-        {/* Tab 3: Solutions */}
+        {/* TAB 3: SOLUTIONS */}
         {currentTab === 'solutions' && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
               <FlaskConical className="w-4 h-4 text-indigo-400" />
-              <h3 className="font-bold text-sm text-slate-100">Engineering Solution Walkthrough</h3>
+              <h3 className="font-bold text-sm text-slate-100">Official Solution & Root Cause Walkthrough</h3>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-              <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Code2 className="w-3.5 h-3.5" />
-                <span>Root Cause Analysis</span>
-              </h4>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                The defect in this challenge arises from an unhandled boundary case during expression evaluation. In real-world environments, this manifests as silent data loss or unexpected exceptions.
-              </p>
-            </div>
+            {!solutionRevealed ? (
+              <div className="p-6 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-4">
+                <div className="w-12 h-12 rounded-full bg-indigo-500/10 border border-indigo-500/20 mx-auto flex items-center justify-center">
+                  <Lock className="w-6 h-6 text-indigo-400" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-sm text-slate-200">Reference Solution Guard</h4>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                    Try solving the defect using progressive hints first. Revealing the solution displays the root-cause analysis and reference implementation.
+                  </p>
+                </div>
+                <button
+                  onClick={handleRevealSolution}
+                  disabled={loadingSolution}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition-all shadow-sm flex items-center gap-2 mx-auto disabled:opacity-50"
+                >
+                  {loadingSolution ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+                  <span>Reveal Reference Solution</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4 animate-fade-in">
+                {/* Root Cause Analysis */}
+                <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+                  <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Root Cause Analysis</span>
+                  </h4>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {solutionData?.rootCause || 'The defect occurred due to an unhandled boundary condition during input evaluation.'}
+                  </p>
+                </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-              <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Recommended Architectural Pattern</span>
-              </h4>
-              <ul className="space-y-1.5 text-xs text-slate-300 list-disc pl-4">
-                <li>Explicitly validate optional or nullable parameters.</li>
-                <li>Add defensive unit test coverage covering boundary values.</li>
-                <li>Ensure idempotency and predictable state mutations.</li>
-              </ul>
-            </div>
+                {/* Explanation */}
+                <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+                  <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Fix Explanation</span>
+                  </h4>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {solutionData?.explanation || 'The reference fix restores expected behavior by applying defensive validation.'}
+                  </p>
+                </div>
+
+                {/* Reference Implementation Code */}
+                {solutionData?.files && solutionData.files.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Code2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Reference Fix Implementation</span>
+                    </h4>
+                    {solutionData.files.map((file, idx) => (
+                      <div key={idx} className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950">
+                        <div className="px-3 py-1.5 bg-slate-900 border-b border-slate-800 text-[11px] font-mono text-slate-300">
+                          {file.name}
+                        </div>
+                        <pre className="p-3 text-[11px] font-mono text-emerald-300 overflow-x-auto leading-relaxed">
+                          {file.content}
+                        </pre>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Prevention Patterns */}
+                {solutionData?.prevention && (
+                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+                    <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Production Prevention Guidelines</span>
+                    </h4>
+                    <ul className="space-y-1.5 text-xs text-slate-300 list-disc pl-4">
+                      {solutionData.prevention.map((item, idx) => (
+                        <li key={idx} className="leading-relaxed">{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Tab 4: Submissions */}
+        {/* TAB 4: SUBMISSIONS */}
         {currentTab === 'submissions' && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
@@ -423,46 +575,61 @@ export default function ProblemStatementPanel({
               <h3 className="font-bold text-sm text-slate-100">Submission History</h3>
             </div>
 
-            {submissions.length > 0 ? (
+            {loadingSubmissions ? (
+              <div className="py-12 flex flex-col items-center justify-center text-slate-400 space-y-2">
+                <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+                <p className="text-xs">Loading submission history...</p>
+              </div>
+            ) : displayedSubmissions.length > 0 ? (
               <div className="space-y-2">
-                {submissions.map((sub, idx) => (
-                  <div key={idx} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      {sub.success ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
-                      )}
-                      <div>
-                        <span className={`font-bold ${sub.success ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {sub.success ? 'Accepted' : 'Wrong Answer'}
+                {displayedSubmissions.map((sub, idx) => {
+                  const isAccepted = sub.success === true;
+                  return (
+                    <div key={idx} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2.5">
+                        {isAccepted ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                        )}
+                        <div>
+                          <span className={`font-bold ${isAccepted ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {isAccepted ? 'Accepted' : 'Wrong Answer'}
+                          </span>
+                          <p className="text-[10px] text-slate-500">
+                            {sub.createdAt ? new Date(sub.createdAt).toLocaleString() : (sub.timestamp || 'Recent attempt')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-mono text-slate-300 flex items-center justify-end gap-1">
+                          <Clock className="w-3 h-3 text-slate-500" />
+                          <span>{sub.executionTime ? `${Math.round(sub.executionTime * 1000)} ms` : (sub.timeTaken || '10s')}</span>
                         </span>
-                        <p className="text-[10px] text-slate-500">{sub.timestamp || 'Just now'}</p>
+                        <p className="text-[10px] text-cyan-400 font-semibold">
+                          {sub.score ? `+${sub.score} XP` : (isAccepted ? `+${challenge.points || 100} XP` : '0 XP')}
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className="font-mono text-slate-300">{sub.timeTaken || '10s'}</span>
-                      <p className="text-[10px] text-cyan-400 font-semibold">{sub.score ? `+${sub.score} XP` : '0 XP'}</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="py-12 text-center text-slate-500 space-y-2">
                 <History className="w-8 h-8 mx-auto opacity-40 text-slate-400" />
                 <p className="text-xs">No submissions recorded for this challenge yet.</p>
-                <p className="text-[11px] text-slate-600">Click "Run Code" or "Submit Solution" to test your fix.</p>
+                <p className="text-[11px] text-slate-600">Click "Run" or "Submit" to test your fix against the evaluator.</p>
               </div>
             )}
           </div>
         )}
 
-        {/* Tab 5: Multi-File Explorer (if multiple files) */}
+        {/* TAB 5: MULTI-FILE EXPLORER */}
         {currentTab === 'files' && (
           <div className="space-y-3">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
               <FolderOpen className="w-4 h-4 text-cyan-400" />
-              <h3 className="font-bold text-sm text-slate-100">Project Files ({files.length})</h3>
+              <h3 className="font-bold text-sm text-slate-100">Workspace Files ({files.length})</h3>
             </div>
 
             <div className="space-y-1">
@@ -480,7 +647,6 @@ export default function ProblemStatementPanel({
                     <FileText className="w-3.5 h-3.5" />
                     <span>{file.name}</span>
                   </div>
-                  <ChevronRight className="w-3 h-3 opacity-60" />
                 </button>
               ))}
             </div>
@@ -488,12 +654,13 @@ export default function ProblemStatementPanel({
         )}
       </div>
 
-      {/* 3. LeetCode Style Bottom Action & Reaction Bar */}
+      {/* 3. LeetCode Style Bottom Action & Reaction Bar (Real Persistent Data) */}
       <div className="h-10 bg-slate-950 border-t border-slate-800 px-4 flex items-center justify-between text-xs text-slate-400 shrink-0">
         <div className="flex items-center gap-3">
-          {/* Thumbs up */}
+          {/* Real Thumbs up */}
           <button 
-            onClick={toggleLike}
+            onClick={() => handleToggleReaction('like')}
+            disabled={isReacting}
             className={`flex items-center gap-1.5 hover:text-slate-200 transition-colors ${isLiked ? 'text-cyan-400 font-semibold' : ''}`}
             title="Like this challenge"
           >
@@ -501,9 +668,10 @@ export default function ProblemStatementPanel({
             <span className="text-[11px]">{likeCount}</span>
           </button>
 
-          {/* Thumbs down */}
+          {/* Real Thumbs down */}
           <button 
-            onClick={toggleDislike}
+            onClick={() => handleToggleReaction('dislike')}
+            disabled={isReacting}
             className={`flex items-center gap-1.5 hover:text-slate-200 transition-colors ${isDisliked ? 'text-rose-400 font-semibold' : ''}`}
             title="Dislike"
           >
@@ -511,28 +679,25 @@ export default function ProblemStatementPanel({
             <span className="text-[11px]">{dislikeCount}</span>
           </button>
 
-          {/* Star / Favorite */}
+          {/* Real Star / Favorite */}
           <button 
-            onClick={() => {
-              setIsStarred(!isStarred);
-              if (addToast) addToast(!isStarred ? 'Added to favorites!' : 'Removed from favorites', 'info');
-            }}
+            onClick={handleToggleStar}
             className={`hover:text-amber-400 transition-colors ${isStarred ? 'text-amber-400' : ''}`}
-            title="Favorite"
+            title="Favorite / Bookmark"
           >
             <Star className={`w-3.5 h-3.5 ${isStarred ? 'fill-amber-400' : ''}`} />
           </button>
 
-          {/* Share */}
+          {/* Functional Share */}
           <button 
             onClick={handleShare}
             className="hover:text-slate-200 transition-colors"
-            title="Share challenge"
+            title="Share challenge URL"
           >
             <Share2 className="w-3.5 h-3.5" />
           </button>
 
-          {/* Report */}
+          {/* Functional Report Issue */}
           <button 
             onClick={() => setShowReportModal(true)}
             className="hover:text-amber-400 transition-colors"
@@ -542,14 +707,14 @@ export default function ProblemStatementPanel({
           </button>
         </div>
 
-        {/* Live Active Online Debuggers Indicator */}
-        <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>{onlineCount} Online</span>
+        {/* Challenge Evaluation Engine Status (Truthful - no fake online count) */}
+        <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
+          <span>Evaluation Engine Ready</span>
         </div>
       </div>
 
-      {/* Report Issue Modal */}
+      {/* Functional Report Issue Modal */}
       {showReportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scale-up">

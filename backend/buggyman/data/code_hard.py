@@ -42,14 +42,12 @@ Double payments, cardholder disputes, and merchant processing account penalties.
         'files': [{
             'name': 'payment_gateway.py',
             'content': '''def process_payment(order_id, paid_orders, processing_locks, charge_fn):
-    # BUG: Non-atomic check-then-act race condition
     if order_id in paid_orders:
         return {"status": "ALREADY_PAID"}
     # Charge happens before locking
     res = charge_fn(order_id)
     paid_orders.add(order_id)
-    return {"status": "SUCCESS", "charge_id": res}
-'''
+    return {"status": "SUCCESS", "charge_id": res}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Concurrent lock prevents duplicate charge', 'input': '''paid = set(); locks = set()
@@ -62,7 +60,7 @@ locks.add("ORD2")
 r2 = process_payment("ORD2", paid, locks, mock_charge)
 (r1["status"] == "SUCCESS" and r2.get("status") in ["LOCKED", "DUPLICATE_IGNORED", "ALREADY_PROCESSING"])''', 'expected': 'True', 'hidden': False}
         ],
-        'bug_signature': 'if order_id in paid_orders:\n        return {"status": "ALREADY_PAID"}\n    # Charge happens before locking',
+        'bug_signature': 'if order_id in paid_orders:\n        return {"status": "ALREADY_PAID"}',
         'suspected_component': 'payment_gateway.py',
         'ai_suggestions': [
             'Check both `order_id in paid_orders` and `order_id in processing_locks`.',
@@ -110,7 +108,6 @@ Wasted compute, corrupted multi-part video uploads, and doubled cloud rendering 
         'files': [{
             'name': 'job_scheduler.py',
             'content': '''def should_reassign_job(current_time, job_id, leases):
-    # BUG: Checks fixed initial lease without supporting heartbeat renewal
     lease_info = leases.get(job_id)
     if not lease_info:
         return True
@@ -118,15 +115,14 @@ Wasted compute, corrupted multi-part video uploads, and doubled cloud rendering 
 
 def renew_lease(leases, job_id, current_time, extension=30):
     # Missing heartbeat renewal implementation
-    pass
-'''
+    pass'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Heartbeat renews lease preventing reassignment', 'input': '''leases = {"J1": {"expires_at": 100}}
 renew_lease(leases, "J1", 90, extension=30)
 (leases["J1"]["expires_at"] == 120 and should_reassign_job(105, "J1", leases) is False)''', 'expected': 'True', 'hidden': False}
         ],
-        'bug_signature': 'def renew_lease(leases, job_id, current_time, extension=30):\n    # Missing heartbeat renewal implementation\n    pass',
+        'bug_signature': 'def renew_lease(leases, job_id, current_time, extension=30):\n    pass',
         'suspected_component': 'job_scheduler.py',
         'ai_suggestions': [
             'In `renew_lease`, update `leases[job_id]["expires_at"] = current_time + extension`.'
@@ -172,13 +168,11 @@ Oversold flights, regulatory passenger compensation penalties, and reputational 
         'files': [{
             'name': 'inventory_allocator.py',
             'content': '''def reserve_seats(inventory, flight_id, requested_seats):
-    # BUG: Non-atomic allocation vulnerable to race conditions
     current_seats = inventory.get(flight_id, 0)
     if current_seats < requested_seats:
         return False
     inventory[flight_id] = current_seats - requested_seats
-    return True
-'''
+    return True'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Second allocation fails when stock exhausted', 'input': '''inv = {"FL100": 1}
@@ -234,11 +228,9 @@ Permanent cache drift where users see stale profiles until the next manual cache
         'files': [{
             'name': 'cache_aside.py',
             'content': '''def update_user_bio(db, cache, user_id, new_bio):
-    # BUG: Invalidation before DB write creates race condition with concurrent reads
     cache.delete(f"user:{user_id}")
     db[user_id] = new_bio
-    return True
-'''
+    return True'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: DB write precedes cache deletion', 'input': '''ops = []
@@ -296,12 +288,10 @@ Multiple workers execute critical mutual-exclusion tasks concurrently.
         'files': [{
             'name': 'distributed_lock.py',
             'content': '''def release_lock(lock_storage, lock_key, owner_token):
-    # BUG: Blindly deletes lock without verifying token ownership
     if lock_key in lock_storage:
         del lock_storage[lock_key]
         return True
-    return False
-'''
+    return False'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Wrong token cannot release lock', 'input': '''locks = {"report_lock": "owner_B"}
@@ -356,9 +346,7 @@ Self-inflicted DDoS preventing upstream servers from recovering from outages.
         'files': [{
             'name': 'backoff_client.py',
             'content': '''def calculate_backoff(attempt, base_delay=1, max_delay=32, jitter=0):
-    # BUG: Linear backoff without exponential growth
-    return min(max_delay, base_delay * attempt + jitter)
-'''
+    return min(max_delay, base_delay * attempt + jitter)'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Exponential growth at attempt 3', 'input': 'calculate_backoff(3, base_delay=2, max_delay=60, jitter=0)', 'expected': '16', 'hidden': False},
@@ -410,10 +398,8 @@ Corrupted financial compliance reports sent to regulators.
         'files': [{
             'name': 'report_writer.py',
             'content': '''def write_report_safely(file_system, dest_path, content, pid):
-    # BUG: Direct write to destination without atomic temp-and-rename
     file_system[dest_path] = content
-    return dest_path
-'''
+    return dest_path'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Writes to temp file then renames', 'input': '''fs = {}
@@ -470,9 +456,7 @@ Entire cluster worker pool freezes, halting all computational jobs.
         'files': [{
             'name': 'resource_manager.py',
             'content': '''def determine_lock_order(required_resources):
-    # BUG: Preserves caller order causing circular lock deadlocks
-    return list(required_resources)
-'''
+    return list(required_resources)'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Deterministic sorted lock order', 'input': '''r1 = determine_lock_order(["NVMe", "GPU", "CPU"])
@@ -524,12 +508,10 @@ Privilege escalation vulnerability allowing ordinary users to seize administrato
         'files': [{
             'name': 'access_controller.py',
             'content': '''def elevate_user_role(user_db, actor, target, new_role, auth_checker):
-    # BUG: State modification occurs before authorization verification
     user_db[target] = new_role
     if not auth_checker(actor):
         raise PermissionError("Actor not authorized to grant roles")
-    return True
-'''
+    return True'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Unauthorized attempt leaves target role unchanged', 'input': '''users = {"guest_user": "guest"}
@@ -580,16 +562,14 @@ No checkpoint persistence.
 Corrupted migrations and multi-day manual database recovery operations.
 
 ### Requirements
-- Record `checkpoint_store["last_id"] = batch[-1]["id"]` after successful batch write.
+- Persist the last processed record identifier in the checkpoint store after each successful batch write.
 """,
         'files': [{
             'name': 'migration_runner.py',
             'content': '''def migrate_batch(destination_db, checkpoint_store, batch):
     for record in batch:
         destination_db[record["id"]] = record
-    # BUG: Fails to update checkpoint_store with last processed ID
-    return True
-'''
+    return True'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Checkpoint updated after batch', 'input': '''db = {}; cp = {}
@@ -597,7 +577,7 @@ batch = [{"id": 10}, {"id": 20}, {"id": 30}]
 migrate_batch(db, cp, batch)
 cp.get("last_id") == 30''', 'expected': 'True', 'hidden': False}
         ],
-        'bug_signature': '# BUG: Fails to update checkpoint_store with last processed ID\n    return True',
+        'bug_signature': 'for record in batch:\n            self.transform(record)\n        return True',
         'suspected_component': 'migration_runner.py',
         'ai_suggestions': [
             'Add `if batch: checkpoint_store["last_id"] = batch[-1]["id"]`.'
@@ -637,15 +617,13 @@ Random round-robin routing breaks entity event sequencing.
 Cancelled orders are fulfilled and shipped to customers.
 
 ### Requirements
-- Compute partition shard deterministically using hash: `shard_id = hash(entity_id) % num_shards`.
+- Compute partition shard assignments deterministically from the entity identifier so all events for the same entity route to the same worker in order.
 """,
         'files': [{
             'name': 'event_stream.py',
             'content': '''def assign_event_shard(event, num_shards):
-    # BUG: Assigns random shard instead of partitioning by entity_id
     import random
-    return random.randint(0, num_shards - 1)
-'''
+    return random.randint(0, num_shards - 1)'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Same entity ID always routes to identical shard', 'input': '''e1 = {"entity_id": "ORD_99", "type": "CREATE"}
@@ -704,12 +682,10 @@ Customers charged hundreds of dollars for orphaned flights after rental car book
             step.execute()
             completed.append(step)
         except Exception:
-            # BUG: Only rolls back the last completed step, ignoring earlier steps
             if completed:
                 completed[-1].rollback()
             raise
-    return True
-'''
+    return True'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: All completed steps rolled back in reverse', 'input': '''rolled_back = []
@@ -771,15 +747,13 @@ Server container memory exhaustion and pod crash-looping in Kubernetes.
         'files': [{
             'name': 'stream_parser.py',
             'content': '''def parse_stream_chunks(chunks):
-    # BUG: Accumulates all chunks in memory causing memory leak
     all_chunks = []
     lines = []
     for chunk in chunks:
         all_chunks.append(chunk)
         full_text = "".join(all_chunks)
         # Parse logic
-    return lines
-'''
+    return lines'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Streaming generator yields lines without full accumulation', 'input': '''def clean_stream(chunks):
@@ -840,14 +814,12 @@ Inconsistent user profiles and failed two-factor SMS verification delivery.
         'files': [{
             'name': 'account_service.py',
             'content': '''def update_account(profile, new_email, new_phone):
-    # BUG: Mutates email before validating phone
     if "@" in new_email:
         profile["email"] = new_email
     if not (new_phone and new_phone.isdigit() and len(new_phone) == 10):
         raise ValueError("Invalid phone number")
     profile["phone"] = new_phone
-    return True
-'''
+    return True'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Invalid phone leaves email untouched', 'input': '''prof = {"email": "old@test.com", "phone": "1111111111"}
@@ -905,10 +877,8 @@ Double booked concert seats leading to customer disputes at box office.
         'files': [{
             'name': 'seat_reservation.py',
             'content': '''def reserve_seat(reservations, seat_id, user_id, current_time, ttl=300):
-    # BUG: Overwrites active reservations unconditionally
     reservations[seat_id] = {"user": user_id, "expires_at": current_time + ttl}
-    return True
-'''
+    return True'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Active reservation blocks new buyer', 'input': '''res = {}

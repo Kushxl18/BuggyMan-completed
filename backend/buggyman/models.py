@@ -648,3 +648,25 @@ class PvPBattle(models.Model):
             'difficultyFilter': self.difficulty_filter,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
         }
+
+class ChallengeReaction(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='challenge_reactions')
+    challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, related_name='reactions')
+    is_like = models.BooleanField(null=True, blank=True)  # True = like, False = dislike, None = no reaction
+    is_starred = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'challenge')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'userId': self.user_id,
+            'challengeId': str(self.challenge_id),
+            'isLike': self.is_like,
+            'isStarred': self.is_starred,
+            'createdAt': self.created_at.isoformat() if self.created_at else None
+        }
+

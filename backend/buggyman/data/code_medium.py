@@ -45,15 +45,13 @@ def charge_with_retry(gateway, order_id, amount, max_attempts=3):
     attempts = 0
     while attempts < max_attempts:
         attempts += 1
-        # BUG: Generates a new idempotency key on each retry attempt
         idempotency_key = f"idem_{uuid.uuid4().hex[:8]}"
         try:
             return gateway.charge(order_id, amount, idempotency_key)
         except Exception:
             if attempts >= max_attempts:
                 raise
-    return None
-'''
+    return None'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Retries reuse identical idempotency key', 'input': '''class MockGateway:
@@ -120,9 +118,7 @@ Customers see contradictory pricing between catalog search and checkout, causing
     db[product_id] = {"price": new_price, "category": category_id}
     # Invalidate individual item cache
     cache.delete(f"product:{product_id}")
-    # BUG: Fails to invalidate category catalog cache
-    return True
-'''
+    return True'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Invalidate both product and category keys', 'input': '''class MockCache:
@@ -132,7 +128,7 @@ c = MockCache()
 update_product_price({}, c, "P10", "CAT2", 60)
 "category:CAT2" in c.deleted and "product:P10" in c.deleted''', 'expected': 'True', 'hidden': False}
         ],
-        'bug_signature': 'cache.delete(f"product:{product_id}")\n    # BUG',
+        'bug_signature': '',
         'suspected_component': 'pricing_service.py',
         'ai_suggestions': [
             'Add `cache.delete(f"category:{category_id}")` alongside the product cache deletion.'
@@ -177,11 +173,9 @@ Users see duplicate posts in feeds and review lists.
         'files': [{
             'name': 'paginator.py',
             'content': '''def sort_and_paginate_posts(posts, page=1, page_size=2):
-    # BUG: Non-deterministic sort on tied upvotes
     sorted_posts = sorted(posts, key=lambda p: p["upvotes"], reverse=True)
     start = (page - 1) * page_size
-    return sorted_posts[start:start + page_size]
-'''
+    return sorted_posts[start:start + page_size]'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Deterministic sort with tie-breaker', 'input': '''posts = [
@@ -242,10 +236,8 @@ Duplicate physical orders shipped to customers for a single payment.
             'name': 'webhook_dispatcher.py',
             'content': '''def handle_webhook_event(event, processed_events, order_actions):
     event_id = event.get("id")
-    # BUG: Processes event without deduplicating against processed_events
     order_actions.append(f"FULFILL_{event.get('order_id')}")
-    return "PROCESSED"
-'''
+    return "PROCESSED"'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Duplicate event skipped', 'input': '''processed = set()
@@ -302,10 +294,8 @@ User changes are lost and overwritten by delayed background sync packets.
         'files': [{
             'name': 'preference_manager.py',
             'content': '''def update_user_preferences(current_record, incoming_update):
-    # BUG: Overwrites unconditionally without checking version
     current_record.update(incoming_update)
-    return True
-'''
+    return True'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Stale version rejected', 'input': '''current = {"theme": "dark", "version": 5}
@@ -359,16 +349,14 @@ Code applies offset in reverse direction: `local_hour - offset` -> `8 - 5 = 3` A
 Patients woken up by late-night alerts, resulting in compliance complaints and unsubscribes.
 
 ### Requirements
-- Correct formula: `utc_hour = (local_hour - utc_offset_hours) % 24`.
-- For UTC-5 (offset = -5): `8 - (-5) = 13`.
+- Correctly convert scheduled local notification hours into a 24-hour UTC format.
+- Ensure positive and negative timezone offsets shift hours properly across day boundaries.
 """,
         'files': [{
             'name': 'scheduler.py',
             'content': '''def convert_local_to_utc_hour(local_hour, utc_offset_hours):
-    # BUG: Offset applied in reverse direction
     # e.g. for UTC-5 (offset -5), it should add 5 to local hour to get UTC
-    return (local_hour + utc_offset_hours) % 24
-'''
+    return (local_hour + utc_offset_hours) % 24'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: NYC (UTC-5) 8am local -> 1pm UTC', 'input': 'convert_local_to_utc_hour(8, -5)', 'expected': '13', 'hidden': False},
@@ -379,7 +367,7 @@ Patients woken up by late-night alerts, resulting in compliance complaints and u
         'suspected_component': 'scheduler.py',
         'ai_suggestions': [
             'Remember: `UTC = Local - Offset`. For UTC-5, `8 - (-5) = 13`.',
-            'Change `local_hour + utc_offset_hours` to `(local_hour - utc_offset_hours) % 24`.'
+            'Consider both the sign of the timezone offset and 24-hour wrap-around boundaries when converting local time to UTC.'
         ],
         'topics': ['Timezones', 'Datetime', 'Scheduling'],
         'skills_tested': ['Python', 'Backend'],
@@ -421,10 +409,8 @@ Trading bot crashes during high market volatility.
         'files': [{
             'name': 'http_client.py',
             'content': '''def parse_rate_limit_delay(response_headers, attempt=1):
-    # BUG: Direct key lookup throws KeyError when Retry-After is absent
     raw_delay = response_headers["Retry-After"]
-    return int(raw_delay)
-'''
+    return int(raw_delay)'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Valid Retry-After header', 'input': 'parse_rate_limit_delay({"Retry-After": "5"}, 1)', 'expected': '5', 'hidden': False},
@@ -486,16 +472,14 @@ Employees underpaid, triggering wage compliance law penalties.
             hours = float(r["hours"])
             valid_records.append({"emp_id": r["emp_id"], "hours": hours})
         except Exception:
-            # BUG: Silently drops malformed record without quarantining
             pass
-    return {"valid": valid_records, "quarantined": quarantined_records}
-'''
+    return {"valid": valid_records, "quarantined": quarantined_records}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Malformed row quarantined', 'input': '''res = process_timesheets([{"emp_id": "E1", "hours": "40"}, {"emp_id": "E2", "hours": "forty"}])
 (len(res["valid"]) == 1 and len(res["quarantined"]) == 1 and res["quarantined"][0]["record"]["emp_id"] == "E2")''', 'expected': 'True', 'hidden': False}
         ],
-        'bug_signature': 'except Exception:\n            # BUG: Silently drops malformed record without quarantining\n            pass',
+        'bug_signature': 'except Exception:\n            pass',
         'suspected_component': 'pipeline.py',
         'ai_suggestions': [
             'In the except block, record the failure: `quarantined_records.append({"record": r, "error": str(e)})`.'
@@ -543,11 +527,9 @@ Orders remain in pending state indefinitely with no retry attempt.
         'files': [{
             'name': 'worker_queue.py',
             'content': '''def execute_job(queue, job, job_fn):
-    # BUG: Early ACK loses job if job_fn raises exception
     queue.ack(job["id"])
     job_fn(job)
-    return True
-'''
+    return True'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Failed job sent to DLQ', 'input': '''class MockQueue:
@@ -615,11 +597,9 @@ Account balance discrepancies and regulatory auditing non-compliance.
     balances[sender] -= amount
     # Step 2: Credit receiver (may throw if receiver invalid)
     if receiver not in balances:
-        # BUG: Fails to restore sender balance on error
         raise KeyError(f"Receiver {receiver} not found")
     balances[receiver] += amount
-    return True
-'''
+    return True'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Sender balance restored on receiver failure', 'input': '''balances = {"Alice": 200}
@@ -632,7 +612,7 @@ balances["Alice"] == 200''', 'expected': 'True', 'hidden': False},
 transfer_funds(balances, "Alice", "Bob", 50)
 (balances["Alice"] == 150 and balances["Bob"] == 100)''', 'expected': 'True', 'hidden': False}
         ],
-        'bug_signature': 'if receiver not in balances:\n        # BUG: Fails to restore sender balance on error',
+        'bug_signature': 'if receiver not in balances:\n        return False',
         'suspected_component': 'account_transfer.py',
         'ai_suggestions': [
             'Before raising KeyError, rollback the sender: `balances[sender] += amount`.'
@@ -684,10 +664,8 @@ Users see search results for previous queries they already deleted.
         self.latest_issued_seq = 0
 
     def apply_response(self, response_seq_id, data):
-        # BUG: Applies out-of-order stale response
         self.current_result = data
-        return True
-'''
+        return True'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Stale response discarded', 'input': '''store = AsyncResultStore()
@@ -748,10 +726,8 @@ Legitimate users logged out and account sessions invalidated.
         self.is_refreshing = False
 
     def get_token(self):
-        # BUG: No coordination between concurrent callers
         self.access_token = self.refresh_fn()
-        return self.access_token
-'''
+        return self.access_token'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Reuses cached token when valid', 'input': '''refresh_count = 0
@@ -812,11 +788,9 @@ Production clusters fail to start because database hosts and connection settings
         'files': [{
             'name': 'config_merger.py',
             'content': '''def deep_merge(base, override):
-    # BUG: Shallow update overwrites nested dicts
     result = base.copy()
     result.update(override)
-    return result
-'''
+    return result'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Sibling nested keys preserved', 'input': '''base = {"db": {"host": "localhost", "port": 5432}}
@@ -871,10 +845,8 @@ Overselling physical stock resulting in unfulfillable orders and customer refund
         'files': [{
             'name': 'inventory_service.py',
             'content': '''def decrement_stock(inventory, item_id, qty):
-    # BUG: Decrements without checking available quantity
     inventory[item_id] -= qty
-    return inventory[item_id]
-'''
+    return inventory[item_id]'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Oversell raises ValueError', 'input': '''inv = {"SKU1": 2}
@@ -932,9 +904,7 @@ Corrupted spreadsheets in corporate accounting and analytics teams.
         'files': [{
             'name': 'csv_exporter.py',
             'content': '''def export_to_csv_row(fields):
-    # BUG: Naive join fails to escape commas, quotes, or newlines
-    return ",".join(str(f) for f in fields) + "\\n"
-'''
+    return ",".join(str(f) for f in fields) + "\\n"'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Escaped field with comma', 'input': '''res = export_to_csv_row(["Alice", "Hello, World", 100])
@@ -988,12 +958,10 @@ Single invalid user input disrupts alerts for thousands of unaffected users.
             'content': '''def process_batch(items, send_fn):
     succeeded = []
     failed = []
-    # BUG: Uncaught exception aborts entire batch loop
     for item in items:
         send_fn(item)
         succeeded.append(item["id"])
-    return {"succeeded": succeeded, "failed": failed}
-'''
+    return {"succeeded": succeeded, "failed": failed}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Sibling items processed despite middle failure', 'input': '''def mock_send(item):
@@ -1043,15 +1011,13 @@ Always returns a non-null `next_cursor`.
 Server CPU exhaustion, API rate-limit exhaustion, and runaway cloud infrastructure costs.
 
 ### Requirements
-- If `len(records) < page_size` or `len(records) == 0`, set `next_cursor = None`.
+- If fewer records than page_size are returned, terminate pagination by setting the next cursor to None.
 """,
         'files': [{
             'name': 'cursor_paginator.py',
             'content': '''def build_page_response(records, page_size, last_id):
-    # BUG: Always generates next_cursor even on empty or last page
     next_cursor = f"cur_{last_id}"
-    return {"records": records, "next_cursor": next_cursor}
-'''
+    return {"records": records, "next_cursor": next_cursor}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Final page next_cursor is None', 'input': '''res = build_page_response([{"id": 1}], page_size=10, last_id=1)
@@ -1105,10 +1071,8 @@ Users without full address details cannot access checkout screens.
         'files': [{
             'name': 'transformer.py',
             'content': '''def format_postal_address(profile):
-    # BUG: Crashes when address or secondary fields are None
     city = profile["address"]["city"]
-    return f"{profile['name']}, {city}"
-'''
+    return f"{profile['name']}, {city}"'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Missing address safely handled', 'input': 'format_postal_address({"name": "Alice", "address": None})', 'expected': 'Alice, Unknown City', 'hidden': False},
@@ -1168,12 +1132,10 @@ API servers overwhelmed by boundary burst attacks.
         self.history = []
 
     def allow_request(self, current_time):
-        # BUG: Fails to prune expired timestamps before checking limit
         if len(self.history) >= self.max_requests:
             return False
         self.history.append(current_time)
-        return True
-'''
+        return True'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Expired timestamps pruned allowing new request', 'input': '''limiter = SlidingWindowLimiter(max_requests=2, window_size=60)
@@ -1235,9 +1197,7 @@ Misdiagnosis of production infrastructure outages as end-user mistakes.
     try:
         return auth_fn(username, password)
     except Exception:
-        # BUG: Masks infrastructure/network failures as invalid password
-        return {"authenticated": False, "error": "Invalid credentials"}
-'''
+        return {"authenticated": False, "error": "Invalid credentials"}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: ConnectionError re-raised', 'input': '''def mock_auth(u, p): raise ConnectionError("LDAP timeout")
@@ -1250,7 +1210,7 @@ raised''', 'expected': 'True', 'hidden': False},
             {'id': 2, 'name': 'Visible: Bad credentials handled cleanly', 'input': '''def mock_auth(u, p): raise ValueError("Incorrect password")
 verify_credentials(mock_auth, "alice", "wrong")["authenticated"]''', 'expected': 'False', 'hidden': False}
         ],
-        'bug_signature': 'except Exception:\n        # BUG: Masks infrastructure/network failures as invalid password',
+        'bug_signature': 'except Exception:\n        return False',
         'suspected_component': 'service_client.py',
         'ai_suggestions': [
             'Catch `ValueError` specifically for invalid credentials.',

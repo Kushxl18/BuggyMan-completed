@@ -47,7 +47,6 @@ export default function RegistrationForm({ onSubmit }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // BUG: Missing check for empty name before calling onSubmit
     onSubmit({ name });
   };
 
@@ -66,13 +65,12 @@ export default function RegistrationForm({ onSubmit }) {
       </button>
     </form>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Validates empty name before submission', 'input': '', 'expected': '!name.trim()'}
         ],
-        'bug_signature': '// BUG: Missing check for empty name before calling onSubmit\n    onSubmit({ name });',
+        'bug_signature': '',
         'suspected_component': 'RegistrationForm.jsx',
         'ai_suggestions': [
             'Add validation inside `handleSubmit`: `if (!name.trim()) { setError("Name is required"); return; }`.'
@@ -119,15 +117,13 @@ Broken visual layout with raw digits rendered in place of status badges.
             'content': '''import React from 'react';
 
 export default function StockBanner({ stock }) {
-  // BUG: Falsy 0 renders raw "0" in JSX instead of conditional content
   return (
     <div className="stock-container">
       {stock && <span className="in-stock">In Stock ({stock})</span>}
       {!stock && <span className="sold-out">Sold Out</span>}
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Uses explicit numeric comparison stock > 0', 'input': '', 'expected': 'stock > 0'}
@@ -136,7 +132,7 @@ export default function StockBanner({ stock }) {
         'suspected_component': 'Banner.jsx',
         'ai_suggestions': [
             'In React, `{0 && <span />}` renders the number 0.',
-            'Change `{stock && ...}` to `{stock > 0 ? <span className="in-stock">In Stock ({stock})</span> : <span className="sold-out">Sold Out</span>}`.'
+            "In JavaScript JSX, `{0 && ...}` renders literal '0' rather than falling back to false; use explicit comparison."
         ],
         'topics': ['React', 'Conditional Rendering', 'JSX'],
         'skills_tested': ['React', 'Frontend'],
@@ -174,7 +170,7 @@ Maintains duplicate state variable `totalPrice` that reads previous `quantity` v
 Customers see outdated price totals during cart selection.
 
 ### Requirements
-- Compute `const totalPrice = price * quantity;` directly during render.
+- Compute total price directly from current props and state during render to prevent stale derived state.
 """,
         'files': [{
             'name': 'ProductCard.jsx',
@@ -186,7 +182,6 @@ export default function ProductCard({ price = 25 }) {
 
   const handleIncrement = () => {
     setQuantity(quantity + 1);
-    // BUG: Reads stale quantity immediately after setQuantity
     setTotalPrice(price * quantity);
   };
 
@@ -198,8 +193,7 @@ export default function ProductCard({ price = 25 }) {
       <p className="total">Total: ${totalPrice}</p>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Total price derived cleanly from quantity', 'input': '', 'expected': 'price * quantity'}
@@ -254,8 +248,7 @@ Catastrophic accidental data loss when users intend to save their work.
 export default function ActionToolbar({ onSave, onDelete }) {
   return (
     <div className="flex gap-2">
-      {/* BUG: Save button calls onDelete handler */}
-      <button onClick={onDelete} className="bg-emerald-600 text-white px-3 py-1 rounded">
+<button onClick={onDelete} className="bg-emerald-600 text-white px-3 py-1 rounded">
         Save
       </button>
       <button onClick={onDelete} className="bg-rose-600 text-white px-3 py-1 rounded">
@@ -263,8 +256,7 @@ export default function ActionToolbar({ onSave, onDelete }) {
       </button>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Save button triggers onSave', 'input': '', 'expected': 'onClick={onSave}'}
@@ -319,7 +311,6 @@ Users fail to find valid contacts in company directory.
 export default function SearchBar({ items = [] }) {
   const [query, setQuery] = useState('');
 
-  // BUG: Case-sensitive search ignores uppercase / lowercase normalization
   const filtered = items.filter(item => item.name.includes(query));
 
   return (
@@ -335,8 +326,7 @@ export default function SearchBar({ items = [] }) {
       </ul>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Case-insensitive search using toLowerCase', 'input': '', 'expected': 'toLowerCase()'}
@@ -400,7 +390,6 @@ export default function DataViewer({ fetchFn }) {
         setLoading(false);
       })
       .catch(err => {
-        // BUG: Fails to set loading to false on error
         setError(err.message);
       });
   }, [fetchFn]);
@@ -408,8 +397,7 @@ export default function DataViewer({ fetchFn }) {
   if (loading) return <div className="spinner">Loading...</div>;
   if (error) return <div className="error">{error}</div>;
   return <div>Data Loaded: {JSON.stringify(data)}</div>;
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Loading set to false on catch', 'input': '', 'expected': 'setLoading(false)'}
@@ -454,26 +442,24 @@ Hardcoded fixed `width: 600px;`.
 Broken mobile responsiveness and poor Google mobile search ranking.
 
 ### Requirements
-- Replace `width: 600px;` with `max-width: 600px; width: 100%;`.
+- Ensure the container adapts fluidly across mobile and desktop viewport sizes using responsive width constraints.
 """,
         'files': [{
             'name': 'ResponsiveCard.css',
             'content': '''.product-card {
-    /* BUG: Hardcoded fixed width overflows on small screens */
     width: 600px;
     padding: 24px;
     background: #ffffff;
     border-radius: 8px;
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Uses max-width for responsive scaling', 'input': '', 'expected': 'max-width'}
         ],
-        'bug_signature': '/* BUG: Hardcoded fixed width overflows on small screens */\n    width: 600px;',
+        'bug_signature': 'product-card {\n    width: 600px;',
         'suspected_component': 'ResponsiveCard.css',
         'ai_suggestions': [
-            'Change `width: 600px;` to `max-width: 600px; width: 100%;`.'
+            'Use responsive fluid max-width constraints instead of rigid fixed-pixel widths for mobile containers.'
         ],
         'topics': ['CSS', 'Responsive Design', 'Mobile'],
         'skills_tested': ['CSS', 'Frontend'],
@@ -522,7 +508,6 @@ export default function EmailInput() {
 
   const validate = () => {
     if (!email.includes('@')) {
-      // BUG: Copy-paste error displays password error message
       setError('Password must be at least 8 characters');
     } else {
       setError('');
@@ -535,8 +520,7 @@ export default function EmailInput() {
       {error && <span className="error">{error}</span>}
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Displays valid email error message', 'input': '', 'expected': 'Please enter a valid email address.'}
@@ -589,7 +573,6 @@ Accessibility compliance violation (WCAG 2.1 Level AA) for keyboard-only navigat
             'content': '''import React, { useEffect } from 'react';
 
 export default function Modal({ isOpen, onClose, children }) {
-  // BUG: Missing Escape key accessibility listener
   if (!isOpen) return null;
 
   return (
@@ -600,13 +583,12 @@ export default function Modal({ isOpen, onClose, children }) {
       </div>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Attaches Escape key listener in useEffect', 'input': '', 'expected': 'Escape'}
         ],
-        'bug_signature': '// BUG: Missing Escape key accessibility listener',
+        'bug_signature': '',
         'suspected_component': 'Modal.jsx',
         'ai_suggestions': [
             'Add a `useEffect` that listens for `keydown` on window: `if (e.key === "Escape") onClose();`.'
@@ -656,8 +638,7 @@ State corruption in form inputs and reordered lists.
 export default function UserList({ users = [], onDelete }) {
   return (
     <ul>
-      {/* BUG: Uses array index as key causing state corruption on deletion */}
-      {users.map((user, index) => (
+{users.map((user, index) => (
         <li key={index} className="flex justify-between p-2">
           <span>{user.name}</span>
           <button onClick={() => onDelete(user.id)}>Delete</button>
@@ -665,8 +646,7 @@ export default function UserList({ users = [], onDelete }) {
       ))}
     </ul>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Uses stable user.id as key', 'input': '', 'expected': 'key={user.id}'}
@@ -674,7 +654,7 @@ export default function UserList({ users = [], onDelete }) {
         'bug_signature': '<li key={index}',
         'suspected_component': 'UserList.jsx',
         'ai_suggestions': [
-            'Change `<li key={index}` to `<li key={user.id}`.'
+            'Use persistent, unique entity identifiers as React keys rather than transient array indices.'
         ],
         'topics': ['React', 'Keys', 'Reconciliation'],
         'skills_tested': ['React', 'Frontend'],

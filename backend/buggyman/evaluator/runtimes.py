@@ -167,7 +167,8 @@ for tc in test_cases:
         'input': inp,
         'expected': expected,
         'actual': actual_out,
-        'error': err_msg
+        'error': err_msg,
+        'hidden': bool(tc.get('hidden', False))
     }})
 
 print("---BUGGYMAN_TEST_RESULTS---")
@@ -373,7 +374,8 @@ for (const tc of testCases) {{
         input: input,
         expected: expected,
         actual: actual,
-        error: error
+        error: error,
+        hidden: Boolean(tc.hidden)
     }});
 }}
 
@@ -598,7 +600,8 @@ class StaticCodeRuntimeAdapter(BaseRuntimeAdapter):
                 'input': tc.get('input', ''),
                 'expected': expected,
                 'actual': actual,
-                'error': None if passed else actual
+                'error': None if passed else actual,
+                'hidden': bool(tc.get('hidden', False))
             })
 
         all_passed = all(t['passed'] for t in parsed_tests) and not has_bug
@@ -808,7 +811,8 @@ class SQLRuntimeAdapter(BaseRuntimeAdapter):
                     'input': tc.get('input', ''),
                     'expected': expected_table_str or expected_str,
                     'actual': actual_output,
-                    'error': err_detail
+                    'error': err_detail,
+                    'hidden': bool(tc.get('hidden', False))
                 })
 
             conn.close()

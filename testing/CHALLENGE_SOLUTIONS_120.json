@@ -10,7 +10,7 @@
     "starter_files": [
       {
         "name": "pagination.py",
-        "content": "def paginate(items, page=1, page_size=10):\n    if not items or page < 1 or page_size < 1:\n        return []\n    start = (page - 1) * page_size\n    # BUG: Off-by-one error prematurely cuts off the last record of the page\n    end = min(len(items), (page * page_size) - 1)\n    if start >= len(items):\n        return []\n    return items[start:end]\n"
+        "content": "def paginate(items, page=1, page_size=10):\n    if not items or page < 1 or page_size < 1:\n        return []\n    start = (page - 1) * page_size\n    end = min(len(items), (page * page_size) - 1)\n    if start >= len(items):\n        return []\n    return items[start:end]"
       }
     ],
     "solution_files": [
@@ -61,7 +61,7 @@
     "starter_files": [
       {
         "name": "cursor_encoder.py",
-        "content": "import base64\n\ndef encode_cursor(cursor_str):\n    if not cursor_str:\n        return \"\"\n    # BUG: Enforcing ascii encoding crashes on Unicode international input\n    raw_bytes = cursor_str.encode(\"ascii\")\n    return base64.b64encode(raw_bytes).decode(\"ascii\")\n\ndef decode_cursor(encoded_cursor):\n    if not encoded_cursor:\n        return \"\"\n    raw_bytes = base64.b64decode(encoded_cursor.encode(\"ascii\"))\n    # BUG: Decoding as ascii fails for multi-byte sequences\n    return raw_bytes.decode(\"ascii\")\n"
+        "content": "import base64\n\ndef encode_cursor(cursor_str):\n    if not cursor_str:\n        return \"\"\n    raw_bytes = cursor_str.encode(\"ascii\")\n    return base64.b64encode(raw_bytes).decode(\"ascii\")\n\ndef decode_cursor(encoded_cursor):\n    if not encoded_cursor:\n        return \"\"\n    raw_bytes = base64.b64decode(encoded_cursor.encode(\"ascii\"))\n    return raw_bytes.decode(\"ascii\")"
       }
     ],
     "solution_files": [
@@ -112,7 +112,7 @@
     "starter_files": [
       {
         "name": "api_client.py",
-        "content": "def extract_latest_price(payload):\n    if not isinstance(payload, dict):\n        return {\"price\": 0.0, \"status\": \"unavailable\"}\n    \n    # BUG: Direct indexing throws IndexError if items is empty list\n    items = payload.get(\"items\", [])\n    first_item = items[0]\n    return {\"price\": first_item.get(\"price\", 0.0), \"status\": \"active\"}\n"
+        "content": "def extract_latest_price(payload):\n    if not isinstance(payload, dict):\n        return {\"price\": 0.0, \"status\": \"unavailable\"}\n    \n    items = payload.get(\"items\", [])\n    first_item = items[0]\n    return {\"price\": first_item.get(\"price\", 0.0), \"status\": \"active\"}"
       }
     ],
     "solution_files": [
@@ -163,7 +163,7 @@
     "starter_files": [
       {
         "name": "date_parser.py",
-        "content": "from datetime import datetime\n\ndef parse_transaction_date(date_str):\n    if not date_str or not isinstance(date_str, str):\n        return None\n    # BUG: Uses US Month/Day format %m/%d/%Y instead of European %d/%m/%Y\n    dt = datetime.strptime(date_str.strip(), \"%m/%d/%Y\")\n    return dt.strftime(\"%Y-%m-%d\")\n"
+        "content": "from datetime import datetime\n\ndef parse_transaction_date(date_str):\n    if not date_str or not isinstance(date_str, str):\n        return None\n    dt = datetime.strptime(date_str.strip(), \"%m/%d/%Y\")\n    return dt.strftime(\"%Y-%m-%d\")"
       }
     ],
     "solution_files": [
@@ -214,7 +214,7 @@
     "starter_files": [
       {
         "name": "retry_handler.py",
-        "content": "def execute_with_retry(operation, max_retries=3):\n    attempt = 0\n    # BUG: Stops one attempt too early\n    while attempt < max_retries - 1:\n        attempt += 1\n        try:\n            return operation(attempt)\n        except Exception:\n            continue\n    return None\n"
+        "content": "def execute_with_retry(operation, max_retries=3):\n    attempt = 0\n    while attempt < max_retries - 1:\n        attempt += 1\n        try:\n            return operation(attempt)\n        except Exception:\n            continue\n    return None"
       }
     ],
     "solution_files": [
@@ -258,7 +258,7 @@
     "starter_files": [
       {
         "name": "deduplicator.py",
-        "content": "def deduplicate_records(records):\n    seen = set()\n    result = []\n    for r in records:\n        # BUG: Keys only on record[\"id\"], colliding across clinic_ids\n        key = r.get(\"id\")\n        if key not in seen:\n            seen.add(key)\n            result.append(r)\n    return result\n"
+        "content": "def deduplicate_records(records):\n    seen = set()\n    result = []\n    for r in records:\n        key = r.get(\"id\")\n        if key not in seen:\n            seen.add(key)\n            result.append(r)\n    return result"
       }
     ],
     "solution_files": [
@@ -302,7 +302,7 @@
     "starter_files": [
       {
         "name": "config_loader.py",
-        "content": "def get_timeout_seconds(env_dict=None):\n    env = env_dict if env_dict is not None else {}\n    val = env.get(\"TIMEOUT_SECONDS\")\n    # BUG: \"or 30\" treats valid 0 as falsy and overwrites it with 30\n    if not val:\n        return 30\n    parsed = int(val)\n    return parsed or 30\n"
+        "content": "def get_timeout_seconds(env_dict=None):\n    env = env_dict if env_dict is not None else {}\n    val = env.get(\"TIMEOUT_SECONDS\")\n    if not val:\n        return 30\n    parsed = int(val)\n    return parsed or 30"
       }
     ],
     "solution_files": [
@@ -346,7 +346,7 @@
     "starter_files": [
       {
         "name": "cache_manager.py",
-        "content": "def generate_cache_key(store_id, user_id):\n    # BUG: Omits store_id, causing cross-merchant cache collisions\n    return f\"user_profile:{user_id}\"\n"
+        "content": "def generate_cache_key(store_id, user_id):\n    return f\"user_profile:{user_id}\""
       }
     ],
     "solution_files": [
@@ -390,7 +390,7 @@
     "starter_files": [
       {
         "name": "validator.py",
-        "content": "def validate_inventory_update(item_id, quantity):\n    if not item_id:\n        return (False, \"Item ID is required\")\n    # BUG: Falsy check rejects valid zero quantity\n    if not quantity:\n        return (False, \"Quantity is required\")\n    if quantity < 0:\n        return (False, \"Quantity cannot be negative\")\n    return (True, \"Valid\")\n"
+        "content": "def validate_inventory_update(item_id, quantity):\n    if not item_id:\n        return (False, \"Item ID is required\")\n    if not quantity:\n        return (False, \"Quantity is required\")\n    if quantity < 0:\n        return (False, \"Quantity cannot be negative\")\n    return (True, \"Valid\")"
       }
     ],
     "solution_files": [
@@ -441,7 +441,7 @@
     "starter_files": [
       {
         "name": "csv_parser.py",
-        "content": "def parse_csv_row(row_str):\n    if not row_str:\n        return []\n    # BUG: Naive split on comma breaks when fields contain quoted commas\n    return [field.strip().strip('\"') for field in row_str.split(\",\")]\n"
+        "content": "def parse_csv_row(row_str):\n    if not row_str:\n        return []\n    return [field.strip().strip('\"') for field in row_str.split(\",\")]"
       }
     ],
     "solution_files": [
@@ -485,7 +485,7 @@
     "starter_files": [
       {
         "name": "sorter.py",
-        "content": "def sort_priority_levels(levels):\n    # BUG: Lexicographical sort instead of numeric sort\n    return sorted(levels)\n"
+        "content": "def sort_priority_levels(levels):\n    return sorted(levels)"
       }
     ],
     "solution_files": [
@@ -529,7 +529,7 @@
     "starter_files": [
       {
         "name": "serializer.py",
-        "content": "def serialize_user_profile(user_model):\n    if not user_model:\n        return {}\n    # BUG: Missing required field \"created_at\" in output dictionary\n    return {\n        \"id\": user_model.get(\"id\"),\n        \"username\": user_model.get(\"username\"),\n        \"email\": user_model.get(\"email\")\n    }\n"
+        "content": "def serialize_user_profile(user_model):\n    if not user_model:\n        return {}\n    return {\n        \"id\": user_model.get(\"id\"),\n        \"username\": user_model.get(\"username\"),\n        \"email\": user_model.get(\"email\")\n    }"
       }
     ],
     "solution_files": [
@@ -573,7 +573,7 @@
     "starter_files": [
       {
         "name": "token_service.py",
-        "content": "def calculate_expiration(current_timestamp, seconds_to_live=3600):\n    # BUG: Premature expiration: divides seconds by 1000\n    return current_timestamp + int(seconds_to_live / 1000)\n"
+        "content": "def calculate_expiration(current_timestamp, seconds_to_live=3600):\n    return current_timestamp + int(seconds_to_live / 1000)"
       }
     ],
     "solution_files": [
@@ -617,7 +617,7 @@
     "starter_files": [
       {
         "name": "queue_processor.py",
-        "content": "def peek_next_job(jobs):\n    # BUG: Crashes on empty list\n    return jobs[0]\n"
+        "content": "def peek_next_job(jobs):\n    return jobs[0]"
       }
     ],
     "solution_files": [
@@ -661,7 +661,7 @@
     "starter_files": [
       {
         "name": "invoice_calculator.py",
-        "content": "def calculate_total_tax(line_items, tax_rate=0.0825):\n    if not line_items:\n        return 0.0\n    # BUG: Premature rounding of individual items causes 1-cent discrepancy\n    tax_sum = sum(round(item * tax_rate, 2) for item in line_items)\n    return round(tax_sum, 2)\n"
+        "content": "def calculate_total_tax(line_items, tax_rate=0.0825):\n    if not line_items:\n        return 0.0\n    tax_sum = sum(round(item * tax_rate, 2) for item in line_items)\n    return round(tax_sum, 2)"
       }
     ],
     "solution_files": [
@@ -705,7 +705,7 @@
     "starter_files": [
       {
         "name": "payment_client.py",
-        "content": "import uuid\n\ndef charge_with_retry(gateway, order_id, amount, max_attempts=3):\n    attempts = 0\n    while attempts < max_attempts:\n        attempts += 1\n        # BUG: Generates a new idempotency key on each retry attempt\n        idempotency_key = f\"idem_{uuid.uuid4().hex[:8]}\"\n        try:\n            return gateway.charge(order_id, amount, idempotency_key)\n        except Exception:\n            if attempts >= max_attempts:\n                raise\n    return None\n"
+        "content": "import uuid\n\ndef charge_with_retry(gateway, order_id, amount, max_attempts=3):\n    attempts = 0\n    while attempts < max_attempts:\n        attempts += 1\n        idempotency_key = f\"idem_{uuid.uuid4().hex[:8]}\"\n        try:\n            return gateway.charge(order_id, amount, idempotency_key)\n        except Exception:\n            if attempts >= max_attempts:\n                raise\n    return None"
       }
     ],
     "solution_files": [
@@ -738,17 +738,17 @@
     "technology": "Python",
     "category": "Caching",
     "points": 150,
-    "bug_signature": "cache.delete(f\"product:{product_id}\")\n    # BUG",
+    "bug_signature": "",
     "starter_files": [
       {
         "name": "pricing_service.py",
-        "content": "def update_product_price(db, cache, product_id, category_id, new_price):\n    # Update database\n    db[product_id] = {\"price\": new_price, \"category\": category_id}\n    # Invalidate individual item cache\n    cache.delete(f\"product:{product_id}\")\n    # BUG: Fails to invalidate category catalog cache\n    return True\n"
+        "content": "def update_product_price(db, cache, product_id, category_id, new_price):\n    # Update database\n    db[product_id] = {\"price\": new_price, \"category\": category_id}\n    # Invalidate individual item cache\n    cache.delete(f\"product:{product_id}\")\n    return True"
       }
     ],
     "solution_files": [
       {
         "name": "pricing_service.py",
-        "content": "class ProductPricingService:\n    def __init__(self, db, cache):\n        self.db = db\n        self.cache = cache\n\n    def update_product_price(self, product_id, new_price):\n        self.db.update_price(product_id, new_price)\n        self.cache.delete(f\"product:{product_id}\")\n"
+        "content": "def update_product_price(db, cache, product_id, category_id, new_price):\n    db[product_id] = {\"price\": new_price, \"category\": category_id}\n    cache.delete(f\"product:{product_id}\")\n    cache.delete(f\"category:{category_id}\")\n    return True\n"
       }
     ],
     "test_cases": [
@@ -772,7 +772,7 @@
     "starter_files": [
       {
         "name": "paginator.py",
-        "content": "def sort_and_paginate_posts(posts, page=1, page_size=2):\n    # BUG: Non-deterministic sort on tied upvotes\n    sorted_posts = sorted(posts, key=lambda p: p[\"upvotes\"], reverse=True)\n    start = (page - 1) * page_size\n    return sorted_posts[start:start + page_size]\n"
+        "content": "def sort_and_paginate_posts(posts, page=1, page_size=2):\n    sorted_posts = sorted(posts, key=lambda p: p[\"upvotes\"], reverse=True)\n    start = (page - 1) * page_size\n    return sorted_posts[start:start + page_size]"
       }
     ],
     "solution_files": [
@@ -802,7 +802,7 @@
     "starter_files": [
       {
         "name": "webhook_dispatcher.py",
-        "content": "def handle_webhook_event(event, processed_events, order_actions):\n    event_id = event.get(\"id\")\n    # BUG: Processes event without deduplicating against processed_events\n    order_actions.append(f\"FULFILL_{event.get('order_id')}\")\n    return \"PROCESSED\"\n"
+        "content": "def handle_webhook_event(event, processed_events, order_actions):\n    event_id = event.get(\"id\")\n    order_actions.append(f\"FULFILL_{event.get('order_id')}\")\n    return \"PROCESSED\""
       }
     ],
     "solution_files": [
@@ -832,7 +832,7 @@
     "starter_files": [
       {
         "name": "preference_manager.py",
-        "content": "def update_user_preferences(current_record, incoming_update):\n    # BUG: Overwrites unconditionally without checking version\n    current_record.update(incoming_update)\n    return True\n"
+        "content": "def update_user_preferences(current_record, incoming_update):\n    current_record.update(incoming_update)\n    return True"
       }
     ],
     "solution_files": [
@@ -869,7 +869,7 @@
     "starter_files": [
       {
         "name": "scheduler.py",
-        "content": "def convert_local_to_utc_hour(local_hour, utc_offset_hours):\n    # BUG: Offset applied in reverse direction\n    # e.g. for UTC-5 (offset -5), it should add 5 to local hour to get UTC\n    return (local_hour + utc_offset_hours) % 24\n"
+        "content": "def convert_local_to_utc_hour(local_hour, utc_offset_hours):\n    # e.g. for UTC-5 (offset -5), it should add 5 to local hour to get UTC\n    return (local_hour + utc_offset_hours) % 24"
       }
     ],
     "solution_files": [
@@ -913,7 +913,7 @@
     "starter_files": [
       {
         "name": "http_client.py",
-        "content": "def parse_rate_limit_delay(response_headers, attempt=1):\n    # BUG: Direct key lookup throws KeyError when Retry-After is absent\n    raw_delay = response_headers[\"Retry-After\"]\n    return int(raw_delay)\n"
+        "content": "def parse_rate_limit_delay(response_headers, attempt=1):\n    raw_delay = response_headers[\"Retry-After\"]\n    return int(raw_delay)"
       }
     ],
     "solution_files": [
@@ -953,11 +953,11 @@
     "technology": "Python",
     "category": "Data & Processing",
     "points": 150,
-    "bug_signature": "except Exception:\n            # BUG: Silently drops malformed record without quarantining\n            pass",
+    "bug_signature": "except Exception:\n            pass",
     "starter_files": [
       {
         "name": "pipeline.py",
-        "content": "def process_timesheets(rows):\n    valid_records = []\n    quarantined_records = []\n    for r in rows:\n        try:\n            hours = float(r[\"hours\"])\n            valid_records.append({\"emp_id\": r[\"emp_id\"], \"hours\": hours})\n        except Exception:\n            # BUG: Silently drops malformed record without quarantining\n            pass\n    return {\"valid\": valid_records, \"quarantined\": quarantined_records}\n"
+        "content": "def process_timesheets(rows):\n    valid_records = []\n    quarantined_records = []\n    for r in rows:\n        try:\n            hours = float(r[\"hours\"])\n            valid_records.append({\"emp_id\": r[\"emp_id\"], \"hours\": hours})\n        except Exception:\n            pass\n    return {\"valid\": valid_records, \"quarantined\": quarantined_records}"
       }
     ],
     "solution_files": [
@@ -987,7 +987,7 @@
     "starter_files": [
       {
         "name": "worker_queue.py",
-        "content": "def execute_job(queue, job, job_fn):\n    # BUG: Early ACK loses job if job_fn raises exception\n    queue.ack(job[\"id\"])\n    job_fn(job)\n    return True\n"
+        "content": "def execute_job(queue, job, job_fn):\n    queue.ack(job[\"id\"])\n    job_fn(job)\n    return True"
       }
     ],
     "solution_files": [
@@ -1013,11 +1013,11 @@
     "technology": "Python",
     "category": "Transactions",
     "points": 150,
-    "bug_signature": "if receiver not in balances:\n        # BUG: Fails to restore sender balance on error",
+    "bug_signature": "if receiver not in balances:\n        return False",
     "starter_files": [
       {
         "name": "account_transfer.py",
-        "content": "def transfer_funds(balances, sender, receiver, amount):\n    if balances.get(sender, 0) < amount:\n        raise ValueError(\"Insufficient funds\")\n    # Step 1: Debit sender\n    balances[sender] -= amount\n    # Step 2: Credit receiver (may throw if receiver invalid)\n    if receiver not in balances:\n        # BUG: Fails to restore sender balance on error\n        raise KeyError(f\"Receiver {receiver} not found\")\n    balances[receiver] += amount\n    return True\n"
+        "content": "def transfer_funds(balances, sender, receiver, amount):\n    if balances.get(sender, 0) < amount:\n        raise ValueError(\"Insufficient funds\")\n    # Step 1: Debit sender\n    balances[sender] -= amount\n    # Step 2: Credit receiver (may throw if receiver invalid)\n    if receiver not in balances:\n        raise KeyError(f\"Receiver {receiver} not found\")\n    balances[receiver] += amount\n    return True"
       }
     ],
     "solution_files": [
@@ -1054,7 +1054,7 @@
     "starter_files": [
       {
         "name": "data_fetcher.py",
-        "content": "class AsyncResultStore:\n    def __init__(self):\n        self.current_result = None\n        self.latest_issued_seq = 0\n\n    def apply_response(self, response_seq_id, data):\n        # BUG: Applies out-of-order stale response\n        self.current_result = data\n        return True\n"
+        "content": "class AsyncResultStore:\n    def __init__(self):\n        self.current_result = None\n        self.latest_issued_seq = 0\n\n    def apply_response(self, response_seq_id, data):\n        self.current_result = data\n        return True"
       }
     ],
     "solution_files": [
@@ -1084,7 +1084,7 @@
     "starter_files": [
       {
         "name": "token_refresh.py",
-        "content": "class TokenManager:\n    def __init__(self, refresh_fn):\n        self.refresh_fn = refresh_fn\n        self.access_token = None\n        self.is_refreshing = False\n\n    def get_token(self):\n        # BUG: No coordination between concurrent callers\n        self.access_token = self.refresh_fn()\n        return self.access_token\n"
+        "content": "class TokenManager:\n    def __init__(self, refresh_fn):\n        self.refresh_fn = refresh_fn\n        self.access_token = None\n        self.is_refreshing = False\n\n    def get_token(self):\n        self.access_token = self.refresh_fn()\n        return self.access_token"
       }
     ],
     "solution_files": [
@@ -1114,7 +1114,7 @@
     "starter_files": [
       {
         "name": "config_merger.py",
-        "content": "def deep_merge(base, override):\n    # BUG: Shallow update overwrites nested dicts\n    result = base.copy()\n    result.update(override)\n    return result\n"
+        "content": "def deep_merge(base, override):\n    result = base.copy()\n    result.update(override)\n    return result"
       }
     ],
     "solution_files": [
@@ -1144,7 +1144,7 @@
     "starter_files": [
       {
         "name": "inventory_service.py",
-        "content": "def decrement_stock(inventory, item_id, qty):\n    # BUG: Decrements without checking available quantity\n    inventory[item_id] -= qty\n    return inventory[item_id]\n"
+        "content": "def decrement_stock(inventory, item_id, qty):\n    inventory[item_id] -= qty\n    return inventory[item_id]"
       }
     ],
     "solution_files": [
@@ -1181,7 +1181,7 @@
     "starter_files": [
       {
         "name": "csv_exporter.py",
-        "content": "def export_to_csv_row(fields):\n    # BUG: Naive join fails to escape commas, quotes, or newlines\n    return \",\".join(str(f) for f in fields) + \"\\n\"\n"
+        "content": "def export_to_csv_row(fields):\n    return \",\".join(str(f) for f in fields) + \"\\n\""
       }
     ],
     "solution_files": [
@@ -1211,7 +1211,7 @@
     "starter_files": [
       {
         "name": "batch_processor.py",
-        "content": "def process_batch(items, send_fn):\n    succeeded = []\n    failed = []\n    # BUG: Uncaught exception aborts entire batch loop\n    for item in items:\n        send_fn(item)\n        succeeded.append(item[\"id\"])\n    return {\"succeeded\": succeeded, \"failed\": failed}\n"
+        "content": "def process_batch(items, send_fn):\n    succeeded = []\n    failed = []\n    for item in items:\n        send_fn(item)\n        succeeded.append(item[\"id\"])\n    return {\"succeeded\": succeeded, \"failed\": failed}"
       }
     ],
     "solution_files": [
@@ -1241,7 +1241,7 @@
     "starter_files": [
       {
         "name": "cursor_paginator.py",
-        "content": "def build_page_response(records, page_size, last_id):\n    # BUG: Always generates next_cursor even on empty or last page\n    next_cursor = f\"cur_{last_id}\"\n    return {\"records\": records, \"next_cursor\": next_cursor}\n"
+        "content": "def build_page_response(records, page_size, last_id):\n    next_cursor = f\"cur_{last_id}\"\n    return {\"records\": records, \"next_cursor\": next_cursor}"
       }
     ],
     "solution_files": [
@@ -1278,7 +1278,7 @@
     "starter_files": [
       {
         "name": "transformer.py",
-        "content": "def format_postal_address(profile):\n    # BUG: Crashes when address or secondary fields are None\n    city = profile[\"address\"][\"city\"]\n    return f\"{profile['name']}, {city}\"\n"
+        "content": "def format_postal_address(profile):\n    city = profile[\"address\"][\"city\"]\n    return f\"{profile['name']}, {city}\""
       }
     ],
     "solution_files": [
@@ -1315,7 +1315,7 @@
     "starter_files": [
       {
         "name": "rate_limiter.py",
-        "content": "class SlidingWindowLimiter:\n    def __init__(self, max_requests=100, window_size=60):\n        self.max_requests = max_requests\n        self.window_size = window_size\n        self.history = []\n\n    def allow_request(self, current_time):\n        # BUG: Fails to prune expired timestamps before checking limit\n        if len(self.history) >= self.max_requests:\n            return False\n        self.history.append(current_time)\n        return True\n"
+        "content": "class SlidingWindowLimiter:\n    def __init__(self, max_requests=100, window_size=60):\n        self.max_requests = max_requests\n        self.window_size = window_size\n        self.history = []\n\n    def allow_request(self, current_time):\n        if len(self.history) >= self.max_requests:\n            return False\n        self.history.append(current_time)\n        return True"
       }
     ],
     "solution_files": [
@@ -1348,11 +1348,11 @@
     "technology": "Python",
     "category": "Error Handling",
     "points": 150,
-    "bug_signature": "except Exception:\n        # BUG: Masks infrastructure/network failures as invalid password",
+    "bug_signature": "except Exception:\n        return False",
     "starter_files": [
       {
         "name": "service_client.py",
-        "content": "def verify_credentials(auth_fn, username, password):\n    try:\n        return auth_fn(username, password)\n    except Exception:\n        # BUG: Masks infrastructure/network failures as invalid password\n        return {\"authenticated\": False, \"error\": \"Invalid credentials\"}\n"
+        "content": "def verify_credentials(auth_fn, username, password):\n    try:\n        return auth_fn(username, password)\n    except Exception:\n        return {\"authenticated\": False, \"error\": \"Invalid credentials\"}"
       }
     ],
     "solution_files": [
@@ -1385,11 +1385,11 @@
     "technology": "Python",
     "category": "Concurrency",
     "points": 250,
-    "bug_signature": "if order_id in paid_orders:\n        return {\"status\": \"ALREADY_PAID\"}\n    # Charge happens before locking",
+    "bug_signature": "if order_id in paid_orders:\n        return {\"status\": \"ALREADY_PAID\"}",
     "starter_files": [
       {
         "name": "payment_gateway.py",
-        "content": "def process_payment(order_id, paid_orders, processing_locks, charge_fn):\n    # BUG: Non-atomic check-then-act race condition\n    if order_id in paid_orders:\n        return {\"status\": \"ALREADY_PAID\"}\n    # Charge happens before locking\n    res = charge_fn(order_id)\n    paid_orders.add(order_id)\n    return {\"status\": \"SUCCESS\", \"charge_id\": res}\n"
+        "content": "def process_payment(order_id, paid_orders, processing_locks, charge_fn):\n    if order_id in paid_orders:\n        return {\"status\": \"ALREADY_PAID\"}\n    # Charge happens before locking\n    res = charge_fn(order_id)\n    paid_orders.add(order_id)\n    return {\"status\": \"SUCCESS\", \"charge_id\": res}"
       }
     ],
     "solution_files": [
@@ -1415,11 +1415,11 @@
     "technology": "Python",
     "category": "Backend",
     "points": 250,
-    "bug_signature": "def renew_lease(leases, job_id, current_time, extension=30):\n    # Missing heartbeat renewal implementation\n    pass",
+    "bug_signature": "def renew_lease(leases, job_id, current_time, extension=30):\n    pass",
     "starter_files": [
       {
         "name": "job_scheduler.py",
-        "content": "def should_reassign_job(current_time, job_id, leases):\n    # BUG: Checks fixed initial lease without supporting heartbeat renewal\n    lease_info = leases.get(job_id)\n    if not lease_info:\n        return True\n    return current_time > lease_info[\"expires_at\"]\n\ndef renew_lease(leases, job_id, current_time, extension=30):\n    # Missing heartbeat renewal implementation\n    pass\n"
+        "content": "def should_reassign_job(current_time, job_id, leases):\n    lease_info = leases.get(job_id)\n    if not lease_info:\n        return True\n    return current_time > lease_info[\"expires_at\"]\n\ndef renew_lease(leases, job_id, current_time, extension=30):\n    # Missing heartbeat renewal implementation\n    pass"
       }
     ],
     "solution_files": [
@@ -1449,7 +1449,7 @@
     "starter_files": [
       {
         "name": "inventory_allocator.py",
-        "content": "def reserve_seats(inventory, flight_id, requested_seats):\n    # BUG: Non-atomic allocation vulnerable to race conditions\n    current_seats = inventory.get(flight_id, 0)\n    if current_seats < requested_seats:\n        return False\n    inventory[flight_id] = current_seats - requested_seats\n    return True\n"
+        "content": "def reserve_seats(inventory, flight_id, requested_seats):\n    current_seats = inventory.get(flight_id, 0)\n    if current_seats < requested_seats:\n        return False\n    inventory[flight_id] = current_seats - requested_seats\n    return True"
       }
     ],
     "solution_files": [
@@ -1479,7 +1479,7 @@
     "starter_files": [
       {
         "name": "cache_aside.py",
-        "content": "def update_user_bio(db, cache, user_id, new_bio):\n    # BUG: Invalidation before DB write creates race condition with concurrent reads\n    cache.delete(f\"user:{user_id}\")\n    db[user_id] = new_bio\n    return True\n"
+        "content": "def update_user_bio(db, cache, user_id, new_bio):\n    cache.delete(f\"user:{user_id}\")\n    db[user_id] = new_bio\n    return True"
       }
     ],
     "solution_files": [
@@ -1509,7 +1509,7 @@
     "starter_files": [
       {
         "name": "distributed_lock.py",
-        "content": "def release_lock(lock_storage, lock_key, owner_token):\n    # BUG: Blindly deletes lock without verifying token ownership\n    if lock_key in lock_storage:\n        del lock_storage[lock_key]\n        return True\n    return False\n"
+        "content": "def release_lock(lock_storage, lock_key, owner_token):\n    if lock_key in lock_storage:\n        del lock_storage[lock_key]\n        return True\n    return False"
       }
     ],
     "solution_files": [
@@ -1546,7 +1546,7 @@
     "starter_files": [
       {
         "name": "backoff_client.py",
-        "content": "def calculate_backoff(attempt, base_delay=1, max_delay=32, jitter=0):\n    # BUG: Linear backoff without exponential growth\n    return min(max_delay, base_delay * attempt + jitter)\n"
+        "content": "def calculate_backoff(attempt, base_delay=1, max_delay=32, jitter=0):\n    return min(max_delay, base_delay * attempt + jitter)"
       }
     ],
     "solution_files": [
@@ -1583,7 +1583,7 @@
     "starter_files": [
       {
         "name": "report_writer.py",
-        "content": "def write_report_safely(file_system, dest_path, content, pid):\n    # BUG: Direct write to destination without atomic temp-and-rename\n    file_system[dest_path] = content\n    return dest_path\n"
+        "content": "def write_report_safely(file_system, dest_path, content, pid):\n    file_system[dest_path] = content\n    return dest_path"
       }
     ],
     "solution_files": [
@@ -1613,7 +1613,7 @@
     "starter_files": [
       {
         "name": "resource_manager.py",
-        "content": "def determine_lock_order(required_resources):\n    # BUG: Preserves caller order causing circular lock deadlocks\n    return list(required_resources)\n"
+        "content": "def determine_lock_order(required_resources):\n    return list(required_resources)"
       }
     ],
     "solution_files": [
@@ -1643,7 +1643,7 @@
     "starter_files": [
       {
         "name": "access_controller.py",
-        "content": "def elevate_user_role(user_db, actor, target, new_role, auth_checker):\n    # BUG: State modification occurs before authorization verification\n    user_db[target] = new_role\n    if not auth_checker(actor):\n        raise PermissionError(\"Actor not authorized to grant roles\")\n    return True\n"
+        "content": "def elevate_user_role(user_db, actor, target, new_role, auth_checker):\n    user_db[target] = new_role\n    if not auth_checker(actor):\n        raise PermissionError(\"Actor not authorized to grant roles\")\n    return True"
       }
     ],
     "solution_files": [
@@ -1669,11 +1669,11 @@
     "technology": "Python",
     "category": "Data & Processing",
     "points": 250,
-    "bug_signature": "# BUG: Fails to update checkpoint_store with last processed ID\n    return True",
+    "bug_signature": "for record in batch:\n            self.transform(record)\n        return True",
     "starter_files": [
       {
         "name": "migration_runner.py",
-        "content": "def migrate_batch(destination_db, checkpoint_store, batch):\n    for record in batch:\n        destination_db[record[\"id\"]] = record\n    # BUG: Fails to update checkpoint_store with last processed ID\n    return True\n"
+        "content": "def migrate_batch(destination_db, checkpoint_store, batch):\n    for record in batch:\n        destination_db[record[\"id\"]] = record\n    return True"
       }
     ],
     "solution_files": [
@@ -1703,7 +1703,7 @@
     "starter_files": [
       {
         "name": "event_stream.py",
-        "content": "def assign_event_shard(event, num_shards):\n    # BUG: Assigns random shard instead of partitioning by entity_id\n    import random\n    return random.randint(0, num_shards - 1)\n"
+        "content": "def assign_event_shard(event, num_shards):\n    import random\n    return random.randint(0, num_shards - 1)"
       }
     ],
     "solution_files": [
@@ -1733,7 +1733,7 @@
     "starter_files": [
       {
         "name": "saga_coordinator.py",
-        "content": "def execute_saga(steps):\n    completed = []\n    for step in steps:\n        try:\n            step.execute()\n            completed.append(step)\n        except Exception:\n            # BUG: Only rolls back the last completed step, ignoring earlier steps\n            if completed:\n                completed[-1].rollback()\n            raise\n    return True\n"
+        "content": "def execute_saga(steps):\n    completed = []\n    for step in steps:\n        try:\n            step.execute()\n            completed.append(step)\n        except Exception:\n            if completed:\n                completed[-1].rollback()\n            raise\n    return True"
       }
     ],
     "solution_files": [
@@ -1763,7 +1763,7 @@
     "starter_files": [
       {
         "name": "stream_parser.py",
-        "content": "def parse_stream_chunks(chunks):\n    # BUG: Accumulates all chunks in memory causing memory leak\n    all_chunks = []\n    lines = []\n    for chunk in chunks:\n        all_chunks.append(chunk)\n        full_text = \"\".join(all_chunks)\n        # Parse logic\n    return lines\n"
+        "content": "def parse_stream_chunks(chunks):\n    all_chunks = []\n    lines = []\n    for chunk in chunks:\n        all_chunks.append(chunk)\n        full_text = \"\".join(all_chunks)\n        # Parse logic\n    return lines"
       }
     ],
     "solution_files": [
@@ -1793,7 +1793,7 @@
     "starter_files": [
       {
         "name": "account_service.py",
-        "content": "def update_account(profile, new_email, new_phone):\n    # BUG: Mutates email before validating phone\n    if \"@\" in new_email:\n        profile[\"email\"] = new_email\n    if not (new_phone and new_phone.isdigit() and len(new_phone) == 10):\n        raise ValueError(\"Invalid phone number\")\n    profile[\"phone\"] = new_phone\n    return True\n"
+        "content": "def update_account(profile, new_email, new_phone):\n    if \"@\" in new_email:\n        profile[\"email\"] = new_email\n    if not (new_phone and new_phone.isdigit() and len(new_phone) == 10):\n        raise ValueError(\"Invalid phone number\")\n    profile[\"phone\"] = new_phone\n    return True"
       }
     ],
     "solution_files": [
@@ -1823,7 +1823,7 @@
     "starter_files": [
       {
         "name": "seat_reservation.py",
-        "content": "def reserve_seat(reservations, seat_id, user_id, current_time, ttl=300):\n    # BUG: Overwrites active reservations unconditionally\n    reservations[seat_id] = {\"user\": user_id, \"expires_at\": current_time + ttl}\n    return True\n"
+        "content": "def reserve_seat(reservations, seat_id, user_id, current_time, ttl=300):\n    reservations[seat_id] = {\"user\": user_id, \"expires_at\": current_time + ttl}\n    return True"
       }
     ],
     "solution_files": [
@@ -1860,11 +1860,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE customers (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    email VARCHAR(100),\n    opt_out INT\n);\n\nINSERT INTO customers VALUES\n(1, 'Alice', 'alice@test.com', 0),\n(2, 'Bob', 'bob@test.com', 1),\n(3, 'Charlie', 'charlie@test.com', NULL),\n(4, 'Diana', 'diana@test.com', 0);\n"
+        "content": "CREATE TABLE customers (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    email VARCHAR(100),\n    opt_out INT\n);\n\nINSERT INTO customers VALUES\n(1, 'Alice', 'alice@test.com', 0),\n(2, 'Bob', 'bob@test.com', 1),\n(3, 'Charlie', 'charlie@test.com', NULL),\n(4, 'Diana', 'diana@test.com', 0);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Evaluates to UNKNOWN for NULL values, excluding Charlie\nSELECT id, name, email FROM customers WHERE opt_out != 1;\n"
+        "content": "SELECT id, name, email FROM customers WHERE opt_out != 1;"
       }
     ],
     "solution_files": [
@@ -1878,7 +1878,7 @@
         "id": 1,
         "name": "Visible: Includes NULL and 0 opt-out records",
         "input": "",
-        "expected": "SELECT id, name, email FROM customers WHERE opt_out = 0 OR opt_out IS NULL ORDER BY id;"
+        "expected": "Customers including opt_out=0 and opt_out IS NULL"
       }
     ]
   },
@@ -1893,11 +1893,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE orders (\n    id INT PRIMARY KEY,\n    amount DECIMAL(10,2),\n    order_date DATETIME\n);\n\nINSERT INTO orders VALUES\n(1, 100.00, '2026-10-01 10:00:00'),\n(2, 250.00, '2026-10-15 14:00:00'),\n(3, 150.00, '2026-10-31 18:30:00'),\n(4, 300.00, '2026-11-01 09:00:00');\n"
+        "content": "CREATE TABLE orders (\n    id INT PRIMARY KEY,\n    amount DECIMAL(10,2),\n    order_date DATETIME\n);\n\nINSERT INTO orders VALUES\n(1, 100.00, '2026-10-01 10:00:00'),\n(2, 250.00, '2026-10-15 14:00:00'),\n(3, 150.00, '2026-10-31 18:30:00'),\n(4, 300.00, '2026-11-01 09:00:00');"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Excludes afternoon orders on October 31st\nSELECT SUM(amount) AS total_revenue FROM orders WHERE order_date BETWEEN '2026-10-01' AND '2026-10-31';\n"
+        "content": "SELECT SUM(amount) AS total_revenue FROM orders WHERE order_date BETWEEN '2026-10-01' AND '2026-10-31';"
       }
     ],
     "solution_files": [
@@ -1911,7 +1911,7 @@
         "id": 1,
         "name": "Visible: Total includes October 31st afternoon order",
         "input": "",
-        "expected": "SELECT SUM(amount) AS total_revenue FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01';"
+        "expected": "Total revenue sum including October 31st afternoon transactions"
       }
     ]
   },
@@ -1926,11 +1926,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE products (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    price DECIMAL(10,2),\n    status VARCHAR(20)\n);\n\nINSERT INTO products VALUES\n(1, 'Laptop Pro', 1200.00, 'active'),\n(2, 'Legacy Phone', 150.00, 'archived'),\n(3, 'Wireless Mouse', 25.00, 'active');\n"
+        "content": "CREATE TABLE products (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    price DECIMAL(10,2),\n    status VARCHAR(20)\n);\n\nINSERT INTO products VALUES\n(1, 'Laptop Pro', 1200.00, 'active'),\n(2, 'Legacy Phone', 150.00, 'archived'),\n(3, 'Wireless Mouse', 25.00, 'active');"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Selects archived products instead of active products\nSELECT id, name, price FROM products WHERE status = 'archived' ORDER BY name ASC;\n"
+        "content": "SELECT id, name, price FROM products WHERE status = 'archived' ORDER BY name ASC;"
       }
     ],
     "solution_files": [
@@ -1944,7 +1944,7 @@
         "id": 1,
         "name": "Visible: Returns active products ordered by name",
         "input": "",
-        "expected": "SELECT id, name, price FROM products WHERE status = 'active' ORDER BY name ASC;"
+        "expected": "Accurate tabular result set satisfying problem criteria"
       }
     ]
   },
@@ -1959,11 +1959,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE customers (\n    id INT PRIMARY KEY,\n    name VARCHAR(50)\n);\n\nCREATE TABLE orders (\n    id INT PRIMARY KEY,\n    customer_id INT,\n    amount DECIMAL(10,2)\n);\n\nINSERT INTO customers VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Charlie');\nINSERT INTO orders VALUES (101, 1, 50.00), (102, 2, 75.00);\n"
+        "content": "CREATE TABLE customers (\n    id INT PRIMARY KEY,\n    name VARCHAR(50)\n);\n\nCREATE TABLE orders (\n    id INT PRIMARY KEY,\n    customer_id INT,\n    amount DECIMAL(10,2)\n);\n\nINSERT INTO customers VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Charlie');\nINSERT INTO orders VALUES (101, 1, 50.00), (102, 2, 75.00);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: INNER JOIN removes Charlie (who has 0 orders)\nSELECT c.id, c.name, o.id AS order_id FROM customers c INNER JOIN orders o ON c.id = o.customer_id ORDER BY c.id;\n"
+        "content": "SELECT c.id, c.name, o.id AS order_id FROM customers c INNER JOIN orders o ON c.id = o.customer_id ORDER BY c.id;"
       }
     ],
     "solution_files": [
@@ -1977,7 +1977,7 @@
         "id": 1,
         "name": "Visible: LEFT JOIN includes Charlie with NULL order_id",
         "input": "",
-        "expected": "SELECT c.id, c.name, o.id AS order_id FROM customers c LEFT JOIN orders o ON c.id = o.customer_id ORDER BY c.id;"
+        "expected": "All customers with order IDs or NULL if no orders"
       }
     ]
   },
@@ -1992,11 +1992,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE employees (\n    id INT PRIMARY KEY,\n    department VARCHAR(50),\n    bonus DECIMAL(5,2)\n);\n\nINSERT INTO employees VALUES\n(1, 'Engineering', 10.0),\n(2, 'Engineering', 0.0),\n(3, 'Sales', 20.0),\n(4, 'Sales', 10.0);\n"
+        "content": "CREATE TABLE employees (\n    id INT PRIMARY KEY,\n    department VARCHAR(50),\n    bonus DECIMAL(5,2)\n);\n\nINSERT INTO employees VALUES\n(1, 'Engineering', 10.0),\n(2, 'Engineering', 0.0),\n(3, 'Sales', 20.0),\n(4, 'Sales', 10.0);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: WHERE clause removes 0.0 bonus employees before AVG\nSELECT department, AVG(bonus) AS avg_bonus FROM employees WHERE bonus > 0 GROUP BY department ORDER BY department;\n"
+        "content": "SELECT department, AVG(bonus) AS avg_bonus FROM employees WHERE bonus > 0 GROUP BY department ORDER BY department;"
       }
     ],
     "solution_files": [
@@ -2010,7 +2010,7 @@
         "id": 1,
         "name": "Visible: Department average includes 0% bonus",
         "input": "",
-        "expected": "SELECT department, AVG(bonus) AS avg_bonus FROM employees GROUP BY department ORDER BY department;"
+        "expected": "Average metric correctly computed per group"
       }
     ]
   },
@@ -2025,11 +2025,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE users (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    email VARCHAR(100)\n);\n\nINSERT INTO users VALUES\n(1, 'Alice', 'dup@test.com'),\n(2, 'Bob', 'unique@test.com'),\n(3, 'Charlie', 'dup@test.com');\n"
+        "content": "CREATE TABLE users (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    email VARCHAR(100)\n);\n\nINSERT INTO users VALUES\n(1, 'Alice', 'dup@test.com'),\n(2, 'Bob', 'unique@test.com'),\n(3, 'Charlie', 'dup@test.com');"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Uses >= 1 instead of > 1, flagging unique emails\nSELECT email, COUNT(*) AS count FROM users GROUP BY email HAVING COUNT(*) >= 1 ORDER BY email;\n"
+        "content": "SELECT email, COUNT(*) AS count FROM users GROUP BY email HAVING COUNT(*) >= 1 ORDER BY email;"
       }
     ],
     "solution_files": [
@@ -2043,7 +2043,7 @@
         "id": 1,
         "name": "Visible: Only true duplicate emails returned",
         "input": "",
-        "expected": "SELECT email, COUNT(*) AS count FROM users GROUP BY email HAVING COUNT(*) > 1 ORDER BY email;"
+        "expected": "Deduplicated groups satisfying having condition"
       }
     ]
   },
@@ -2058,11 +2058,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE invoice_items (\n    id INT PRIMARY KEY,\n    subtotal DECIMAL(10,2),\n    tax_rate DECIMAL(4,4)\n);\n\nINSERT INTO invoice_items VALUES\n(1, 10.50, 0.0825),\n(2, 25.20, 0.0825);\n"
+        "content": "CREATE TABLE invoice_items (\n    id INT PRIMARY KEY,\n    subtotal DECIMAL(10,2),\n    tax_rate DECIMAL(4,4)\n);\n\nINSERT INTO invoice_items VALUES\n(1, 10.50, 0.0825),\n(2, 25.20, 0.0825);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Rounds to integer dollar instead of 2 decimal places\nSELECT ROUND(SUM(subtotal * tax_rate)) AS total_tax FROM invoice_items;\n"
+        "content": "SELECT ROUND(SUM(subtotal * tax_rate)) AS total_tax FROM invoice_items;"
       }
     ],
     "solution_files": [
@@ -2076,7 +2076,7 @@
         "id": 1,
         "name": "Visible: Monetary total rounded to 2 decimal places",
         "input": "",
-        "expected": "SELECT ROUND(SUM(subtotal * tax_rate), 2) AS total_tax FROM invoice_items;"
+        "expected": "Accurate tabular result set satisfying problem criteria"
       }
     ]
   },
@@ -2091,11 +2091,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE orders (\n    id INT PRIMARY KEY,\n    amount DECIMAL(10,2),\n    status VARCHAR(20)\n);\n\nINSERT INTO orders VALUES\n(1, 100.00, 'completed'),\n(2, 50.00, 'cancelled'),\n(3, 200.00, 'completed');\n"
+        "content": "CREATE TABLE orders (\n    id INT PRIMARY KEY,\n    amount DECIMAL(10,2),\n    status VARCHAR(20)\n);\n\nINSERT INTO orders VALUES\n(1, 100.00, 'completed'),\n(2, 50.00, 'cancelled'),\n(3, 200.00, 'completed');"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Includes cancelled orders in GMV\nSELECT SUM(amount) AS completed_gmv FROM orders;\n"
+        "content": "SELECT SUM(amount) AS completed_gmv FROM orders;"
       }
     ],
     "solution_files": [
@@ -2109,7 +2109,7 @@
         "id": 1,
         "name": "Visible: Total only includes completed orders",
         "input": "",
-        "expected": "SELECT SUM(amount) AS completed_gmv FROM orders WHERE status = 'completed';"
+        "expected": "Sum of GMV for completed orders only"
       }
     ]
   },
@@ -2124,11 +2124,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE tasks (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    priority_level VARCHAR(10)\n);\n\nINSERT INTO tasks VALUES\n(1, 'Task A', '10'),\n(2, 'Task B', '2'),\n(3, 'Task C', '100'),\n(4, 'Task D', '20');\n"
+        "content": "CREATE TABLE tasks (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    priority_level VARCHAR(10)\n);\n\nINSERT INTO tasks VALUES\n(1, 'Task A', '10'),\n(2, 'Task B', '2'),\n(3, 'Task C', '100'),\n(4, 'Task D', '20');"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Sorts VARCHAR priority alphabetically\nSELECT id, name, priority_level FROM tasks ORDER BY priority_level ASC;\n"
+        "content": "SELECT id, name, priority_level FROM tasks ORDER BY priority_level ASC;"
       }
     ],
     "solution_files": [
@@ -2142,7 +2142,7 @@
         "id": 1,
         "name": "Visible: Tasks ordered by numerical priority level",
         "input": "",
-        "expected": "SELECT id, name, priority_level FROM tasks ORDER BY CAST(priority_level AS INTEGER) ASC;"
+        "expected": "Accurate tabular result set satisfying problem criteria"
       }
     ]
   },
@@ -2157,11 +2157,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE product_sales (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    total_sold INT\n);\n\nINSERT INTO product_sales VALUES\n(1, 'Slow Mover', 1),\n(2, 'Hot Item', 500),\n(3, 'Average Seller', 50);\n"
+        "content": "CREATE TABLE product_sales (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    total_sold INT\n);\n\nINSERT INTO product_sales VALUES\n(1, 'Slow Mover', 1),\n(2, 'Hot Item', 500),\n(3, 'Average Seller', 50);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Orders ASC instead of DESC\nSELECT id, name, total_sold FROM product_sales ORDER BY total_sold ASC LIMIT 1;\n"
+        "content": "SELECT id, name, total_sold FROM product_sales ORDER BY total_sold ASC LIMIT 1;"
       }
     ],
     "solution_files": [
@@ -2175,7 +2175,7 @@
         "id": 1,
         "name": "Visible: Returns top selling item with highest count",
         "input": "",
-        "expected": "SELECT id, name, total_sold FROM product_sales ORDER BY total_sold DESC LIMIT 1;"
+        "expected": "Accurate tabular result set satisfying problem criteria"
       }
     ]
   },
@@ -2190,11 +2190,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE orders (\n    id INT PRIMARY KEY,\n    customer_id INT,\n    total_amount DECIMAL(10,2)\n);\n\nCREATE TABLE order_items (\n    id INT PRIMARY KEY,\n    order_id INT,\n    product_name VARCHAR(50)\n);\n\nINSERT INTO orders VALUES (1, 10, 100.00), (2, 20, 50.00);\nINSERT INTO order_items VALUES (1, 1, 'Book A'), (2, 1, 'Book B'), (3, 2, 'Pen');\n"
+        "content": "CREATE TABLE orders (\n    id INT PRIMARY KEY,\n    customer_id INT,\n    total_amount DECIMAL(10,2)\n);\n\nCREATE TABLE order_items (\n    id INT PRIMARY KEY,\n    order_id INT,\n    product_name VARCHAR(50)\n);\n\nINSERT INTO orders VALUES (1, 10, 100.00), (2, 20, 50.00);\nINSERT INTO order_items VALUES (1, 1, 'Book A'), (2, 1, 'Book B'), (3, 2, 'Pen');"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Multiplying total_amount by joining line items\nSELECT o.customer_id, SUM(o.total_amount) AS revenue FROM orders o JOIN order_items i ON o.id = i.order_id GROUP BY o.customer_id ORDER BY o.customer_id;\n"
+        "content": "SELECT o.customer_id, SUM(o.total_amount) AS revenue FROM orders o JOIN order_items i ON o.id = i.order_id GROUP BY o.customer_id ORDER BY o.customer_id;"
       }
     ],
     "solution_files": [
@@ -2208,7 +2208,7 @@
         "id": 1,
         "name": "Visible: Accurate customer revenue without join duplication",
         "input": "",
-        "expected": "SELECT customer_id, SUM(total_amount) AS revenue FROM orders GROUP BY customer_id ORDER BY customer_id;"
+        "expected": "Aggregated revenue matching date/order criteria"
       }
     ]
   },
@@ -2223,11 +2223,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE orders (\n    id INT PRIMARY KEY,\n    customer_id INT,\n    amount DECIMAL(10,2)\n);\n\nINSERT INTO orders VALUES\n(1, 1, 100.00),\n(2, 1, 20.00),\n(3, 1, 30.00),\n(4, 2, 50.00);\n"
+        "content": "CREATE TABLE orders (\n    id INT PRIMARY KEY,\n    customer_id INT,\n    amount DECIMAL(10,2)\n);\n\nINSERT INTO orders VALUES\n(1, 1, 100.00),\n(2, 1, 20.00),\n(3, 1, 30.00),\n(4, 2, 50.00);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Computes sum instead of average order value\nSELECT customer_id, SUM(amount) AS aov FROM orders GROUP BY customer_id ORDER BY customer_id;\n"
+        "content": "SELECT customer_id, SUM(amount) AS aov FROM orders GROUP BY customer_id ORDER BY customer_id;"
       }
     ],
     "solution_files": [
@@ -2241,7 +2241,7 @@
         "id": 1,
         "name": "Visible: True average order value per customer",
         "input": "",
-        "expected": "SELECT customer_id, ROUND(AVG(amount), 2) AS aov FROM orders GROUP BY customer_id ORDER BY customer_id;"
+        "expected": "Average metric correctly computed per group"
       }
     ]
   },
@@ -2256,11 +2256,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE audit_logs (\n    id INT PRIMARY KEY,\n    event VARCHAR(50),\n    created_at VARCHAR(20)\n);\n\nINSERT INTO audit_logs VALUES\n(4, 'Login', '2026-10-19 10:00:00'),\n(2, 'Logout', '2026-10-19 10:00:00'),\n(1, 'Password Reset', '2026-10-19 10:00:00'),\n(3, 'Login', '2026-10-19 10:00:00');\n"
+        "content": "CREATE TABLE audit_logs (\n    id INT PRIMARY KEY,\n    event VARCHAR(50),\n    created_at VARCHAR(20)\n);\n\nINSERT INTO audit_logs VALUES\n(4, 'Login', '2026-10-19 10:00:00'),\n(2, 'Logout', '2026-10-19 10:00:00'),\n(1, 'Password Reset', '2026-10-19 10:00:00'),\n(3, 'Login', '2026-10-19 10:00:00');"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Non-deterministic order on tied timestamps\nSELECT id, event, created_at FROM audit_logs ORDER BY created_at DESC LIMIT 2 OFFSET 0;\n"
+        "content": "SELECT id, event, created_at FROM audit_logs ORDER BY created_at DESC LIMIT 2 OFFSET 0;"
       }
     ],
     "solution_files": [
@@ -2274,7 +2274,7 @@
         "id": 1,
         "name": "Visible: Deterministic sort with id tie-breaker",
         "input": "",
-        "expected": "SELECT id, event, created_at FROM audit_logs ORDER BY created_at DESC, id ASC LIMIT 2 OFFSET 0;"
+        "expected": "Accurate tabular result set satisfying problem criteria"
       }
     ]
   },
@@ -2289,11 +2289,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE sales_reps (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    region VARCHAR(20),\n    revenue DECIMAL(10,2)\n);\n\nINSERT INTO sales_reps VALUES\n(1, 'Alice', 'EMEA', 50000.00),\n(2, 'Bob', 'EMEA', 70000.00),\n(3, 'Charlie', 'APAC', 60000.00),\n(4, 'Diana', 'APAC', 90000.00);\n"
+        "content": "CREATE TABLE sales_reps (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    region VARCHAR(20),\n    revenue DECIMAL(10,2)\n);\n\nINSERT INTO sales_reps VALUES\n(1, 'Alice', 'EMEA', 50000.00),\n(2, 'Bob', 'EMEA', 70000.00),\n(3, 'Charlie', 'APAC', 60000.00),\n(4, 'Diana', 'APAC', 90000.00);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Missing PARTITION BY region, creating global rank\nSELECT id, name, region, revenue, RANK() OVER (ORDER BY revenue DESC) AS regional_rank FROM sales_reps ORDER BY region, regional_rank;\n"
+        "content": "SELECT id, name, region, revenue, RANK() OVER (ORDER BY revenue DESC) AS regional_rank FROM sales_reps ORDER BY region, regional_rank;"
       }
     ],
     "solution_files": [
@@ -2307,7 +2307,7 @@
         "id": 1,
         "name": "Visible: Regional partition ranks top rep in each region as #1",
         "input": "",
-        "expected": "SELECT id, name, region, revenue, RANK() OVER (PARTITION BY region ORDER BY revenue DESC) AS regional_rank FROM sales_reps ORDER BY region, regional_rank;"
+        "expected": "Aggregated revenue matching date/order criteria"
       }
     ]
   },
@@ -2322,11 +2322,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE payments (\n    id INT PRIMARY KEY,\n    amount DECIMAL(10,2),\n    payment_date VARCHAR(25)\n);\n\nINSERT INTO payments VALUES\n(1, 100.00, '2026-09-01 00:30:00'),\n(2, 200.00, '2026-09-15 12:00:00'),\n(3, 150.00, '2026-10-01 10:00:00');\n"
+        "content": "CREATE TABLE payments (\n    id INT PRIMARY KEY,\n    amount DECIMAL(10,2),\n    payment_date VARCHAR(25)\n);\n\nINSERT INTO payments VALUES\n(1, 100.00, '2026-09-01 00:30:00'),\n(2, 200.00, '2026-09-15 12:00:00'),\n(3, 150.00, '2026-10-01 10:00:00');"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Uses substring that breaks on date formatting\nSELECT substr(payment_date, 6, 2) AS month, SUM(amount) AS total FROM payments GROUP BY month ORDER BY month;\n"
+        "content": "SELECT substr(payment_date, 6, 2) AS month, SUM(amount) AS total FROM payments GROUP BY month ORDER BY month;"
       }
     ],
     "solution_files": [
@@ -2340,7 +2340,7 @@
         "id": 1,
         "name": "Visible: Grouped by YYYY-MM formatted month",
         "input": "",
-        "expected": "SELECT strftime('%Y-%m', payment_date) AS month, SUM(amount) AS total FROM payments GROUP BY month ORDER BY month;"
+        "expected": "Accurate tabular result set satisfying problem criteria"
       }
     ]
   },
@@ -2355,11 +2355,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE users (\n    id INT PRIMARY KEY,\n    name VARCHAR(50)\n);\n\nCREATE TABLE subscriptions (\n    id INT PRIMARY KEY,\n    user_id INT,\n    plan_name VARCHAR(50),\n    status VARCHAR(20)\n);\n\nINSERT INTO users VALUES (1, 'Alice'), (2, 'Bob');\nINSERT INTO subscriptions VALUES (101, 1, 'Pro Plan', 'active');\n"
+        "content": "CREATE TABLE users (\n    id INT PRIMARY KEY,\n    name VARCHAR(50)\n);\n\nCREATE TABLE subscriptions (\n    id INT PRIMARY KEY,\n    user_id INT,\n    plan_name VARCHAR(50),\n    status VARCHAR(20)\n);\n\nINSERT INTO users VALUES (1, 'Alice'), (2, 'Bob');\nINSERT INTO subscriptions VALUES (101, 1, 'Pro Plan', 'active');"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: WHERE clause filters out NULLs, converting LEFT JOIN to INNER JOIN\nSELECT u.id, u.name, s.plan_name FROM users u LEFT JOIN subscriptions s ON u.id = s.user_id WHERE s.status = 'active' ORDER BY u.id;\n"
+        "content": "SELECT u.id, u.name, s.plan_name FROM users u LEFT JOIN subscriptions s ON u.id = s.user_id WHERE s.status = 'active' ORDER BY u.id;"
       }
     ],
     "solution_files": [
@@ -2373,7 +2373,7 @@
         "id": 1,
         "name": "Visible: Preserves Bob with NULL plan_name",
         "input": "",
-        "expected": "SELECT u.id, u.name, s.plan_name FROM users u LEFT JOIN subscriptions s ON u.id = s.user_id AND s.status = 'active' ORDER BY u.id;"
+        "expected": "Accurate tabular result set satisfying problem criteria"
       }
     ]
   },
@@ -2388,11 +2388,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE inventory (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    physical_stock INT,\n    reserved_stock INT\n);\n\nINSERT INTO inventory VALUES\n(1, 'Laptop', 10, 2),\n(2, 'Keyboard', 25, NULL),\n(3, 'Monitor', 5, 5);\n"
+        "content": "CREATE TABLE inventory (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    physical_stock INT,\n    reserved_stock INT\n);\n\nINSERT INTO inventory VALUES\n(1, 'Laptop', 10, 2),\n(2, 'Keyboard', 25, NULL),\n(3, 'Monitor', 5, 5);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: physical_stock - NULL produces NULL for Keyboard\nSELECT id, name, (physical_stock - reserved_stock) AS available_stock FROM inventory ORDER BY id;\n"
+        "content": "SELECT id, name, (physical_stock - reserved_stock) AS available_stock FROM inventory ORDER BY id;"
       }
     ],
     "solution_files": [
@@ -2406,7 +2406,7 @@
         "id": 1,
         "name": "Visible: Keyboard shows available_stock = 25",
         "input": "",
-        "expected": "SELECT id, name, (physical_stock - COALESCE(reserved_stock, 0)) AS available_stock FROM inventory ORDER BY id;"
+        "expected": "Accurate tabular result set satisfying problem criteria"
       }
     ]
   },
@@ -2421,11 +2421,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE shipments (\n    id INT PRIMARY KEY,\n    status VARCHAR(20)\n);\n\nINSERT INTO shipments VALUES\n(1, 'delivered'),\n(2, 'returned'),\n(3, 'delivered');\n"
+        "content": "CREATE TABLE shipments (\n    id INT PRIMARY KEY,\n    status VARCHAR(20)\n);\n\nINSERT INTO shipments VALUES\n(1, 'delivered'),\n(2, 'returned'),\n(3, 'delivered');"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: COUNT counts 0 as non-null, counting all 3 rows as delivered\nSELECT COUNT(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS delivered_count FROM shipments;\n"
+        "content": "SELECT COUNT(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS delivered_count FROM shipments;"
       }
     ],
     "solution_files": [
@@ -2439,7 +2439,7 @@
         "id": 1,
         "name": "Visible: True delivered count is 2",
         "input": "",
-        "expected": "SELECT SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS delivered_count FROM shipments;"
+        "expected": "Accurate tabular result set satisfying problem criteria"
       }
     ]
   },
@@ -2454,11 +2454,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE orders (\n    id INT PRIMARY KEY,\n    customer_id INT,\n    amount DECIMAL(10,2)\n);\n\nINSERT INTO orders VALUES\n(1, 101, 300.00),\n(2, 101, 300.00),\n(3, 102, 600.00),\n(4, 103, 100.00);\n"
+        "content": "CREATE TABLE orders (\n    id INT PRIMARY KEY,\n    customer_id INT,\n    amount DECIMAL(10,2)\n);\n\nINSERT INTO orders VALUES\n(1, 101, 300.00),\n(2, 101, 300.00),\n(3, 102, 600.00),\n(4, 103, 100.00);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Filters individual orders >= 500 in CTE, dropping customer 101\nWITH large_orders AS (\n    SELECT customer_id, amount FROM orders WHERE amount >= 500\n)\nSELECT customer_id, SUM(amount) AS total_spent FROM large_orders GROUP BY customer_id ORDER BY customer_id;\n"
+        "content": "WITH large_orders AS (\n    SELECT customer_id, amount FROM orders WHERE amount >= 500\n)\nSELECT customer_id, SUM(amount) AS total_spent FROM large_orders GROUP BY customer_id ORDER BY customer_id;"
       }
     ],
     "solution_files": [
@@ -2472,7 +2472,7 @@
         "id": 1,
         "name": "Visible: Customers 101 and 102 both have total >= 500",
         "input": "",
-        "expected": "WITH customer_totals AS (\n    SELECT customer_id, SUM(amount) AS total_spent FROM orders GROUP BY customer_id\n)\nSELECT customer_id, total_spent FROM customer_totals WHERE total_spent >= 500 ORDER BY customer_id;"
+        "expected": "High-value customers whose total spend meets or exceeds 500"
       }
     ]
   },
@@ -2487,11 +2487,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE users (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    phone VARCHAR(20)\n);\n\nINSERT INTO users VALUES\n(1, 'Alice', NULL),\n(2, 'Bob', NULL),\n(3, 'Charlie', '555-0100'),\n(4, 'Diana', '555-0100');\n"
+        "content": "CREATE TABLE users (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    phone VARCHAR(20)\n);\n\nINSERT INTO users VALUES\n(1, 'Alice', NULL),\n(2, 'Bob', NULL),\n(3, 'Charlie', '555-0100'),\n(4, 'Diana', '555-0100');"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Groups NULL phones into a duplicate cluster\nSELECT phone, COUNT(*) AS count FROM users GROUP BY phone HAVING COUNT(*) > 1 ORDER BY phone;\n"
+        "content": "SELECT phone, COUNT(*) AS count FROM users GROUP BY phone HAVING COUNT(*) > 1 ORDER BY phone;"
       }
     ],
     "solution_files": [
@@ -2505,7 +2505,7 @@
         "id": 1,
         "name": "Visible: Only non-null duplicate phone 555-0100 returned",
         "input": "",
-        "expected": "SELECT phone, COUNT(*) AS count FROM users WHERE phone IS NOT NULL AND phone != '' GROUP BY phone HAVING COUNT(*) > 1 ORDER BY phone;"
+        "expected": "Accurate tabular result set satisfying problem criteria"
       }
     ]
   },
@@ -2520,11 +2520,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE scores (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    score INT\n);\n\nINSERT INTO scores VALUES\n(1, 'Alice', 95),\n(2, 'Bob', 95),\n(3, 'Charlie', 90);\n"
+        "content": "CREATE TABLE scores (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    score INT\n);\n\nINSERT INTO scores VALUES\n(1, 'Alice', 95),\n(2, 'Bob', 95),\n(3, 'Charlie', 90);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: DENSE_RANK assigns Charlie rank 2 instead of 3\nSELECT id, name, score, DENSE_RANK() OVER (ORDER BY score DESC) AS rank FROM scores ORDER BY rank, id;\n"
+        "content": "SELECT id, name, score, DENSE_RANK() OVER (ORDER BY score DESC) AS rank FROM scores ORDER BY rank, id;"
       }
     ],
     "solution_files": [
@@ -2538,7 +2538,7 @@
         "id": 1,
         "name": "Visible: Competition rank assigns Charlie rank 3",
         "input": "",
-        "expected": "SELECT id, name, score, RANK() OVER (ORDER BY score DESC) AS rank FROM scores ORDER BY rank, id;"
+        "expected": "Ranked records with correct tie-breaker ordering"
       }
     ]
   },
@@ -2553,11 +2553,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE discounts (\n    id INT PRIMARY KEY,\n    category VARCHAR(20),\n    amount DECIMAL(5,2)\n);\n\nCREATE TABLE products (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    discount_id INT\n);\n\nINSERT INTO discounts VALUES (1, 'tech', 10.00), (2, 'tech', 20.00);\nINSERT INTO products VALUES (101, 'Mouse', 1), (102, 'Keyboard', 2), (103, 'Shirt', NULL);\n"
+        "content": "CREATE TABLE discounts (\n    id INT PRIMARY KEY,\n    category VARCHAR(20),\n    amount DECIMAL(5,2)\n);\n\nCREATE TABLE products (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    discount_id INT\n);\n\nINSERT INTO discounts VALUES (1, 'tech', 10.00), (2, 'tech', 20.00);\nINSERT INTO products VALUES (101, 'Mouse', 1), (102, 'Keyboard', 2), (103, 'Shirt', NULL);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Fails with subquery returns more than 1 row\nSELECT id, name, discount_id FROM products WHERE discount_id = (SELECT id FROM discounts WHERE category = 'tech') ORDER BY id;\n"
+        "content": "SELECT id, name, discount_id FROM products WHERE discount_id = (SELECT id FROM discounts WHERE category = 'tech') ORDER BY id;"
       }
     ],
     "solution_files": [
@@ -2571,7 +2571,7 @@
         "id": 1,
         "name": "Visible: IN operator matches all eligible products",
         "input": "",
-        "expected": "SELECT id, name, discount_id FROM products WHERE discount_id IN (SELECT id FROM discounts WHERE category = 'tech') ORDER BY id;"
+        "expected": "Accurate tabular result set satisfying problem criteria"
       }
     ]
   },
@@ -2586,11 +2586,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE products (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    current_price DECIMAL(10,2)\n);\n\nCREATE TABLE order_items (\n    id INT PRIMARY KEY,\n    product_id INT,\n    quantity INT,\n    price_at_purchase DECIMAL(10,2)\n);\n\nINSERT INTO products VALUES (1, 'Widget', 80.00);\nINSERT INTO order_items VALUES (101, 1, 2, 50.00);\n"
+        "content": "CREATE TABLE products (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    current_price DECIMAL(10,2)\n);\n\nCREATE TABLE order_items (\n    id INT PRIMARY KEY,\n    product_id INT,\n    quantity INT,\n    price_at_purchase DECIMAL(10,2)\n);\n\nINSERT INTO products VALUES (1, 'Widget', 80.00);\nINSERT INTO order_items VALUES (101, 1, 2, 50.00);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Uses current_price instead of historical price_at_purchase\nSELECT oi.product_id, SUM(oi.quantity * p.current_price) AS total_revenue FROM order_items oi JOIN products p ON oi.product_id = p.id GROUP BY oi.product_id;\n"
+        "content": "SELECT oi.product_id, SUM(oi.quantity * p.current_price) AS total_revenue FROM order_items oi JOIN products p ON oi.product_id = p.id GROUP BY oi.product_id;"
       }
     ],
     "solution_files": [
@@ -2604,7 +2604,7 @@
         "id": 1,
         "name": "Visible: Total reflects historical purchase price (2 * 50 = 100)",
         "input": "",
-        "expected": "SELECT product_id, SUM(quantity * price_at_purchase) AS total_revenue FROM order_items GROUP BY product_id;"
+        "expected": "Aggregated revenue matching date/order criteria"
       }
     ]
   },
@@ -2619,11 +2619,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE orders (\n    id INT PRIMARY KEY,\n    customer_id INT,\n    order_date VARCHAR(20)\n);\n\nINSERT INTO orders VALUES\n(1, 10, '2026-10-19'),\n(2, 10, '2026-10-19'),\n(3, 20, '2026-10-19');\n"
+        "content": "CREATE TABLE orders (\n    id INT PRIMARY KEY,\n    customer_id INT,\n    order_date VARCHAR(20)\n);\n\nINSERT INTO orders VALUES\n(1, 10, '2026-10-19'),\n(2, 10, '2026-10-19'),\n(3, 20, '2026-10-19');"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Counts total orders instead of unique customers\nSELECT COUNT(customer_id) AS unique_customers FROM orders;\n"
+        "content": "SELECT COUNT(customer_id) AS unique_customers FROM orders;"
       }
     ],
     "solution_files": [
@@ -2637,7 +2637,7 @@
         "id": 1,
         "name": "Visible: Distinct customers count is 2",
         "input": "",
-        "expected": "SELECT COUNT(DISTINCT customer_id) AS unique_customers FROM orders;"
+        "expected": "Deduplicated groups satisfying having condition"
       }
     ]
   },
@@ -2652,11 +2652,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE employees (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    manager_id INT\n);\n\nINSERT INTO employees VALUES\n(1, 'CEO', NULL),\n(2, 'VP Eng', 1),\n(3, 'Lead Dev', 2),\n(4, 'Junior Dev', 3);\n"
+        "content": "CREATE TABLE employees (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    manager_id INT\n);\n\nINSERT INTO employees VALUES\n(1, 'CEO', NULL),\n(2, 'VP Eng', 1),\n(3, 'Lead Dev', 2),\n(4, 'Junior Dev', 3);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Joins e.manager_id = org.manager_id instead of e.manager_id = org.id\nWITH RECURSIVE org_tree AS (\n    SELECT id, name, manager_id, 1 AS level FROM employees WHERE manager_id IS NULL\n    UNION ALL\n    SELECT e.id, e.name, e.manager_id, org.level + 1\n    FROM employees e JOIN org_tree org ON e.manager_id = org.manager_id\n)\nSELECT id, name, level FROM org_tree ORDER BY level, id;\n"
+        "content": "WITH RECURSIVE org_tree AS (\n    SELECT id, name, manager_id, 1 AS level FROM employees WHERE manager_id IS NULL\n    UNION ALL\n    SELECT e.id, e.name, e.manager_id, org.level + 1\n    FROM employees e JOIN org_tree org ON e.manager_id = org.manager_id\n)\nSELECT id, name, level FROM org_tree ORDER BY level, id;"
       }
     ],
     "solution_files": [
@@ -2670,7 +2670,7 @@
         "id": 1,
         "name": "Visible: Full 4-level tree generated",
         "input": "",
-        "expected": "WITH RECURSIVE org_tree AS (\n    SELECT id, name, manager_id, 1 AS level FROM employees WHERE manager_id IS NULL\n    UNION ALL\n    SELECT e.id, e.name, e.manager_id, org.level + 1\n    FROM employees e JOIN org_tree org ON e.manager_id = org.id\n)\nSELECT id, name, level FROM org_tree ORDER BY level, id;"
+        "expected": "Complete hierarchical reporting structure"
       }
     ]
   },
@@ -2685,11 +2685,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE inventory (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    stock INT\n);\n\nINSERT INTO inventory VALUES (10, 'PlayStation 5', 0);\n"
+        "content": "CREATE TABLE inventory (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    stock INT\n);\n\nINSERT INTO inventory VALUES (10, 'PlayStation 5', 0);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Decrements stock without checking if stock >= 1\nUPDATE inventory SET stock = stock - 1 WHERE id = 10;\nSELECT id, name, stock FROM inventory WHERE id = 10;\n"
+        "content": "UPDATE inventory SET stock = stock - 1 WHERE id = 10;\nSELECT id, name, stock FROM inventory WHERE id = 10;"
       }
     ],
     "solution_files": [
@@ -2718,11 +2718,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE accounts (\n    id INT PRIMARY KEY,\n    owner VARCHAR(50),\n    balance DECIMAL(10,2)\n);\n\nINSERT INTO accounts VALUES (1, 'Alice', 100.00), (2, 'Bob', 50.00);\n"
+        "content": "CREATE TABLE accounts (\n    id INT PRIMARY KEY,\n    owner VARCHAR(50),\n    balance DECIMAL(10,2)\n);\n\nINSERT INTO accounts VALUES (1, 'Alice', 100.00), (2, 'Bob', 50.00);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Unmanaged debit to invalid account 999 leaves ledger inconsistent\nUPDATE accounts SET balance = balance - 50 WHERE id = 1;\nUPDATE accounts SET balance = balance + 50 WHERE id = 999;\nSELECT id, owner, balance FROM accounts ORDER BY id;\n"
+        "content": "UPDATE accounts SET balance = balance - 50 WHERE id = 1;\nUPDATE accounts SET balance = balance + 50 WHERE id = 999;\nSELECT id, owner, balance FROM accounts ORDER BY id;"
       }
     ],
     "solution_files": [
@@ -2751,11 +2751,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE customers (\n    id INT PRIMARY KEY,\n    name VARCHAR(50)\n);\n\nCREATE TABLE orders (\n    id INT PRIMARY KEY,\n    customer_id INT,\n    amount DECIMAL(10,2)\n);\n\nCREATE TABLE tickets (\n    id INT PRIMARY KEY,\n    customer_id INT,\n    subject VARCHAR(50)\n);\n\nINSERT INTO customers VALUES (1, 'Alice');\nINSERT INTO orders VALUES (101, 1, 50.00), (102, 1, 100.00);\nINSERT INTO tickets VALUES (201, 1, 'Login Help'), (202, 1, 'Billing Question'), (203, 1, 'Feedback');\n"
+        "content": "CREATE TABLE customers (\n    id INT PRIMARY KEY,\n    name VARCHAR(50)\n);\n\nCREATE TABLE orders (\n    id INT PRIMARY KEY,\n    customer_id INT,\n    amount DECIMAL(10,2)\n);\n\nCREATE TABLE tickets (\n    id INT PRIMARY KEY,\n    customer_id INT,\n    subject VARCHAR(50)\n);\n\nINSERT INTO customers VALUES (1, 'Alice');\nINSERT INTO orders VALUES (101, 1, 50.00), (102, 1, 100.00);\nINSERT INTO tickets VALUES (201, 1, 'Login Help'), (202, 1, 'Billing Question'), (203, 1, 'Feedback');"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Cartesian product between orders and tickets multiplies sums\nSELECT c.id, c.name, SUM(o.amount) AS total_spent, COUNT(t.id) AS total_tickets\nFROM customers c\nLEFT JOIN orders o ON c.id = o.customer_id\nLEFT JOIN tickets t ON c.id = t.customer_id\nGROUP BY c.id, c.name;\n"
+        "content": "SELECT c.id, c.name, SUM(o.amount) AS total_spent, COUNT(t.id) AS total_tickets\nFROM customers c\nLEFT JOIN orders o ON c.id = o.customer_id\nLEFT JOIN tickets t ON c.id = t.customer_id\nGROUP BY c.id, c.name;"
       }
     ],
     "solution_files": [
@@ -2769,7 +2769,7 @@
         "id": 1,
         "name": "Visible: Independent aggregation reports total_spent=150, tickets=3",
         "input": "",
-        "expected": "WITH o_summary AS (\n    SELECT customer_id, SUM(amount) AS total_spent FROM orders GROUP BY customer_id\n),\nt_summary AS (\n    SELECT customer_id, COUNT(*) AS total_tickets FROM tickets GROUP BY customer_id\n)\nSELECT c.id, c.name, COALESCE(o.total_spent, 0) AS total_spent, COALESCE(t.total_tickets, 0) AS total_tickets\nFROM customers c\nLEFT JOIN o_summary o ON c.id = o.customer_id\nLEFT JOIN t_summary t ON c.id = t.customer_id;"
+        "expected": "All registered users preserving unassigned plans as NULL"
       }
     ]
   },
@@ -2784,11 +2784,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE invoices (\n    id INT PRIMARY KEY,\n    amount DECIMAL(10,2),\n    status VARCHAR(20)\n);\n\nCREATE TABLE audit_journal (\n    id INT PRIMARY KEY,\n    invoice_id INT,\n    action VARCHAR(50)\n);\n\nINSERT INTO invoices VALUES (1, 500.00, 'pending');\n"
+        "content": "CREATE TABLE invoices (\n    id INT PRIMARY KEY,\n    amount DECIMAL(10,2),\n    status VARCHAR(20)\n);\n\nCREATE TABLE audit_journal (\n    id INT PRIMARY KEY,\n    invoice_id INT,\n    action VARCHAR(50)\n);\n\nINSERT INTO invoices VALUES (1, 500.00, 'pending');"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Fails to record audit journal entry\nUPDATE invoices SET status = 'paid' WHERE id = 1;\nSELECT i.status, COUNT(a.id) AS journal_count FROM invoices i LEFT JOIN audit_journal a ON i.id = a.invoice_id WHERE i.id = 1 GROUP BY i.status;\n"
+        "content": "UPDATE invoices SET status = 'paid' WHERE id = 1;\nSELECT i.status, COUNT(a.id) AS journal_count FROM invoices i LEFT JOIN audit_journal a ON i.id = a.invoice_id WHERE i.id = 1 GROUP BY i.status;"
       }
     ],
     "solution_files": [
@@ -2813,15 +2813,15 @@
     "technology": "SQL",
     "category": "Schema",
     "points": 250,
-    "bug_signature": "-- BUG: Leaves NULL values unmigrated",
+    "bug_signature": "UPDATE profiles SET country = (SELECT country FROM users WHERE id = profiles.user_id);",
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE user_settings (\n    id INT PRIMARY KEY,\n    user_id INT,\n    notification_email VARCHAR(100)\n);\n\nINSERT INTO user_settings VALUES\n(1, 101, 'user1@test.com'),\n(2, 102, NULL),\n(3, 103, NULL);\n"
+        "content": "CREATE TABLE user_settings (\n    id INT PRIMARY KEY,\n    user_id INT,\n    notification_email VARCHAR(100)\n);\n\nINSERT INTO user_settings VALUES\n(1, 101, 'user1@test.com'),\n(2, 102, NULL),\n(3, 103, NULL);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Leaves NULL values unmigrated\nSELECT id, user_id, notification_email FROM user_settings ORDER BY id;\n"
+        "content": "SELECT id, user_id, notification_email FROM user_settings ORDER BY id;"
       }
     ],
     "solution_files": [
@@ -2850,11 +2850,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE ledger (\n    id INT PRIMARY KEY,\n    amount DECIMAL(10,2),\n    trans_time VARCHAR(20)\n);\n\nINSERT INTO ledger VALUES\n(1, 100.00, '2026-10-19 12:00:00'),\n(2, 50.00, '2026-10-19 12:00:00'),\n(3, 25.00, '2026-10-19 13:00:00');\n"
+        "content": "CREATE TABLE ledger (\n    id INT PRIMARY KEY,\n    amount DECIMAL(10,2),\n    trans_time VARCHAR(20)\n);\n\nINSERT INTO ledger VALUES\n(1, 100.00, '2026-10-19 12:00:00'),\n(2, 50.00, '2026-10-19 12:00:00'),\n(3, 25.00, '2026-10-19 13:00:00');"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Tied trans_time groups peers together, showing 150.00 on row 1\nSELECT id, amount, trans_time, SUM(amount) OVER (ORDER BY trans_time) AS running_balance FROM ledger ORDER BY id;\n"
+        "content": "SELECT id, amount, trans_time, SUM(amount) OVER (ORDER BY trans_time) AS running_balance FROM ledger ORDER BY id;"
       }
     ],
     "solution_files": [
@@ -2868,7 +2868,7 @@
         "id": 1,
         "name": "Visible: Strict row-by-row running balance (100.00 then 150.00)",
         "input": "",
-        "expected": "SELECT id, amount, trans_time, SUM(amount) OVER (ORDER BY trans_time, id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_balance FROM ledger ORDER BY id;"
+        "expected": "Aggregated revenue matching date/order criteria"
       }
     ]
   },
@@ -2883,11 +2883,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE orders (\n    id INT PRIMARY KEY,\n    amount DECIMAL(10,2),\n    status VARCHAR(20)\n);\n\nINSERT INTO orders VALUES\n(1, 100.00, 'confirmed'),\n(2, 50.00, 'draft'),\n(3, 200.00, 'confirmed');\n"
+        "content": "CREATE TABLE orders (\n    id INT PRIMARY KEY,\n    amount DECIMAL(10,2),\n    status VARCHAR(20)\n);\n\nINSERT INTO orders VALUES\n(1, 100.00, 'confirmed'),\n(2, 50.00, 'draft'),\n(3, 200.00, 'confirmed');"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Includes draft unconfirmed orders\nSELECT SUM(amount) AS total_sales FROM orders;\n"
+        "content": "SELECT SUM(amount) AS total_sales FROM orders;"
       }
     ],
     "solution_files": [
@@ -2901,7 +2901,7 @@
         "id": 1,
         "name": "Visible: Only confirmed orders summed",
         "input": "",
-        "expected": "SELECT SUM(amount) AS total_sales FROM orders WHERE status = 'confirmed';"
+        "expected": "Total sales amount for confirmed orders only"
       }
     ]
   },
@@ -2916,11 +2916,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE documents (\n    id INT PRIMARY KEY,\n    title VARCHAR(50),\n    deleted_at VARCHAR(20)\n);\n\nINSERT INTO documents VALUES\n(1, 'Public Specs', NULL),\n(2, 'Deprecated Draft', '2026-10-15 10:00:00'),\n(3, 'Security Policy', NULL);\n"
+        "content": "CREATE TABLE documents (\n    id INT PRIMARY KEY,\n    title VARCHAR(50),\n    deleted_at VARCHAR(20)\n);\n\nINSERT INTO documents VALUES\n(1, 'Public Specs', NULL),\n(2, 'Deprecated Draft', '2026-10-15 10:00:00'),\n(3, 'Security Policy', NULL);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Fails to check deleted_at IS NULL, leaking deleted document 2\nSELECT id, title FROM documents ORDER BY id;\n"
+        "content": "SELECT id, title FROM documents ORDER BY id;"
       }
     ],
     "solution_files": [
@@ -2934,7 +2934,7 @@
         "id": 1,
         "name": "Visible: Only non-deleted documents returned",
         "input": "",
-        "expected": "SELECT id, title FROM documents WHERE deleted_at IS NULL ORDER BY id;"
+        "expected": "Accurate tabular result set satisfying problem criteria"
       }
     ]
   },
@@ -2949,11 +2949,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE categories (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    parent_id INT\n);\n\nINSERT INTO categories VALUES\n(1, 'Tech', NULL),\n(2, 'Computers', 1),\n(3, 'Laptops', 2);\n"
+        "content": "CREATE TABLE categories (\n    id INT PRIMARY KEY,\n    name VARCHAR(50),\n    parent_id INT\n);\n\nINSERT INTO categories VALUES\n(1, 'Tech', NULL),\n(2, 'Computers', 1),\n(3, 'Laptops', 2);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Missing cycle detection or depth guard causes infinite recursion\nWITH RECURSIVE cat_tree AS (\n    SELECT id, name, parent_id, 1 AS depth FROM categories WHERE parent_id IS NULL\n    UNION ALL\n    SELECT c.id, c.name, c.parent_id, ct.depth + 1\n    FROM categories c JOIN cat_tree ct ON c.parent_id = ct.id\n)\nSELECT id, name, depth FROM cat_tree ORDER BY depth, id;\n"
+        "content": "WITH RECURSIVE cat_tree AS (\n    SELECT id, name, parent_id, 1 AS depth FROM categories WHERE parent_id IS NULL\n    UNION ALL\n    SELECT c.id, c.name, c.parent_id, ct.depth + 1\n    FROM categories c JOIN cat_tree ct ON c.parent_id = ct.id\n)\nSELECT id, name, depth FROM cat_tree ORDER BY depth, id;"
       }
     ],
     "solution_files": [
@@ -2967,7 +2967,7 @@
         "id": 1,
         "name": "Visible: Hierarchy traversed safely with depth limit",
         "input": "",
-        "expected": "WITH RECURSIVE cat_tree AS (\n    SELECT id, name, parent_id, 1 AS depth FROM categories WHERE parent_id IS NULL\n    UNION ALL\n    SELECT c.id, c.name, c.parent_id, ct.depth + 1\n    FROM categories c JOIN cat_tree ct ON c.parent_id = ct.id\n    WHERE ct.depth < 5\n)\nSELECT id, name, depth FROM cat_tree ORDER BY depth, id;"
+        "expected": "Complete hierarchical reporting structure"
       }
     ]
   },
@@ -2982,11 +2982,11 @@
     "starter_files": [
       {
         "name": "schema.sql",
-        "content": "CREATE TABLE customers (\n    id INT PRIMARY KEY,\n    name VARCHAR(50)\n);\n\nCREATE TABLE orders (\n    id INT PRIMARY KEY,\n    customer_id INT,\n    amount DECIMAL(10,2)\n);\n\nINSERT INTO customers VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Charlie');\nINSERT INTO orders VALUES (101, 1, 50.00), (102, 2, 75.00);\n"
+        "content": "CREATE TABLE customers (\n    id INT PRIMARY KEY,\n    name VARCHAR(50)\n);\n\nCREATE TABLE orders (\n    id INT PRIMARY KEY,\n    customer_id INT,\n    amount DECIMAL(10,2)\n);\n\nINSERT INTO customers VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Charlie');\nINSERT INTO orders VALUES (101, 1, 50.00), (102, 2, 75.00);"
       },
       {
         "name": "query.sql",
-        "content": "-- BUG: Correlated IN subquery causes table scan\nSELECT c.id, c.name FROM customers c WHERE c.id IN (SELECT o.customer_id FROM orders o) ORDER BY c.id;\n"
+        "content": "SELECT c.id, c.name FROM customers c WHERE c.id IN (SELECT o.customer_id FROM orders o) ORDER BY c.id;"
       }
     ],
     "solution_files": [
@@ -3000,7 +3000,7 @@
         "id": 1,
         "name": "Visible: Efficient EXISTS returns Alice and Bob",
         "input": "",
-        "expected": "SELECT c.id, c.name FROM customers c WHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id) ORDER BY c.id;"
+        "expected": "Accurate tabular result set satisfying problem criteria"
       }
     ]
   },
@@ -3011,11 +3011,11 @@
     "technology": "React",
     "category": "Forms",
     "points": 100,
-    "bug_signature": "// BUG: Missing check for empty name before calling onSubmit\n    onSubmit({ name });",
+    "bug_signature": "",
     "starter_files": [
       {
         "name": "RegistrationForm.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function RegistrationForm({ onSubmit }) {\n  const [name, setName] = useState('');\n  const [error, setError] = useState('');\n\n  const handleSubmit = (e) => {\n    e.preventDefault();\n    // BUG: Missing check for empty name before calling onSubmit\n    onSubmit({ name });\n  };\n\n  return (\n    <form onSubmit={handleSubmit} className=\"p-4 space-y-3\">\n      <input\n        type=\"text\"\n        value={name}\n        onChange={(e) => setName(e.target.value)}\n        placeholder=\"Enter your name\"\n        className=\"border p-2 rounded\"\n      />\n      {error && <p className=\"text-red-500 text-sm\">{error}</p>}\n      <button type=\"submit\" className=\"bg-blue-600 text-white px-4 py-2 rounded\">\n        Register\n      </button>\n    </form>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function RegistrationForm({ onSubmit }) {\n  const [name, setName] = useState('');\n  const [error, setError] = useState('');\n\n  const handleSubmit = (e) => {\n    e.preventDefault();\n    onSubmit({ name });\n  };\n\n  return (\n    <form onSubmit={handleSubmit} className=\"p-4 space-y-3\">\n      <input\n        type=\"text\"\n        value={name}\n        onChange={(e) => setName(e.target.value)}\n        placeholder=\"Enter your name\"\n        className=\"border p-2 rounded\"\n      />\n      {error && <p className=\"text-red-500 text-sm\">{error}</p>}\n      <button type=\"submit\" className=\"bg-blue-600 text-white px-4 py-2 rounded\">\n        Register\n      </button>\n    </form>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3044,7 +3044,7 @@
     "starter_files": [
       {
         "name": "Banner.jsx",
-        "content": "import React from 'react';\n\nexport default function StockBanner({ stock }) {\n  // BUG: Falsy 0 renders raw \"0\" in JSX instead of conditional content\n  return (\n    <div className=\"stock-container\">\n      {stock && <span className=\"in-stock\">In Stock ({stock})</span>}\n      {!stock && <span className=\"sold-out\">Sold Out</span>}\n    </div>\n  );\n}\n"
+        "content": "import React from 'react';\n\nexport default function StockBanner({ stock }) {\n  return (\n    <div className=\"stock-container\">\n      {stock && <span className=\"in-stock\">In Stock ({stock})</span>}\n      {!stock && <span className=\"sold-out\">Sold Out</span>}\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3073,7 +3073,7 @@
     "starter_files": [
       {
         "name": "ProductCard.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function ProductCard({ price = 25 }) {\n  const [quantity, setQuantity] = useState(1);\n  const [totalPrice, setTotalPrice] = useState(price);\n\n  const handleIncrement = () => {\n    setQuantity(quantity + 1);\n    // BUG: Reads stale quantity immediately after setQuantity\n    setTotalPrice(price * quantity);\n  };\n\n  return (\n    <div className=\"card p-4 border rounded\">\n      <p>Unit Price: ${price}</p>\n      <p>Quantity: {quantity}</p>\n      <button onClick={handleIncrement} className=\"btn-add\">+</button>\n      <p className=\"total\">Total: ${totalPrice}</p>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function ProductCard({ price = 25 }) {\n  const [quantity, setQuantity] = useState(1);\n  const [totalPrice, setTotalPrice] = useState(price);\n\n  const handleIncrement = () => {\n    setQuantity(quantity + 1);\n    setTotalPrice(price * quantity);\n  };\n\n  return (\n    <div className=\"card p-4 border rounded\">\n      <p>Unit Price: ${price}</p>\n      <p>Quantity: {quantity}</p>\n      <button onClick={handleIncrement} className=\"btn-add\">+</button>\n      <p className=\"total\">Total: ${totalPrice}</p>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3102,7 +3102,7 @@
     "starter_files": [
       {
         "name": "ActionButton.jsx",
-        "content": "import React from 'react';\n\nexport default function ActionToolbar({ onSave, onDelete }) {\n  return (\n    <div className=\"flex gap-2\">\n      {/* BUG: Save button calls onDelete handler */}\n      <button onClick={onDelete} className=\"bg-emerald-600 text-white px-3 py-1 rounded\">\n        Save\n      </button>\n      <button onClick={onDelete} className=\"bg-rose-600 text-white px-3 py-1 rounded\">\n        Delete\n      </button>\n    </div>\n  );\n}\n"
+        "content": "import React from 'react';\n\nexport default function ActionToolbar({ onSave, onDelete }) {\n  return (\n    <div className=\"flex gap-2\">\n<button onClick={onDelete} className=\"bg-emerald-600 text-white px-3 py-1 rounded\">\n        Save\n      </button>\n      <button onClick={onDelete} className=\"bg-rose-600 text-white px-3 py-1 rounded\">\n        Delete\n      </button>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3131,7 +3131,7 @@
     "starter_files": [
       {
         "name": "SearchBar.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function SearchBar({ items = [] }) {\n  const [query, setQuery] = useState('');\n\n  // BUG: Case-sensitive search ignores uppercase / lowercase normalization\n  const filtered = items.filter(item => item.name.includes(query));\n\n  return (\n    <div>\n      <input\n        type=\"text\"\n        value={query}\n        onChange={(e) => setQuery(e.target.value)}\n        placeholder=\"Search employees...\"\n      />\n      <ul>\n        {filtered.map(item => <li key={item.id}>{item.name}</li>)}\n      </ul>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function SearchBar({ items = [] }) {\n  const [query, setQuery] = useState('');\n\n  const filtered = items.filter(item => item.name.includes(query));\n\n  return (\n    <div>\n      <input\n        type=\"text\"\n        value={query}\n        onChange={(e) => setQuery(e.target.value)}\n        placeholder=\"Search employees...\"\n      />\n      <ul>\n        {filtered.map(item => <li key={item.id}>{item.name}</li>)}\n      </ul>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3160,7 +3160,7 @@
     "starter_files": [
       {
         "name": "DataViewer.jsx",
-        "content": "import React, { useState, useEffect } from 'react';\n\nexport default function DataViewer({ fetchFn }) {\n  const [data, setData] = useState(null);\n  const [loading, setLoading] = useState(true);\n  const [error, setError] = useState(null);\n\n  useEffect(() => {\n    fetchFn()\n      .then(res => {\n        setData(res);\n        setLoading(false);\n      })\n      .catch(err => {\n        // BUG: Fails to set loading to false on error\n        setError(err.message);\n      });\n  }, [fetchFn]);\n\n  if (loading) return <div className=\"spinner\">Loading...</div>;\n  if (error) return <div className=\"error\">{error}</div>;\n  return <div>Data Loaded: {JSON.stringify(data)}</div>;\n}\n"
+        "content": "import React, { useState, useEffect } from 'react';\n\nexport default function DataViewer({ fetchFn }) {\n  const [data, setData] = useState(null);\n  const [loading, setLoading] = useState(true);\n  const [error, setError] = useState(null);\n\n  useEffect(() => {\n    fetchFn()\n      .then(res => {\n        setData(res);\n        setLoading(false);\n      })\n      .catch(err => {\n        setError(err.message);\n      });\n  }, [fetchFn]);\n\n  if (loading) return <div className=\"spinner\">Loading...</div>;\n  if (error) return <div className=\"error\">{error}</div>;\n  return <div>Data Loaded: {JSON.stringify(data)}</div>;\n}"
       }
     ],
     "solution_files": [
@@ -3185,11 +3185,11 @@
     "technology": "CSS",
     "category": "CSS & Styling",
     "points": 100,
-    "bug_signature": "/* BUG: Hardcoded fixed width overflows on small screens */\n    width: 600px;",
+    "bug_signature": "product-card {\n    width: 600px;",
     "starter_files": [
       {
         "name": "ResponsiveCard.css",
-        "content": ".product-card {\n    /* BUG: Hardcoded fixed width overflows on small screens */\n    width: 600px;\n    padding: 24px;\n    background: #ffffff;\n    border-radius: 8px;\n}\n"
+        "content": ".product-card {\n    width: 600px;\n    padding: 24px;\n    background: #ffffff;\n    border-radius: 8px;\n}"
       }
     ],
     "solution_files": [
@@ -3218,7 +3218,7 @@
     "starter_files": [
       {
         "name": "EmailInput.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function EmailInput() {\n  const [email, setEmail] = useState('');\n  const [error, setError] = useState('');\n\n  const validate = () => {\n    if (!email.includes('@')) {\n      // BUG: Copy-paste error displays password error message\n      setError('Password must be at least 8 characters');\n    } else {\n      setError('');\n    }\n  };\n\n  return (\n    <div>\n      <input value={email} onChange={e => setEmail(e.target.value)} onBlur={validate} />\n      {error && <span className=\"error\">{error}</span>}\n    </div>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function EmailInput() {\n  const [email, setEmail] = useState('');\n  const [error, setError] = useState('');\n\n  const validate = () => {\n    if (!email.includes('@')) {\n      setError('Password must be at least 8 characters');\n    } else {\n      setError('');\n    }\n  };\n\n  return (\n    <div>\n      <input value={email} onChange={e => setEmail(e.target.value)} onBlur={validate} />\n      {error && <span className=\"error\">{error}</span>}\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3243,11 +3243,11 @@
     "technology": "React",
     "category": "Accessibility",
     "points": 100,
-    "bug_signature": "// BUG: Missing Escape key accessibility listener",
+    "bug_signature": "",
     "starter_files": [
       {
         "name": "Modal.jsx",
-        "content": "import React, { useEffect } from 'react';\n\nexport default function Modal({ isOpen, onClose, children }) {\n  // BUG: Missing Escape key accessibility listener\n  if (!isOpen) return null;\n\n  return (\n    <div className=\"modal-backdrop\" onClick={onClose}>\n      <div className=\"modal-content\" onClick={e => e.stopPropagation()}>\n        <button onClick={onClose} aria-label=\"Close\">X</button>\n        {children}\n      </div>\n    </div>\n  );\n}\n"
+        "content": "import React, { useEffect } from 'react';\n\nexport default function Modal({ isOpen, onClose, children }) {\n  if (!isOpen) return null;\n\n  return (\n    <div className=\"modal-backdrop\" onClick={onClose}>\n      <div className=\"modal-content\" onClick={e => e.stopPropagation()}>\n        <button onClick={onClose} aria-label=\"Close\">X</button>\n        {children}\n      </div>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3276,7 +3276,7 @@
     "starter_files": [
       {
         "name": "UserList.jsx",
-        "content": "import React from 'react';\n\nexport default function UserList({ users = [], onDelete }) {\n  return (\n    <ul>\n      {/* BUG: Uses array index as key causing state corruption on deletion */}\n      {users.map((user, index) => (\n        <li key={index} className=\"flex justify-between p-2\">\n          <span>{user.name}</span>\n          <button onClick={() => onDelete(user.id)}>Delete</button>\n        </li>\n      ))}\n    </ul>\n  );\n}\n"
+        "content": "import React from 'react';\n\nexport default function UserList({ users = [], onDelete }) {\n  return (\n    <ul>\n{users.map((user, index) => (\n        <li key={index} className=\"flex justify-between p-2\">\n          <span>{user.name}</span>\n          <button onClick={() => onDelete(user.id)}>Delete</button>\n        </li>\n      ))}\n    </ul>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3305,7 +3305,7 @@
     "starter_files": [
       {
         "name": "LiveSearch.jsx",
-        "content": "import React, { useState, useEffect } from 'react';\n\nexport default function LiveSearch({ fetchResults }) {\n  const [query, setQuery] = useState('');\n  const [results, setResults] = useState([]);\n\n  useEffect(() => {\n    if (!query) {\n      setResults([]);\n      return;\n    }\n\n    // BUG: Race condition - earlier slow responses overwrite newer fast responses\n    fetchResults(query).then(data => {\n      setResults(data);\n    });\n  }, [query, fetchResults]);\n\n  return (\n    <div className=\"search-container p-4\">\n      <input\n        type=\"text\"\n        value={query}\n        onChange={(e) => setQuery(e.target.value)}\n        placeholder=\"Search documentation...\"\n        className=\"border p-2 rounded w-full\"\n      />\n      <ul className=\"mt-2 divide-y\">\n        {results.map((item, idx) => (\n          <li key={idx} className=\"p-2\">{item.title}</li>\n        ))}\n      </ul>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState, useEffect } from 'react';\n\nexport default function LiveSearch({ fetchResults }) {\n  const [query, setQuery] = useState('');\n  const [results, setResults] = useState([]);\n\n  useEffect(() => {\n    if (!query) {\n      setResults([]);\n      return;\n    }\n\n    fetchResults(query).then(data => {\n      setResults(data);\n    });\n  }, [query, fetchResults]);\n\n  return (\n    <div className=\"search-container p-4\">\n      <input\n        type=\"text\"\n        value={query}\n        onChange={(e) => setQuery(e.target.value)}\n        placeholder=\"Search documentation...\"\n        className=\"border p-2 rounded w-full\"\n      />\n      <ul className=\"mt-2 divide-y\">\n        {results.map((item, idx) => (\n          <li key={idx} className=\"p-2\">{item.title}</li>\n        ))}\n      </ul>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3334,7 +3334,7 @@
     "starter_files": [
       {
         "name": "CounterBatch.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function CounterBatch() {\n  const [count, setCount] = useState(0);\n\n  const incrementByThree = () => {\n    // BUG: Batched state updates all capture the stale snapshot of `count`\n    setCount(count + 1);\n    setCount(count + 1);\n    setCount(count + 1);\n  };\n\n  return (\n    <div className=\"p-4\">\n      <p className=\"text-lg font-bold\">Boxes: {count}</p>\n      <button\n        onClick={incrementByThree}\n        className=\"bg-emerald-600 text-white px-3 py-1 rounded mt-2\"\n      >\n        +3 Quick Add\n      </button>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function CounterBatch() {\n  const [count, setCount] = useState(0);\n\n  const incrementByThree = () => {\n    setCount(count + 1);\n    setCount(count + 1);\n    setCount(count + 1);\n  };\n\n  return (\n    <div className=\"p-4\">\n      <p className=\"text-lg font-bold\">Boxes: {count}</p>\n      <button\n        onClick={incrementByThree}\n        className=\"bg-emerald-600 text-white px-3 py-1 rounded mt-2\"\n      >\n        +3 Quick Add\n      </button>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3363,7 +3363,7 @@
     "starter_files": [
       {
         "name": "UserProfileLoader.jsx",
-        "content": "import React, { useState, useEffect } from 'react';\n\nexport default function UserProfileLoader({ userId, fetchUser }) {\n  const [profile, setProfile] = useState(null);\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    let isMounted = true;\n    setLoading(true);\n\n    fetchUser(userId).then(data => {\n      if (isMounted) {\n        setProfile(data);\n        setLoading(false);\n      }\n    });\n\n    return () => {\n      isMounted = false;\n    };\n    // BUG: Missing userId in dependency array causes stale closure\n  }, []);\n\n  if (loading) return <p>Loading profile...</p>;\n  return (\n    <div className=\"profile-card p-4\">\n      <h2 className=\"text-xl font-bold\">{profile?.name}</h2>\n      <p>{profile?.email}</p>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState, useEffect } from 'react';\n\nexport default function UserProfileLoader({ userId, fetchUser }) {\n  const [profile, setProfile] = useState(null);\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    let isMounted = true;\n    setLoading(true);\n\n    fetchUser(userId).then(data => {\n      if (isMounted) {\n        setProfile(data);\n        setLoading(false);\n      }\n    });\n\n    return () => {\n      isMounted = false;\n    };\n  }, []);\n\n  if (loading) return <p>Loading profile...</p>;\n  return (\n    <div className=\"profile-card p-4\">\n      <h2 className=\"text-xl font-bold\">{profile?.name}</h2>\n      <p>{profile?.email}</p>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3392,7 +3392,7 @@
     "starter_files": [
       {
         "name": "ShoppingCart.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function ShoppingCart({ initialItems = [] }) {\n  const [items, setItems] = useState(initialItems);\n\n  const updateQuantity = (id, newQty) => {\n    // BUG: Direct mutation of state object and array reference\n    const index = items.findIndex(item => item.id === id);\n    if (index !== -1) {\n      items[index].qty = newQty;\n      setItems(items);\n    }\n  };\n\n  const total = items.reduce((sum, item) => sum + item.price * (item.qty || 1), 0);\n\n  return (\n    <div className=\"cart p-4\">\n      {items.map(item => (\n        <div key={item.id} className=\"flex justify-between py-2 border-b\">\n          <span>{item.name} (${item.price})</span>\n          <input\n            type=\"number\"\n            value={item.qty}\n            onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 0)}\n            className=\"w-16 border rounded p-1\"\n          />\n        </div>\n      ))}\n      <div className=\"font-bold mt-4\">Total: ${total.toFixed(2)}</div>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function ShoppingCart({ initialItems = [] }) {\n  const [items, setItems] = useState(initialItems);\n\n  const updateQuantity = (id, newQty) => {\n    const index = items.findIndex(item => item.id === id);\n    if (index !== -1) {\n      items[index].qty = newQty;\n      setItems(items);\n    }\n  };\n\n  const total = items.reduce((sum, item) => sum + item.price * (item.qty || 1), 0);\n\n  return (\n    <div className=\"cart p-4\">\n      {items.map(item => (\n        <div key={item.id} className=\"flex justify-between py-2 border-b\">\n          <span>{item.name} (${item.price})</span>\n          <input\n            type=\"number\"\n            value={item.qty}\n            onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 0)}\n            className=\"w-16 border rounded p-1\"\n          />\n        </div>\n      ))}\n      <div className=\"font-bold mt-4\">Total: ${total.toFixed(2)}</div>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3417,11 +3417,11 @@
     "technology": "React",
     "category": "Pagination",
     "points": 200,
-    "bug_signature": "const handleFilterChange = (newCategory) => {\n    // BUG: Missing setPage(1) when filter changes causes out-of-bounds page\n    setCategory(newCategory);\n  };",
+    "bug_signature": "const handleFilterChange = (newCategory) => {\n    setCategory(newCategory);\n  };",
     "starter_files": [
       {
         "name": "FilterPagination.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function FilterPagination({ products = [] }) {\n  const [category, setCategory] = useState('All');\n  const [page, setPage] = useState(1);\n  const pageSize = 5;\n\n  const handleFilterChange = (newCategory) => {\n    // BUG: Missing setPage(1) when filter changes causes out-of-bounds page\n    setCategory(newCategory);\n  };\n\n  const filtered = category === 'All' \n    ? products \n    : products.filter(p => p.category === category);\n\n  const totalPages = Math.ceil(filtered.length / pageSize) || 1;\n  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);\n\n  return (\n    <div className=\"catalog p-4\">\n      <select \n        value={category} \n        onChange={(e) => handleFilterChange(e.target.value)}\n        className=\"border p-2 rounded mb-4\"\n      >\n        <option value=\"All\">All Categories</option>\n        <option value=\"Electronics\">Electronics</option>\n        <option value=\"Furniture\">Furniture</option>\n      </select>\n\n      {paginated.length === 0 ? (\n        <p>No products found</p>\n      ) : (\n        <ul>\n          {paginated.map(p => <li key={p.id}>{p.name}</li>)}\n        </ul>\n      )}\n\n      <div className=\"flex gap-2 mt-4\">\n        <button disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</button>\n        <span>Page {page} of {totalPages}</span>\n        <button disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</button>\n      </div>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function FilterPagination({ products = [] }) {\n  const [category, setCategory] = useState('All');\n  const [page, setPage] = useState(1);\n  const pageSize = 5;\n\n  const handleFilterChange = (newCategory) => {\n    setCategory(newCategory);\n  };\n\n  const filtered = category === 'All' \n    ? products \n    : products.filter(p => p.category === category);\n\n  const totalPages = Math.ceil(filtered.length / pageSize) || 1;\n  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);\n\n  return (\n    <div className=\"catalog p-4\">\n      <select \n        value={category} \n        onChange={(e) => handleFilterChange(e.target.value)}\n        className=\"border p-2 rounded mb-4\"\n      >\n        <option value=\"All\">All Categories</option>\n        <option value=\"Electronics\">Electronics</option>\n        <option value=\"Furniture\">Furniture</option>\n      </select>\n\n      {paginated.length === 0 ? (\n        <p>No products found</p>\n      ) : (\n        <ul>\n          {paginated.map(p => <li key={p.id}>{p.name}</li>)}\n        </ul>\n      )}\n\n      <div className=\"flex gap-2 mt-4\">\n        <button disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</button>\n        <span>Page {page} of {totalPages}</span>\n        <button disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</button>\n      </div>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3450,7 +3450,7 @@
     "starter_files": [
       {
         "name": "ResizeListener.jsx",
-        "content": "import React, { useState, useEffect } from 'react';\n\nexport default function ResizeListener() {\n  const [windowWidth, setWindowWidth] = useState(window.innerWidth);\n\n  useEffect(() => {\n    const handleResize = () => {\n      setWindowWidth(window.innerWidth);\n    };\n\n    window.addEventListener('resize', handleResize);\n    // BUG: Missing cleanup function to removeEventListener\n  }, []);\n\n  return (\n    <div className=\"p-4\">\n      <p className=\"font-semibold\">Current width: {windowWidth}px</p>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState, useEffect } from 'react';\n\nexport default function ResizeListener() {\n  const [windowWidth, setWindowWidth] = useState(window.innerWidth);\n\n  useEffect(() => {\n    const handleResize = () => {\n      setWindowWidth(window.innerWidth);\n    };\n\n    window.addEventListener('resize', handleResize);\n  }, []);\n\n  return (\n    <div className=\"p-4\">\n      <p className=\"font-semibold\">Current width: {windowWidth}px</p>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3475,11 +3475,11 @@
     "technology": "React",
     "category": "Authentication",
     "points": 200,
-    "bug_signature": "export default function ProtectedRoute({ user, isLoading, children }) {\n  // BUG: Prematurely redirects before isLoading resolves\n  if (!user) {",
+    "bug_signature": "export default function ProtectedRoute({ user, isLoading, children }) {\n  if (!user) {",
     "starter_files": [
       {
         "name": "ProtectedRoute.jsx",
-        "content": "import React from 'react';\n\nfunction LoadingSpinner() {\n  return <div className=\"spinner p-4\">Loading session...</div>;\n}\n\nfunction Navigate({ to }) {\n  return <div>Redirecting to {to}...</div>;\n}\n\nexport default function ProtectedRoute({ user, isLoading, children }) {\n  // BUG: Prematurely redirects before isLoading resolves\n  if (!user) {\n    return <Navigate to=\"/login\" />;\n  }\n\n  return children;\n}\n"
+        "content": "import React from 'react';\n\nfunction LoadingSpinner() {\n  return <div className=\"spinner p-4\">Loading session...</div>;\n}\n\nfunction Navigate({ to }) {\n  return <div>Redirecting to {to}...</div>;\n}\n\nexport default function ProtectedRoute({ user, isLoading, children }) {\n  if (!user) {\n    return <Navigate to=\"/login\" />;\n  }\n\n  return children;\n}"
       }
     ],
     "solution_files": [
@@ -3504,11 +3504,11 @@
     "technology": "React",
     "category": "Error Handling",
     "points": 200,
-    "bug_signature": "} catch (err) {\n      // BUG: Leaves isUploading true and does not display error to user\n      console.error('Upload failed', err);\n    }",
+    "bug_signature": "} catch (err) {\n      console.error('Upload failed', err);\n    }",
     "starter_files": [
       {
         "name": "FileUploader.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function FileUploader({ uploadApi }) {\n  const [isUploading, setIsUploading] = useState(false);\n  const [progress, setProgress] = useState(0);\n  const [error, setError] = useState(null);\n\n  const handleUpload = async (file) => {\n    setIsUploading(true);\n    setError(null);\n    setProgress(20);\n\n    try {\n      await uploadApi(file, (p) => setProgress(p));\n      setIsUploading(false);\n      setProgress(100);\n    } catch (err) {\n      // BUG: Leaves isUploading true and does not display error to user\n      console.error('Upload failed', err);\n    }\n  };\n\n  return (\n    <div className=\"uploader p-4 border rounded\">\n      {error && <div className=\"text-red-500 mb-2\">{error}</div>}\n      {isUploading ? (\n        <p>Uploading... {progress}%</p>\n      ) : (\n        <button \n          onClick={() => handleUpload({ name: 'receipt.pdf' })}\n          className=\"bg-blue-600 text-white px-4 py-2 rounded\"\n        >\n          Upload Document\n        </button>\n      )}\n    </div>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function FileUploader({ uploadApi }) {\n  const [isUploading, setIsUploading] = useState(false);\n  const [progress, setProgress] = useState(0);\n  const [error, setError] = useState(null);\n\n  const handleUpload = async (file) => {\n    setIsUploading(true);\n    setError(null);\n    setProgress(20);\n\n    try {\n      await uploadApi(file, (p) => setProgress(p));\n      setIsUploading(false);\n      setProgress(100);\n    } catch (err) {\n      console.error('Upload failed', err);\n    }\n  };\n\n  return (\n    <div className=\"uploader p-4 border rounded\">\n      {error && <div className=\"text-red-500 mb-2\">{error}</div>}\n      {isUploading ? (\n        <p>Uploading... {progress}%</p>\n      ) : (\n        <button \n          onClick={() => handleUpload({ name: 'receipt.pdf' })}\n          className=\"bg-blue-600 text-white px-4 py-2 rounded\"\n        >\n          Upload Document\n        </button>\n      )}\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3533,11 +3533,11 @@
     "technology": "React",
     "category": "Form Architecture",
     "points": 200,
-    "bug_signature": "export function Step1({ formData = {}, onChange }) {\n  // BUG: Local state unmounts and discards user input on navigation\n  const [name, setName] = useState('');",
+    "bug_signature": "export function Step1({ formData = {}, onChange }) {\n  const [name, setName] = useState('');",
     "starter_files": [
       {
         "name": "WizardForm.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport function Step1({ formData = {}, onChange }) {\n  // BUG: Local state unmounts and discards user input on navigation\n  const [name, setName] = useState('');\n\n  return (\n    <div>\n      <input\n        type=\"text\"\n        value={name}\n        onChange={(e) => {\n          setName(e.target.value);\n          onChange({ name: e.target.value });\n        }}\n        placeholder=\"Full Name\"\n        className=\"border p-2\"\n      />\n    </div>\n  );\n}\n\nexport default function WizardForm() {\n  const [step, setStep] = useState(1);\n  const [formData, setFormData] = useState({ name: '' });\n\n  return (\n    <div className=\"p-4\">\n      {step === 1 && (\n        <Step1 formData={formData} onChange={(d) => setFormData(prev => ({ ...prev, ...d }))} />\n      )}\n      {step === 2 && (\n        <div>Step 2: Confirmation for {formData.name}</div>\n      )}\n      <div className=\"mt-4 flex gap-2\">\n        <button onClick={() => setStep(s => Math.max(1, s - 1))}>Back</button>\n        <button onClick={() => setStep(s => s + 1)}>Next</button>\n      </div>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport function Step1({ formData = {}, onChange }) {\n  const [name, setName] = useState('');\n\n  return (\n    <div>\n      <input\n        type=\"text\"\n        value={name}\n        onChange={(e) => {\n          setName(e.target.value);\n          onChange({ name: e.target.value });\n        }}\n        placeholder=\"Full Name\"\n        className=\"border p-2\"\n      />\n    </div>\n  );\n}\n\nexport default function WizardForm() {\n  const [step, setStep] = useState(1);\n  const [formData, setFormData] = useState({ name: '' });\n\n  return (\n    <div className=\"p-4\">\n      {step === 1 && (\n        <Step1 formData={formData} onChange={(d) => setFormData(prev => ({ ...prev, ...d }))} />\n      )}\n      {step === 2 && (\n        <div>Step 2: Confirmation for {formData.name}</div>\n      )}\n      <div className=\"mt-4 flex gap-2\">\n        <button onClick={() => setStep(s => Math.max(1, s - 1))}>Back</button>\n        <button onClick={() => setStep(s => s + 1)}>Next</button>\n      </div>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3566,7 +3566,7 @@
     "starter_files": [
       {
         "name": "MetricsDashboard.jsx",
-        "content": "import React, { useState, useEffect } from 'react';\n\nexport default function MetricsDashboard({ fetchRevenue, fetchHealth }) {\n  const [revenue, setRevenue] = useState(null);\n  const [health, setHealth] = useState(null);\n  const [error, setError] = useState(null);\n\n  useEffect(() => {\n    // BUG: Promise.all fails entirely if either promise rejects\n    Promise.all([fetchRevenue(), fetchHealth()])\n      .then(([revData, healthData]) => {\n        setRevenue(revData);\n        setHealth(healthData);\n      })\n      .catch((err) => {\n        setError('Failed to load dashboard metrics');\n      });\n  }, [fetchRevenue, fetchHealth]);\n\n  if (error) return <div className=\"text-red-500 p-4\">{error}</div>;\n\n  return (\n    <div className=\"p-4 grid grid-cols-2 gap-4\">\n      <div className=\"card border p-4\">\n        <h3>Revenue: {revenue ? `$${revenue.total}` : 'Loading...'}</h3>\n      </div>\n      <div className=\"card border p-4\">\n        <h3>System Health: {health ? health.status : 'Unavailable'}</h3>\n      </div>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState, useEffect } from 'react';\n\nexport default function MetricsDashboard({ fetchRevenue, fetchHealth }) {\n  const [revenue, setRevenue] = useState(null);\n  const [health, setHealth] = useState(null);\n  const [error, setError] = useState(null);\n\n  useEffect(() => {\n    Promise.all([fetchRevenue(), fetchHealth()])\n      .then(([revData, healthData]) => {\n        setRevenue(revData);\n        setHealth(healthData);\n      })\n      .catch((err) => {\n        setError('Failed to load dashboard metrics');\n      });\n  }, [fetchRevenue, fetchHealth]);\n\n  if (error) return <div className=\"text-red-500 p-4\">{error}</div>;\n\n  return (\n    <div className=\"p-4 grid grid-cols-2 gap-4\">\n      <div className=\"card border p-4\">\n        <h3>Revenue: {revenue ? `$${revenue.total}` : 'Loading...'}</h3>\n      </div>\n      <div className=\"card border p-4\">\n        <h3>System Health: {health ? health.status : 'Unavailable'}</h3>\n      </div>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3591,11 +3591,11 @@
     "technology": "React",
     "category": "Caching",
     "points": 200,
-    "bug_signature": "setProfile(updated);\n    // BUG: Missing cache invalidation/update causes subsequent reads to return stale data",
+    "bug_signature": "",
     "starter_files": [
       {
         "name": "ProfileCache.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function ProfileCache({ userId, api, cache }) {\n  const [profile, setProfile] = useState(() => cache.get(userId) || { name: 'Anonymous' });\n  const [nameInput, setNameInput] = useState('');\n\n  const handleUpdateName = async () => {\n    const updated = await api.updateName(userId, nameInput);\n    setProfile(updated);\n    // BUG: Missing cache invalidation/update causes subsequent reads to return stale data\n  };\n\n  return (\n    <div className=\"p-4\">\n      <h2 className=\"text-xl\">User: {profile.name}</h2>\n      <input\n        type=\"text\"\n        value={nameInput}\n        onChange={(e) => setNameInput(e.target.value)}\n        placeholder=\"New name\"\n        className=\"border p-1 mr-2\"\n      />\n      <button onClick={handleUpdateName} className=\"bg-blue-500 text-white px-3 py-1 rounded\">\n        Save\n      </button>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function ProfileCache({ userId, api, cache }) {\n  const [profile, setProfile] = useState(() => cache.get(userId) || { name: 'Anonymous' });\n  const [nameInput, setNameInput] = useState('');\n\n  const handleUpdateName = async () => {\n    const updated = await api.updateName(userId, nameInput);\n    setProfile(updated);\n  };\n\n  return (\n    <div className=\"p-4\">\n      <h2 className=\"text-xl\">User: {profile.name}</h2>\n      <input\n        type=\"text\"\n        value={nameInput}\n        onChange={(e) => setNameInput(e.target.value)}\n        placeholder=\"New name\"\n        className=\"border p-1 mr-2\"\n      />\n      <button onClick={handleUpdateName} className=\"bg-blue-500 text-white px-3 py-1 rounded\">\n        Save\n      </button>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3620,11 +3620,11 @@
     "technology": "React",
     "category": "Form Submission",
     "points": 200,
-    "bug_signature": "{/* BUG: Missing disabled={isSubmitting} attribute */}\n      <button \n        onClick={handleSubmit}",
+    "bug_signature": "",
     "starter_files": [
       {
         "name": "SubmitButton.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function SubmitButton({ onOrder }) {\n  const [isSubmitting, setIsSubmitting] = useState(false);\n\n  const handleSubmit = async () => {\n    // BUG: Missing guard check if already submitting\n    setIsSubmitting(true);\n    try {\n      await onOrder();\n    } finally {\n      setIsSubmitting(false);\n    }\n  };\n\n  return (\n    <div>\n      {/* BUG: Missing disabled={isSubmitting} attribute */}\n      <button \n        onClick={handleSubmit}\n        className=\"bg-green-600 text-white px-4 py-2 rounded\"\n      >\n        {isSubmitting ? 'Processing...' : 'Place Order'}\n      </button>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function SubmitButton({ onOrder }) {\n  const [isSubmitting, setIsSubmitting] = useState(false);\n\n  const handleSubmit = async () => {\n    setIsSubmitting(true);\n    try {\n      await onOrder();\n    } finally {\n      setIsSubmitting(false);\n    }\n  };\n\n  return (\n    <div>\n<button \n        onClick={handleSubmit}\n        className=\"bg-green-600 text-white px-4 py-2 rounded\"\n      >\n        {isSubmitting ? 'Processing...' : 'Place Order'}\n      </button>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3653,7 +3653,7 @@
     "starter_files": [
       {
         "name": "DatePicker.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function DatePicker({ onSelect }) {\n  const [selectedDate, setSelectedDate] = useState('');\n\n  const handleDateChange = (dateString) => {\n    // BUG: Parsing ISO date string with UTC assumption shifts date backward in western timezones\n    const d = new Date(dateString);\n    const formatted = d.toISOString().split('T')[0];\n    setSelectedDate(formatted);\n    onSelect(formatted);\n  };\n\n  return (\n    <div className=\"p-4\">\n      <input\n        type=\"date\"\n        onChange={(e) => handleDateChange(e.target.value)}\n        className=\"border p-2 rounded\"\n      />\n      {selectedDate && <p className=\"mt-2\">Selected: {selectedDate}</p>}\n    </div>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function DatePicker({ onSelect }) {\n  const [selectedDate, setSelectedDate] = useState('');\n\n  const handleDateChange = (dateString) => {\n    const d = new Date(dateString);\n    const formatted = d.toISOString().split('T')[0];\n    setSelectedDate(formatted);\n    onSelect(formatted);\n  };\n\n  return (\n    <div className=\"p-4\">\n      <input\n        type=\"date\"\n        onChange={(e) => handleDateChange(e.target.value)}\n        className=\"border p-2 rounded\"\n      />\n      {selectedDate && <p className=\"mt-2\">Selected: {selectedDate}</p>}\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3678,11 +3678,11 @@
     "technology": "React",
     "category": "Form Validation",
     "points": 200,
-    "bug_signature": "} catch (err) {\n      // BUG: Discards field-level error mappings from server response\n      setGeneralError('Submission failed');\n    }",
+    "bug_signature": "} catch (err) {\n      setGeneralError('Submission failed');\n    }",
     "starter_files": [
       {
         "name": "ServerErrorForm.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function ServerErrorForm({ onSubmit }) {\n  const [subdomain, setSubdomain] = useState('');\n  const [fieldErrors, setFieldErrors] = useState({});\n  const [generalError, setGeneralError] = useState('');\n\n  const handleSubmit = async (e) => {\n    e.preventDefault();\n    setGeneralError('');\n    setFieldErrors({});\n\n    try {\n      await onSubmit({ subdomain });\n    } catch (err) {\n      // BUG: Discards field-level error mappings from server response\n      setGeneralError('Submission failed');\n    }\n  };\n\n  return (\n    <form onSubmit={handleSubmit} className=\"p-4 space-y-2\">\n      {generalError && <p className=\"text-red-600\">{generalError}</p>}\n      <div>\n        <label>Subdomain:</label>\n        <input\n          type=\"text\"\n          value={subdomain}\n          onChange={(e) => setSubdomain(e.target.value)}\n          className=\"border p-1 block w-full\"\n        />\n        {fieldErrors.subdomain && (\n          <span className=\"text-red-500 text-sm\">{fieldErrors.subdomain}</span>\n        )}\n      </div>\n      <button type=\"submit\" className=\"bg-blue-600 text-white px-3 py-1 rounded\">\n        Submit\n      </button>\n    </form>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function ServerErrorForm({ onSubmit }) {\n  const [subdomain, setSubdomain] = useState('');\n  const [fieldErrors, setFieldErrors] = useState({});\n  const [generalError, setGeneralError] = useState('');\n\n  const handleSubmit = async (e) => {\n    e.preventDefault();\n    setGeneralError('');\n    setFieldErrors({});\n\n    try {\n      await onSubmit({ subdomain });\n    } catch (err) {\n      setGeneralError('Submission failed');\n    }\n  };\n\n  return (\n    <form onSubmit={handleSubmit} className=\"p-4 space-y-2\">\n      {generalError && <p className=\"text-red-600\">{generalError}</p>}\n      <div>\n        <label>Subdomain:</label>\n        <input\n          type=\"text\"\n          value={subdomain}\n          onChange={(e) => setSubdomain(e.target.value)}\n          className=\"border p-1 block w-full\"\n        />\n        {fieldErrors.subdomain && (\n          <span className=\"text-red-500 text-sm\">{fieldErrors.subdomain}</span>\n        )}\n      </div>\n      <button type=\"submit\" className=\"bg-blue-600 text-white px-3 py-1 rounded\">\n        Submit\n      </button>\n    </form>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3707,11 +3707,11 @@
     "technology": "React",
     "category": "Accessibility",
     "points": 200,
-    "bug_signature": "const handleKeyDown = (e) => {\n    // BUG: Missing Escape key listener to close dropdown\n    if (e.key === 'Enter' || e.key === ' ') {",
+    "bug_signature": "const handleKeyDown = (e) => {\n    if (e.key === 'Enter' || e.key === ' ') {",
     "starter_files": [
       {
         "name": "AccessibleDropdown.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function AccessibleDropdown({ options = [], onSelect }) {\n  const [isOpen, setIsOpen] = useState(false);\n  const [selected, setSelected] = useState(null);\n\n  const handleKeyDown = (e) => {\n    // BUG: Missing Escape key listener to close dropdown\n    if (e.key === 'Enter' || e.key === ' ') {\n      setIsOpen(prev => !prev);\n    }\n  };\n\n  return (\n    <div className=\"relative inline-block\" onKeyDown={handleKeyDown}>\n      <button\n        aria-haspopup=\"listbox\"\n        aria-expanded={isOpen}\n        onClick={() => setIsOpen(!isOpen)}\n        className=\"border px-4 py-2 rounded\"\n      >\n        {selected ? selected.label : 'Select an option'}\n      </button>\n\n      {isOpen && (\n        <ul role=\"listbox\" className=\"absolute border bg-white mt-1 w-full shadow-lg\">\n          {options.map((opt) => (\n            <li\n              key={opt.value}\n              role=\"option\"\n              onClick={() => {\n                setSelected(opt);\n                setIsOpen(false);\n                onSelect(opt);\n              }}\n              className=\"p-2 hover:bg-slate-100 cursor-pointer\"\n            >\n              {opt.label}\n            </li>\n          ))}\n        </ul>\n      )}\n    </div>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function AccessibleDropdown({ options = [], onSelect }) {\n  const [isOpen, setIsOpen] = useState(false);\n  const [selected, setSelected] = useState(null);\n\n  const handleKeyDown = (e) => {\n    if (e.key === 'Enter' || e.key === ' ') {\n      setIsOpen(prev => !prev);\n    }\n  };\n\n  return (\n    <div className=\"relative inline-block\" onKeyDown={handleKeyDown}>\n      <button\n        aria-haspopup=\"listbox\"\n        aria-expanded={isOpen}\n        onClick={() => setIsOpen(!isOpen)}\n        className=\"border px-4 py-2 rounded\"\n      >\n        {selected ? selected.label : 'Select an option'}\n      </button>\n\n      {isOpen && (\n        <ul role=\"listbox\" className=\"absolute border bg-white mt-1 w-full shadow-lg\">\n          {options.map((opt) => (\n            <li\n              key={opt.value}\n              role=\"option\"\n              onClick={() => {\n                setSelected(opt);\n                setIsOpen(false);\n                onSelect(opt);\n              }}\n              className=\"p-2 hover:bg-slate-100 cursor-pointer\"\n            >\n              {opt.label}\n            </li>\n          ))}\n        </ul>\n      )}\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3736,11 +3736,11 @@
     "technology": "React",
     "category": "Concurrency",
     "points": 300,
-    "bug_signature": "const handleCheckout = async () => {\n    // BUG: Missing atomic lock allows concurrent overlapping checkout requests\n    setStatus('processing');",
+    "bug_signature": "const handleCheckout = async () => {\n    setStatus('processing');",
     "starter_files": [
       {
         "name": "CheckoutFlow.jsx",
-        "content": "import React, { useState, useRef } from 'react';\n\nexport default function CheckoutFlow({ cart, api }) {\n  const [status, setStatus] = useState('idle');\n  const [orderId, setOrderId] = useState(null);\n\n  const handleCheckout = async () => {\n    // BUG: Missing atomic lock allows concurrent overlapping checkout requests\n    setStatus('processing');\n    try {\n      const res = await api.createOrder(cart);\n      setOrderId(res.id);\n      setStatus('completed');\n    } catch (err) {\n      setStatus('error');\n    }\n  };\n\n  return (\n    <div className=\"p-4\">\n      <h3>Cart Total: ${cart.total}</h3>\n      <button\n        onClick={handleCheckout}\n        disabled={status === 'completed'}\n        className=\"bg-blue-600 text-white px-4 py-2 rounded mt-2\"\n      >\n        {status === 'processing' ? 'Authorizing...' : 'Confirm Checkout'}\n      </button>\n      {orderId && <p className=\"text-green-600 mt-2\">Order Confirmed: {orderId}</p>}\n    </div>\n  );\n}\n"
+        "content": "import React, { useState, useRef } from 'react';\n\nexport default function CheckoutFlow({ cart, api }) {\n  const [status, setStatus] = useState('idle');\n  const [orderId, setOrderId] = useState(null);\n\n  const handleCheckout = async () => {\n    setStatus('processing');\n    try {\n      const res = await api.createOrder(cart);\n      setOrderId(res.id);\n      setStatus('completed');\n    } catch (err) {\n      setStatus('error');\n    }\n  };\n\n  return (\n    <div className=\"p-4\">\n      <h3>Cart Total: ${cart.total}</h3>\n      <button\n        onClick={handleCheckout}\n        disabled={status === 'completed'}\n        className=\"bg-blue-600 text-white px-4 py-2 rounded mt-2\"\n      >\n        {status === 'processing' ? 'Authorizing...' : 'Confirm Checkout'}\n      </button>\n      {orderId && <p className=\"text-green-600 mt-2\">Order Confirmed: {orderId}</p>}\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3765,11 +3765,11 @@
     "technology": "React",
     "category": "Memory Management",
     "points": 300,
-    "bug_signature": "eventBus.subscribe(symbol, handleTick);\n    // BUG: Missing unsubscribe in cleanup function causes memory leak and zombie listeners\n  }, [symbol, eventBus]);",
+    "bug_signature": "eventBus.subscribe(symbol, handleTick);\n  }, [symbol, eventBus]);",
     "starter_files": [
       {
         "name": "SubscriptionWidget.jsx",
-        "content": "import React, { useState, useEffect } from 'react';\n\nexport default function SubscriptionWidget({ symbol, eventBus }) {\n  const [price, setPrice] = useState(null);\n\n  useEffect(() => {\n    const handleTick = (newPrice) => {\n      setPrice(newPrice);\n    };\n\n    eventBus.subscribe(symbol, handleTick);\n    // BUG: Missing unsubscribe in cleanup function causes memory leak and zombie listeners\n  }, [symbol, eventBus]);\n\n  return (\n    <div className=\"card p-4 border rounded\">\n      <h4>{symbol}</h4>\n      <p className=\"text-2xl font-mono\">{price ? `$${price}` : 'Connecting...'}</p>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState, useEffect } from 'react';\n\nexport default function SubscriptionWidget({ symbol, eventBus }) {\n  const [price, setPrice] = useState(null);\n\n  useEffect(() => {\n    const handleTick = (newPrice) => {\n      setPrice(newPrice);\n    };\n\n    eventBus.subscribe(symbol, handleTick);\n  }, [symbol, eventBus]);\n\n  return (\n    <div className=\"card p-4 border rounded\">\n      <h4>{symbol}</h4>\n      <p className=\"text-2xl font-mono\">{price ? `$${price}` : 'Connecting...'}</p>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3798,7 +3798,7 @@
     "starter_files": [
       {
         "name": "SessionCache.jsx",
-        "content": "import React from 'react';\n\nexport const sessionCache = new Map();\n\nexport async function logoutUser(authApi, onLoggedOut) {\n  try {\n    await authApi.logout();\n    localStorage.removeItem('authToken');\n    // BUG: Leaves sensitive records in sessionCache across user logout\n  } finally {\n    if (onLoggedOut) onLoggedOut();\n  }\n}\n\nexport default function SessionCacheView({ currentUser, onLogout, authApi }) {\n  return (\n    <div className=\"p-4\">\n      <p>Signed in as: {currentUser?.username}</p>\n      <button\n        onClick={() => logoutUser(authApi, onLogout)}\n        className=\"bg-red-600 text-white px-3 py-1 rounded\"\n      >\n        Sign Out\n      </button>\n    </div>\n  );\n}\n"
+        "content": "import React from 'react';\n\nexport const sessionCache = new Map();\n\nexport async function logoutUser(authApi, onLoggedOut) {\n  try {\n    await authApi.logout();\n    localStorage.removeItem('authToken');\n  } finally {\n    if (onLoggedOut) onLoggedOut();\n  }\n}\n\nexport default function SessionCacheView({ currentUser, onLogout, authApi }) {\n  return (\n    <div className=\"p-4\">\n      <p>Signed in as: {currentUser?.username}</p>\n      <button\n        onClick={() => logoutUser(authApi, onLogout)}\n        className=\"bg-red-600 text-white px-3 py-1 rounded\"\n      >\n        Sign Out\n      </button>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3823,11 +3823,11 @@
     "technology": "React",
     "category": "Optimistic UI",
     "points": 300,
-    "bug_signature": "setLikes(likes + 1);\n    setIsLiked(true);\n\n    try {\n      await api.likePost();\n    } catch (err) {\n      // Reverting with stale value creates negative or out-of-sync counts\n      setLikes(likes - 1);",
+    "bug_signature": "setLikes(likes + 1);\n    setIsLiked(true);\n\n    try {\n      await api.likePost();\n    } catch (err) {\n      setLikes(likes - 1);",
     "starter_files": [
       {
         "name": "OptimisticFeed.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function OptimisticFeed({ initialLikes = 10, api }) {\n  const [likes, setLikes] = useState(initialLikes);\n  const [isLiked, setIsLiked] = useState(false);\n\n  const handleToggleLike = async () => {\n    // BUG: Blindly mutating and decrementing without snapshot leads to corrupted counter\n    setLikes(likes + 1);\n    setIsLiked(true);\n\n    try {\n      await api.likePost();\n    } catch (err) {\n      // Reverting with stale value creates negative or out-of-sync counts\n      setLikes(likes - 1);\n      setIsLiked(false);\n    }\n  };\n\n  return (\n    <div className=\"p-4 border rounded\">\n      <button\n        onClick={handleToggleLike}\n        className={`px-4 py-2 rounded ${isLiked ? 'bg-pink-600 text-white' : 'bg-gray-200'}`}\n      >\n        \u2764\ufe0f {likes} Likes\n      </button>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function OptimisticFeed({ initialLikes = 10, api }) {\n  const [likes, setLikes] = useState(initialLikes);\n  const [isLiked, setIsLiked] = useState(false);\n\n  const handleToggleLike = async () => {\n    setLikes(likes + 1);\n    setIsLiked(true);\n\n    try {\n      await api.likePost();\n    } catch (err) {\n      // Reverting with stale value creates negative or out-of-sync counts\n      setLikes(likes - 1);\n      setIsLiked(false);\n    }\n  };\n\n  return (\n    <div className=\"p-4 border rounded\">\n      <button\n        onClick={handleToggleLike}\n        className={`px-4 py-2 rounded ${isLiked ? 'bg-pink-600 text-white' : 'bg-gray-200'}`}\n      >\n        \u2764\ufe0f {likes} Likes\n      </button>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3856,7 +3856,7 @@
     "starter_files": [
       {
         "name": "AnalyticsHub.jsx",
-        "content": "import React, { useState, useMemo } from 'react';\n\nexport default function AnalyticsHub({ transactions = [] }) {\n  const [tierFilter, setTierFilter] = useState('All');\n\n  // BUG: Empty dependency array in useMemo ignores transactions and filter updates\n  const metrics = useMemo(() => {\n    const filtered = tierFilter === 'All'\n      ? transactions\n      : transactions.filter(t => t.tier === tierFilter);\n\n    const totalMRR = filtered.reduce((acc, curr) => acc + curr.amount, 0);\n    const avgMRR = filtered.length ? totalMRR / filtered.length : 0;\n    return { totalMRR, avgMRR, count: filtered.length };\n  }, []);\n\n  return (\n    <div className=\"p-4\">\n      <select value={tierFilter} onChange={(e) => setTierFilter(e.target.value)}>\n        <option value=\"All\">All</option>\n        <option value=\"Starter\">Starter</option>\n        <option value=\"Enterprise\">Enterprise</option>\n      </select>\n      <div className=\"mt-4 grid grid-cols-2 gap-4\">\n        <div className=\"border p-4\">Total MRR: ${metrics.totalMRR}</div>\n        <div className=\"border p-4\">Transactions: {metrics.count}</div>\n      </div>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState, useMemo } from 'react';\n\nexport default function AnalyticsHub({ transactions = [] }) {\n  const [tierFilter, setTierFilter] = useState('All');\n\n  const metrics = useMemo(() => {\n    const filtered = tierFilter === 'All'\n      ? transactions\n      : transactions.filter(t => t.tier === tierFilter);\n\n    const totalMRR = filtered.reduce((acc, curr) => acc + curr.amount, 0);\n    const avgMRR = filtered.length ? totalMRR / filtered.length : 0;\n    return { totalMRR, avgMRR, count: filtered.length };\n  }, []);\n\n  return (\n    <div className=\"p-4\">\n      <select value={tierFilter} onChange={(e) => setTierFilter(e.target.value)}>\n        <option value=\"All\">All</option>\n        <option value=\"Starter\">Starter</option>\n        <option value=\"Enterprise\">Enterprise</option>\n      </select>\n      <div className=\"mt-4 grid grid-cols-2 gap-4\">\n        <div className=\"border p-4\">Total MRR: ${metrics.totalMRR}</div>\n        <div className=\"border p-4\">Transactions: {metrics.count}</div>\n      </div>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3881,11 +3881,11 @@
     "technology": "JavaScript",
     "category": "Authentication Architecture",
     "points": 300,
-    "bug_signature": "if (err.status === 401) {\n      // BUG: Each concurrent request triggers its own refresh instead of sharing refreshPromise\n      const newTokens = await refreshApi();",
+    "bug_signature": "if (err.status === 401) {\n      const newTokens = await refreshApi();",
     "starter_files": [
       {
         "name": "AuthManager.jsx",
-        "content": "let currentToken = 'old_token';\nlet refreshPromise = null;\n\nexport async function requestWithAuth(url, fetchApi, refreshApi) {\n  try {\n    return await fetchApi(url, currentToken);\n  } catch (err) {\n    if (err.status === 401) {\n      // BUG: Each concurrent request triggers its own refresh instead of sharing refreshPromise\n      const newTokens = await refreshApi();\n      currentToken = newTokens.accessToken;\n      return await fetchApi(url, currentToken);\n    }\n    throw err;\n  }\n}\n"
+        "content": "let currentToken = 'old_token';\nlet refreshPromise = null;\n\nexport async function requestWithAuth(url, fetchApi, refreshApi) {\n  try {\n    return await fetchApi(url, currentToken);\n  } catch (err) {\n    if (err.status === 401) {\n      const newTokens = await refreshApi();\n      currentToken = newTokens.accessToken;\n      return await fetchApi(url, currentToken);\n    }\n    throw err;\n  }\n}"
       }
     ],
     "solution_files": [
@@ -3914,7 +3914,7 @@
     "starter_files": [
       {
         "name": "VirtualList.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function VirtualList({ items = [], rowHeight = 35, viewportHeight = 350 }) {\n  const [scrollTop, setScrollTop] = useState(0);\n\n  const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - 2);\n  const visibleCount = Math.ceil(viewportHeight / rowHeight) + 4;\n  const visibleItems = items.slice(startIndex, startIndex + visibleCount);\n\n  return (\n    <div\n      onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}\n      style={{ height: viewportHeight, overflowY: 'auto', position: 'relative' }}\n      className=\"border\"\n    >\n      <div style={{ height: items.length * rowHeight, position: 'relative' }}>\n        {visibleItems.map((item, index) => (\n          // BUG: Keying by virtualized index causes DOM reconciliation corruption on filter\n          <div\n            key={startIndex + index}\n            style={{\n              position: 'absolute',\n              top: (startIndex + index) * rowHeight,\n              height: rowHeight,\n              width: '100%'\n            }}\n            className=\"p-2 border-b truncate\"\n          >\n            [{item.level}] {item.message}\n          </div>\n        ))}\n      </div>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function VirtualList({ items = [], rowHeight = 35, viewportHeight = 350 }) {\n  const [scrollTop, setScrollTop] = useState(0);\n\n  const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - 2);\n  const visibleCount = Math.ceil(viewportHeight / rowHeight) + 4;\n  const visibleItems = items.slice(startIndex, startIndex + visibleCount);\n\n  return (\n    <div\n      onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}\n      style={{ height: viewportHeight, overflowY: 'auto', position: 'relative' }}\n      className=\"border\"\n    >\n      <div style={{ height: items.length * rowHeight, position: 'relative' }}>\n        {visibleItems.map((item, index) => (\n          <div\n            key={startIndex + index}\n            style={{\n              position: 'absolute',\n              top: (startIndex + index) * rowHeight,\n              height: rowHeight,\n              width: '100%'\n            }}\n            className=\"p-2 border-b truncate\"\n          >\n            [{item.level}] {item.message}\n          </div>\n        ))}\n      </div>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3939,11 +3939,11 @@
     "technology": "React",
     "category": "Compensating Transactions",
     "points": 300,
-    "bug_signature": "} catch (err) {\n      // BUG: Does not invoke compensating rollback to release reserved seat\n      setError(err.message || 'Payment failed');",
+    "bug_signature": "} catch (err) {\n      setError(err.message || 'Payment failed');",
     "starter_files": [
       {
         "name": "MultiStepCheckout.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function MultiStepCheckout({ flightId, seatNumber, api }) {\n  const [status, setStatus] = useState('idle');\n  const [error, setError] = useState(null);\n\n  const handleBook = async (paymentDetails) => {\n    setStatus('booking');\n    setError(null);\n    let reservation = null;\n\n    try {\n      reservation = await api.reserveSeat(flightId, seatNumber);\n      await api.processPayment(reservation.id, paymentDetails);\n      setStatus('confirmed');\n    } catch (err) {\n      // BUG: Does not invoke compensating rollback to release reserved seat\n      setError(err.message || 'Payment failed');\n      setStatus('failed');\n    }\n  };\n\n  return (\n    <div className=\"p-4 border rounded\">\n      <h3>Seat: {seatNumber}</h3>\n      {error && <p className=\"text-red-500\">{error}</p>}\n      <button\n        onClick={() => handleBook({ card: '4111...' })}\n        disabled={status === 'booking'}\n        className=\"bg-indigo-600 text-white px-4 py-2 rounded mt-2\"\n      >\n        {status === 'booking' ? 'Processing...' : 'Book & Pay'}\n      </button>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function MultiStepCheckout({ flightId, seatNumber, api }) {\n  const [status, setStatus] = useState('idle');\n  const [error, setError] = useState(null);\n\n  const handleBook = async (paymentDetails) => {\n    setStatus('booking');\n    setError(null);\n    let reservation = null;\n\n    try {\n      reservation = await api.reserveSeat(flightId, seatNumber);\n      await api.processPayment(reservation.id, paymentDetails);\n      setStatus('confirmed');\n    } catch (err) {\n      setError(err.message || 'Payment failed');\n      setStatus('failed');\n    }\n  };\n\n  return (\n    <div className=\"p-4 border rounded\">\n      <h3>Seat: {seatNumber}</h3>\n      {error && <p className=\"text-red-500\">{error}</p>}\n      <button\n        onClick={() => handleBook({ card: '4111...' })}\n        disabled={status === 'booking'}\n        className=\"bg-indigo-600 text-white px-4 py-2 rounded mt-2\"\n      >\n        {status === 'booking' ? 'Processing...' : 'Book & Pay'}\n      </button>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3968,11 +3968,11 @@
     "technology": "React",
     "category": "Real-Time State",
     "points": 300,
-    "bug_signature": "const handleIncomingMessage = (event) => {\n      // BUG: Blindly applies incoming packet without validating sequence order\n      setContent(event.text);",
+    "bug_signature": "const handleIncomingMessage = (event) => {\n      setContent(event.text);",
     "starter_files": [
       {
         "name": "RealtimeChat.jsx",
-        "content": "import React, { useState, useRef, useEffect } from 'react';\n\nexport default function RealtimeChat({ socket }) {\n  const [content, setContent] = useState('');\n  const lastSeq = useRef(0);\n\n  useEffect(() => {\n    const handleIncomingMessage = (event) => {\n      // BUG: Blindly applies incoming packet without validating sequence order\n      setContent(event.text);\n      lastSeq.current = event.seq;\n    };\n\n    socket.on('message', handleIncomingMessage);\n    return () => socket.off('message', handleIncomingMessage);\n  }, [socket]);\n\n  return (\n    <div className=\"p-4 border\">\n      <h3>Live Document</h3>\n      <div className=\"p-2 bg-gray-100 rounded mt-2\">{content}</div>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState, useRef, useEffect } from 'react';\n\nexport default function RealtimeChat({ socket }) {\n  const [content, setContent] = useState('');\n  const lastSeq = useRef(0);\n\n  useEffect(() => {\n    const handleIncomingMessage = (event) => {\n      setContent(event.text);\n      lastSeq.current = event.seq;\n    };\n\n    socket.on('message', handleIncomingMessage);\n    return () => socket.off('message', handleIncomingMessage);\n  }, [socket]);\n\n  return (\n    <div className=\"p-4 border\">\n      <h3>Live Document</h3>\n      <div className=\"p-2 bg-gray-100 rounded mt-2\">{content}</div>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [
@@ -3997,11 +3997,11 @@
     "technology": "React",
     "category": "Security & Error Handling",
     "points": 300,
-    "bug_signature": "const handleDelete = async () => {\n    setIsDeleting(true);\n    setErrorMessage('');\n    // BUG: Missing try/catch causes unhandled 403 rejection to crash the application\n    await api.deleteAccount(user.id);\n    setIsDeleting(false);\n  };",
+    "bug_signature": "const handleDelete = async () => {\n    setIsDeleting(true);\n    setErrorMessage('');\n    await api.deleteAccount(user.id);\n    setIsDeleting(false);\n  };",
     "starter_files": [
       {
         "name": "AdminPanel.jsx",
-        "content": "import React, { useState } from 'react';\n\nexport default function AdminPanel({ user, api, onAccessDenied }) {\n  const [errorMessage, setErrorMessage] = useState('');\n  const [isDeleting, setIsDeleting] = useState(false);\n\n  const handleDelete = async () => {\n    setIsDeleting(true);\n    setErrorMessage('');\n    // BUG: Missing try/catch causes unhandled 403 rejection to crash the application\n    await api.deleteAccount(user.id);\n    setIsDeleting(false);\n  };\n\n  return (\n    <div className=\"p-4 border rounded border-red-300\">\n      <h3 className=\"text-red-700 font-bold\">Danger Zone</h3>\n      {errorMessage && <p className=\"text-red-500 mb-2\">{errorMessage}</p>}\n      <button\n        onClick={handleDelete}\n        disabled={isDeleting}\n        className=\"bg-red-600 text-white px-3 py-1 rounded\"\n      >\n        {isDeleting ? 'Deleting...' : 'Delete Account'}\n      </button>\n    </div>\n  );\n}\n"
+        "content": "import React, { useState } from 'react';\n\nexport default function AdminPanel({ user, api, onAccessDenied }) {\n  const [errorMessage, setErrorMessage] = useState('');\n  const [isDeleting, setIsDeleting] = useState(false);\n\n  const handleDelete = async () => {\n    setIsDeleting(true);\n    setErrorMessage('');\n    await api.deleteAccount(user.id);\n    setIsDeleting(false);\n  };\n\n  return (\n    <div className=\"p-4 border rounded border-red-300\">\n      <h3 className=\"text-red-700 font-bold\">Danger Zone</h3>\n      {errorMessage && <p className=\"text-red-500 mb-2\">{errorMessage}</p>}\n      <button\n        onClick={handleDelete}\n        disabled={isDeleting}\n        className=\"bg-red-600 text-white px-3 py-1 rounded\"\n      >\n        {isDeleting ? 'Deleting...' : 'Delete Account'}\n      </button>\n    </div>\n  );\n}"
       }
     ],
     "solution_files": [

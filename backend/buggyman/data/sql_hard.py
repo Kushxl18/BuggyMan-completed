@@ -46,15 +46,12 @@ Over-allocated physical inventory and canceled customer orders.
     stock INT
 );
 
-INSERT INTO inventory VALUES (10, 'PlayStation 5', 0);
-"""
+INSERT INTO inventory VALUES (10, 'PlayStation 5', 0);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Decrements stock without checking if stock >= 1
-UPDATE inventory SET stock = stock - 1 WHERE id = 10;
-SELECT id, name, stock FROM inventory WHERE id = 10;
-"""
+                'content': """UPDATE inventory SET stock = stock - 1 WHERE id = 10;
+SELECT id, name, stock FROM inventory WHERE id = 10;"""
             }
         ],
         'test_cases': [
@@ -115,16 +112,13 @@ Financial ledger audit failure and lost customer money.
     balance DECIMAL(10,2)
 );
 
-INSERT INTO accounts VALUES (1, 'Alice', 100.00), (2, 'Bob', 50.00);
-"""
+INSERT INTO accounts VALUES (1, 'Alice', 100.00), (2, 'Bob', 50.00);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Unmanaged debit to invalid account 999 leaves ledger inconsistent
-UPDATE accounts SET balance = balance - 50 WHERE id = 1;
+                'content': """UPDATE accounts SET balance = balance - 50 WHERE id = 1;
 UPDATE accounts SET balance = balance + 50 WHERE id = 999;
-SELECT id, owner, balance FROM accounts ORDER BY id;
-"""
+SELECT id, owner, balance FROM accounts ORDER BY id;"""
             }
         ],
         'test_cases': [
@@ -200,31 +194,19 @@ CREATE TABLE tickets (
 
 INSERT INTO customers VALUES (1, 'Alice');
 INSERT INTO orders VALUES (101, 1, 50.00), (102, 1, 100.00);
-INSERT INTO tickets VALUES (201, 1, 'Login Help'), (202, 1, 'Billing Question'), (203, 1, 'Feedback');
-"""
+INSERT INTO tickets VALUES (201, 1, 'Login Help'), (202, 1, 'Billing Question'), (203, 1, 'Feedback');"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Cartesian product between orders and tickets multiplies sums
-SELECT c.id, c.name, SUM(o.amount) AS total_spent, COUNT(t.id) AS total_tickets
+                'content': """SELECT c.id, c.name, SUM(o.amount) AS total_spent, COUNT(t.id) AS total_tickets
 FROM customers c
 LEFT JOIN orders o ON c.id = o.customer_id
 LEFT JOIN tickets t ON c.id = t.customer_id
-GROUP BY c.id, c.name;
-"""
+GROUP BY c.id, c.name;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Independent aggregation reports total_spent=150, tickets=3', 'input': '', 'expected': """WITH o_summary AS (
-    SELECT customer_id, SUM(amount) AS total_spent FROM orders GROUP BY customer_id
-),
-t_summary AS (
-    SELECT customer_id, COUNT(*) AS total_tickets FROM tickets GROUP BY customer_id
-)
-SELECT c.id, c.name, COALESCE(o.total_spent, 0) AS total_spent, COALESCE(t.total_tickets, 0) AS total_tickets
-FROM customers c
-LEFT JOIN o_summary o ON c.id = o.customer_id
-LEFT JOIN t_summary t ON c.id = t.customer_id;"""}
+            {'id': 1, 'name': 'Visible: Independent aggregation reports total_spent=150, tickets=3', 'input': '', 'expected': 'All registered users preserving unassigned plans as NULL'}
         ],
         'bug_signature': 'LEFT JOIN orders o ON c.id = o.customer_id\nLEFT JOIN tickets t',
         'suspected_component': 'query.sql',
@@ -294,15 +276,12 @@ CREATE TABLE audit_journal (
     action VARCHAR(50)
 );
 
-INSERT INTO invoices VALUES (1, 500.00, 'pending');
-"""
+INSERT INTO invoices VALUES (1, 500.00, 'pending');"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Fails to record audit journal entry
-UPDATE invoices SET status = 'paid' WHERE id = 1;
-SELECT i.status, COUNT(a.id) AS journal_count FROM invoices i LEFT JOIN audit_journal a ON i.id = a.invoice_id WHERE i.id = 1 GROUP BY i.status;
-"""
+                'content': """UPDATE invoices SET status = 'paid' WHERE id = 1;
+SELECT i.status, COUNT(a.id) AS journal_count FROM invoices i LEFT JOIN audit_journal a ON i.id = a.invoice_id WHERE i.id = 1 GROUP BY i.status;"""
             }
         ],
         'test_cases': [
@@ -353,7 +332,7 @@ Leaves NULL values unmigrated.
 Failed database migrations during deployment causing production downtime.
 
 ### Requirements
-- Execute `UPDATE user_settings SET notification_email = 'no-reply@domain.com' WHERE notification_email IS NULL;`.
+- Update existing records with missing notification emails to a default fallback address prior to applying constraints.
 """,
         'files': [
             {
@@ -367,21 +346,18 @@ Failed database migrations during deployment causing production downtime.
 INSERT INTO user_settings VALUES
 (1, 101, 'user1@test.com'),
 (2, 102, NULL),
-(3, 103, NULL);
-"""
+(3, 103, NULL);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Leaves NULL values unmigrated
-SELECT id, user_id, notification_email FROM user_settings ORDER BY id;
-"""
+                'content': """SELECT id, user_id, notification_email FROM user_settings ORDER BY id;"""
             }
         ],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Backfills NULL notification emails', 'input': '', 'expected': """UPDATE user_settings SET notification_email = 'no-reply@domain.com' WHERE notification_email IS NULL;
 SELECT id, user_id, notification_email FROM user_settings ORDER BY id;"""}
         ],
-        'bug_signature': '-- BUG: Leaves NULL values unmigrated',
+        'bug_signature': 'UPDATE profiles SET country = (SELECT country FROM users WHERE id = profiles.user_id);',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
             'Add `UPDATE user_settings SET notification_email = \'no-reply@domain.com\' WHERE notification_email IS NULL;` before SELECT.'
@@ -438,18 +414,15 @@ Ledger audit mismatch during concurrent transactions.
 INSERT INTO ledger VALUES
 (1, 100.00, '2026-10-19 12:00:00'),
 (2, 50.00, '2026-10-19 12:00:00'),
-(3, 25.00, '2026-10-19 13:00:00');
-"""
+(3, 25.00, '2026-10-19 13:00:00');"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Tied trans_time groups peers together, showing 150.00 on row 1
-SELECT id, amount, trans_time, SUM(amount) OVER (ORDER BY trans_time) AS running_balance FROM ledger ORDER BY id;
-"""
+                'content': """SELECT id, amount, trans_time, SUM(amount) OVER (ORDER BY trans_time) AS running_balance FROM ledger ORDER BY id;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Strict row-by-row running balance (100.00 then 150.00)', 'input': '', 'expected': 'SELECT id, amount, trans_time, SUM(amount) OVER (ORDER BY trans_time, id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_balance FROM ledger ORDER BY id;'}
+            {'id': 1, 'name': 'Visible: Strict row-by-row running balance (100.00 then 150.00)', 'input': '', 'expected': 'Aggregated revenue matching date/order criteria'}
         ],
         'bug_signature': 'SUM(amount) OVER (ORDER BY trans_time) AS running_balance',
         'suspected_component': 'query.sql',
@@ -492,7 +465,7 @@ Reads unconfirmed cart rows.
 Reports include abandoned carts as confirmed sales.
 
 ### Requirements
-- Add `WHERE status = 'confirmed'`.
+- Filter sales revenue calculations to reflect only confirmed orders.
 """,
         'files': [
             {
@@ -506,18 +479,15 @@ Reports include abandoned carts as confirmed sales.
 INSERT INTO orders VALUES
 (1, 100.00, 'confirmed'),
 (2, 50.00, 'draft'),
-(3, 200.00, 'confirmed');
-"""
+(3, 200.00, 'confirmed');"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Includes draft unconfirmed orders
-SELECT SUM(amount) AS total_sales FROM orders;
-"""
+                'content': """SELECT SUM(amount) AS total_sales FROM orders;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Only confirmed orders summed', 'input': '', 'expected': "SELECT SUM(amount) AS total_sales FROM orders WHERE status = 'confirmed';"}
+            {'id': 1, 'name': 'Visible: Only confirmed orders summed', 'input': '', 'expected': 'Total sales amount for confirmed orders only'}
         ],
         'bug_signature': 'SELECT SUM(amount) AS total_sales FROM orders;',
         'suspected_component': 'query.sql',
@@ -561,7 +531,7 @@ Omits soft-delete check.
 Privacy violation: users see documents that were deleted by other administrators.
 
 ### Requirements
-- Add `WHERE deleted_at IS NULL` and sort by `id`.
+- Exclude logically deleted records from active customer listings and order by id.
 """,
         'files': [
             {
@@ -575,18 +545,15 @@ Privacy violation: users see documents that were deleted by other administrators
 INSERT INTO documents VALUES
 (1, 'Public Specs', NULL),
 (2, 'Deprecated Draft', '2026-10-15 10:00:00'),
-(3, 'Security Policy', NULL);
-"""
+(3, 'Security Policy', NULL);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Fails to check deleted_at IS NULL, leaking deleted document 2
-SELECT id, title FROM documents ORDER BY id;
-"""
+                'content': """SELECT id, title FROM documents ORDER BY id;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Only non-deleted documents returned', 'input': '', 'expected': 'SELECT id, title FROM documents WHERE deleted_at IS NULL ORDER BY id;'}
+            {'id': 1, 'name': 'Visible: Only non-deleted documents returned', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': 'SELECT id, title FROM documents ORDER BY id;',
         'suspected_component': 'query.sql',
@@ -643,31 +610,21 @@ Database hangs and connection pool exhaustion.
 INSERT INTO categories VALUES
 (1, 'Tech', NULL),
 (2, 'Computers', 1),
-(3, 'Laptops', 2);
-"""
+(3, 'Laptops', 2);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Missing cycle detection or depth guard causes infinite recursion
-WITH RECURSIVE cat_tree AS (
+                'content': """WITH RECURSIVE cat_tree AS (
     SELECT id, name, parent_id, 1 AS depth FROM categories WHERE parent_id IS NULL
     UNION ALL
     SELECT c.id, c.name, c.parent_id, ct.depth + 1
     FROM categories c JOIN cat_tree ct ON c.parent_id = ct.id
 )
-SELECT id, name, depth FROM cat_tree ORDER BY depth, id;
-"""
+SELECT id, name, depth FROM cat_tree ORDER BY depth, id;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Hierarchy traversed safely with depth limit', 'input': '', 'expected': """WITH RECURSIVE cat_tree AS (
-    SELECT id, name, parent_id, 1 AS depth FROM categories WHERE parent_id IS NULL
-    UNION ALL
-    SELECT c.id, c.name, c.parent_id, ct.depth + 1
-    FROM categories c JOIN cat_tree ct ON c.parent_id = ct.id
-    WHERE ct.depth < 5
-)
-SELECT id, name, depth FROM cat_tree ORDER BY depth, id;"""}
+            {'id': 1, 'name': 'Visible: Hierarchy traversed safely with depth limit', 'input': '', 'expected': 'Complete hierarchical reporting structure'}
         ],
         'bug_signature': 'FROM categories c JOIN cat_tree ct ON c.parent_id = ct.id\n)',
         'suspected_component': 'query.sql',
@@ -717,7 +674,7 @@ Slow correlated `IN` subquery.
 Query timeouts across executive reporting portals.
 
 ### Requirements
-- Rewrite query using `EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)`.
+- Optimize the query using a semi-join or existence check rather than an unindexed full table join.
 """,
         'files': [
             {
@@ -734,18 +691,15 @@ CREATE TABLE orders (
 );
 
 INSERT INTO customers VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Charlie');
-INSERT INTO orders VALUES (101, 1, 50.00), (102, 2, 75.00);
-"""
+INSERT INTO orders VALUES (101, 1, 50.00), (102, 2, 75.00);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Correlated IN subquery causes table scan
-SELECT c.id, c.name FROM customers c WHERE c.id IN (SELECT o.customer_id FROM orders o) ORDER BY c.id;
-"""
+                'content': """SELECT c.id, c.name FROM customers c WHERE c.id IN (SELECT o.customer_id FROM orders o) ORDER BY c.id;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Efficient EXISTS returns Alice and Bob', 'input': '', 'expected': 'SELECT c.id, c.name FROM customers c WHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id) ORDER BY c.id;'}
+            {'id': 1, 'name': 'Visible: Efficient EXISTS returns Alice and Bob', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': 'WHERE c.id IN (SELECT o.customer_id FROM orders o)',
         'suspected_component': 'query.sql',

@@ -35,8 +35,8 @@ Component unconditionally calls `setResults(data)` in the `.then()` callback reg
 Users see irrelevant search results that do not match the text in the search input, causing confusion and incorrect navigation.
 
 ### Requirements
-- Use an `active` cancellation flag inside `useEffect` (`let active = true; ... return () => { active = false; };`) or an `AbortController`.
-- Only update state if the request is still active/current.
+- Implement a request cancellation flag or controller to ignore responses from stale or superseded search requests.
+- Only update state if the request is still current.
 """,
         'files': [{
             'name': 'LiveSearch.jsx',
@@ -52,7 +52,6 @@ export default function LiveSearch({ fetchResults }) {
       return;
     }
 
-    // BUG: Race condition - earlier slow responses overwrite newer fast responses
     fetchResults(query).then(data => {
       setResults(data);
     });
@@ -74,8 +73,7 @@ export default function LiveSearch({ fetchResults }) {
       </ul>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Uses cancellation flag or AbortController to prevent race conditions', 'input': '', 'expected': 'active'}
@@ -113,7 +111,7 @@ Clicking "+3" only increments the box count by 1 instead of 3.
 3. Box count changes from 0 to 1 instead of 0 to 3.
 
 ### Expected Behavior
-Each update must see the most recent queued state using functional state updater: `setCount(prev => prev + 1)`.
+Each sequential update must incorporate the latest queued state transition so the counter increments by the full expected amount.
 
 ### Actual Behavior
 All three `setCount(count + 1)` calls read the same snapshot value of `count` from the current render closure.
@@ -122,7 +120,7 @@ All three `setCount(count + 1)` calls read the same snapshot value of `count` fr
 Warehouse staff submit incorrect inventory counts, leading to stock discrepancies.
 
 ### Requirements
-- Replace direct `setCount(count + 1)` calls with functional updates `setCount(prev => prev + 1)`.
+- Use functional state updates to ensure all increments are applied correctly during batched state transitions.
 """,
         'files': [{
             'name': 'CounterBatch.jsx',
@@ -132,7 +130,6 @@ export default function CounterBatch() {
   const [count, setCount] = useState(0);
 
   const incrementByThree = () => {
-    // BUG: Batched state updates all capture the stale snapshot of `count`
     setCount(count + 1);
     setCount(count + 1);
     setCount(count + 1);
@@ -149,8 +146,7 @@ export default function CounterBatch() {
       </button>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Uses functional state updater prev => prev + 1', 'input': '', 'expected': 'prev =>'}
@@ -220,7 +216,6 @@ export default function UserProfileLoader({ userId, fetchUser }) {
     return () => {
       isMounted = false;
     };
-    // BUG: Missing userId in dependency array causes stale closure
   }, []);
 
   if (loading) return <p>Loading profile...</p>;
@@ -230,8 +225,7 @@ export default function UserProfileLoader({ userId, fetchUser }) {
       <p>{profile?.email}</p>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Declares userId in dependency array', 'input': '', 'expected': '[userId'}
@@ -287,7 +281,6 @@ export default function ShoppingCart({ initialItems = [] }) {
   const [items, setItems] = useState(initialItems);
 
   const updateQuantity = (id, newQty) => {
-    // BUG: Direct mutation of state object and array reference
     const index = items.findIndex(item => item.id === id);
     if (index !== -1) {
       items[index].qty = newQty;
@@ -313,8 +306,7 @@ export default function ShoppingCart({ initialItems = [] }) {
       <div className="font-bold mt-4">Total: ${total.toFixed(2)}</div>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Immutably maps items using object spread', 'input': '', 'expected': 'items.map'}
@@ -373,7 +365,6 @@ export default function FilterPagination({ products = [] }) {
   const pageSize = 5;
 
   const handleFilterChange = (newCategory) => {
-    // BUG: Missing setPage(1) when filter changes causes out-of-bounds page
     setCategory(newCategory);
   };
 
@@ -411,13 +402,12 @@ export default function FilterPagination({ products = [] }) {
       </div>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Resets page to 1 on filter change', 'input': '', 'expected': 'setPage(1)'}
         ],
-        'bug_signature': 'const handleFilterChange = (newCategory) => {\n    // BUG: Missing setPage(1) when filter changes causes out-of-bounds page\n    setCategory(newCategory);\n  };',
+        'bug_signature': 'const handleFilterChange = (newCategory) => {\n    setCategory(newCategory);\n  };',
         'suspected_component': 'FilterPagination.jsx',
         'ai_suggestions': [
             'Inside `handleFilterChange`, add `setPage(1);` alongside `setCategory(newCategory);`.'
@@ -473,7 +463,6 @@ export default function ResizeListener() {
     };
 
     window.addEventListener('resize', handleResize);
-    // BUG: Missing cleanup function to removeEventListener
   }, []);
 
   return (
@@ -481,8 +470,7 @@ export default function ResizeListener() {
       <p className="font-semibold">Current width: {windowWidth}px</p>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Cleans up event listener with removeEventListener', 'input': '', 'expected': 'removeEventListener'}
@@ -543,19 +531,17 @@ function Navigate({ to }) {
 }
 
 export default function ProtectedRoute({ user, isLoading, children }) {
-  // BUG: Prematurely redirects before isLoading resolves
   if (!user) {
     return <Navigate to="/login" />;
   }
 
   return children;
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Checks isLoading before redirecting', 'input': '', 'expected': 'isLoading'}
         ],
-        'bug_signature': 'export default function ProtectedRoute({ user, isLoading, children }) {\n  // BUG: Prematurely redirects before isLoading resolves\n  if (!user) {',
+        'bug_signature': 'export default function ProtectedRoute({ user, isLoading, children }) {\n  if (!user) {',
         'suspected_component': 'ProtectedRoute.jsx',
         'ai_suggestions': [
             'Add `if (isLoading) return <LoadingSpinner />;` at the beginning of `ProtectedRoute` before `if (!user)`.'
@@ -617,7 +603,6 @@ export default function FileUploader({ uploadApi }) {
       setIsUploading(false);
       setProgress(100);
     } catch (err) {
-      // BUG: Leaves isUploading true and does not display error to user
       console.error('Upload failed', err);
     }
   };
@@ -637,13 +622,12 @@ export default function FileUploader({ uploadApi }) {
       )}
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Resets isUploading and sets error state on failure', 'input': '', 'expected': 'setIsUploading(false)'}
         ],
-        'bug_signature': '} catch (err) {\n      // BUG: Leaves isUploading true and does not display error to user\n      console.error(\'Upload failed\', err);\n    }',
+        'bug_signature': '} catch (err) {\n      console.error(\'Upload failed\', err);\n    }',
         'suspected_component': 'FileUploader.jsx',
         'ai_suggestions': [
             'In the `catch` block, call `setIsUploading(false);` and `setError(err.message || "Upload failed");`.'
@@ -691,7 +675,6 @@ High checkout abandonment rates due to users having to re-type form inputs.
             'content': '''import React, { useState } from 'react';
 
 export function Step1({ formData = {}, onChange }) {
-  // BUG: Local state unmounts and discards user input on navigation
   const [name, setName] = useState('');
 
   return (
@@ -728,13 +711,12 @@ export default function WizardForm() {
       </div>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Step1 initializes with formData.name', 'input': '', 'expected': 'formData.name'}
         ],
-        'bug_signature': 'export function Step1({ formData = {}, onChange }) {\n  // BUG: Local state unmounts and discards user input on navigation\n  const [name, setName] = useState(\'\');',
+        'bug_signature': 'export function Step1({ formData = {}, onChange }) {\n  const [name, setName] = useState(\'\');',
         'suspected_component': 'WizardForm.jsx',
         'ai_suggestions': [
             'Initialize `Step1` name state from `formData.name || ""` or use controlled inputs directly from `formData`.'
@@ -787,7 +769,6 @@ export default function MetricsDashboard({ fetchRevenue, fetchHealth }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // BUG: Promise.all fails entirely if either promise rejects
     Promise.all([fetchRevenue(), fetchHealth()])
       .then(([revData, healthData]) => {
         setRevenue(revData);
@@ -810,8 +791,7 @@ export default function MetricsDashboard({ fetchRevenue, fetchHealth }) {
       </div>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Uses Promise.allSettled for resilient data fetching', 'input': '', 'expected': 'Promise.allSettled'}
@@ -819,7 +799,7 @@ export default function MetricsDashboard({ fetchRevenue, fetchHealth }) {
         'bug_signature': 'Promise.all([fetchRevenue(), fetchHealth()])',
         'suspected_component': 'MetricsDashboard.jsx',
         'ai_suggestions': [
-            'Replace `Promise.all` with `Promise.allSettled([fetchRevenue(), fetchHealth()])` and inspect the status of each result.'
+            'Handle partial API failures gracefully by allowing independent endpoints to settle without aborting sibling data.'
         ],
         'topics': ['React', 'Async', 'Promise.allSettled', 'Resilience'],
         'skills_tested': ['React', 'Frontend'],
@@ -870,7 +850,6 @@ export default function ProfileCache({ userId, api, cache }) {
   const handleUpdateName = async () => {
     const updated = await api.updateName(userId, nameInput);
     setProfile(updated);
-    // BUG: Missing cache invalidation/update causes subsequent reads to return stale data
   };
 
   return (
@@ -888,13 +867,12 @@ export default function ProfileCache({ userId, api, cache }) {
       </button>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Updates or deletes the cache entry on save', 'input': '', 'expected': 'cache.set(userId'}
         ],
-        'bug_signature': 'setProfile(updated);\n    // BUG: Missing cache invalidation/update causes subsequent reads to return stale data',
+        'bug_signature': '',
         'suspected_component': 'ProfileCache.jsx',
         'ai_suggestions': [
             'Add `cache.set(userId, updated);` after updating the profile state.'
@@ -945,7 +923,6 @@ export default function SubmitButton({ onOrder }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    // BUG: Missing guard check if already submitting
     setIsSubmitting(true);
     try {
       await onOrder();
@@ -956,8 +933,7 @@ export default function SubmitButton({ onOrder }) {
 
   return (
     <div>
-      {/* BUG: Missing disabled={isSubmitting} attribute */}
-      <button 
+<button 
         onClick={handleSubmit}
         className="bg-green-600 text-white px-4 py-2 rounded"
       >
@@ -965,16 +941,15 @@ export default function SubmitButton({ onOrder }) {
       </button>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Disables button when isSubmitting is true', 'input': '', 'expected': 'disabled={isSubmitting}'}
         ],
-        'bug_signature': '{/* BUG: Missing disabled={isSubmitting} attribute */}\n      <button \n        onClick={handleSubmit}',
+        'bug_signature': '',
         'suspected_component': 'SubmitButton.jsx',
         'ai_suggestions': [
-            'Add `disabled={isSubmitting}` to the `<button>` element.',
+            'Inspect button attributes during pending states: prevent double submissions by disabling the action element.',
             'Add `if (isSubmitting) return;` at the start of `handleSubmit`.'
         ],
         'topics': ['React', 'Forms', 'Debounce', 'Double Submission'],
@@ -1013,7 +988,7 @@ Converts through `new Date(isoDateString).toISOString().split('T')[0]`, shifting
 Guests book rooms for the wrong night, causing booking errors and lost revenue.
 
 ### Requirements
-- Use local date construction `const [y, m, d] = str.split('-'); new Date(y, m - 1, d)` or extract date string directly.
+- Parse date inputs using local calendar date parts to avoid unexpected timezone shifts.
 """,
         'files': [{
             'name': 'DatePicker.jsx',
@@ -1023,7 +998,6 @@ export default function DatePicker({ onSelect }) {
   const [selectedDate, setSelectedDate] = useState('');
 
   const handleDateChange = (dateString) => {
-    // BUG: Parsing ISO date string with UTC assumption shifts date backward in western timezones
     const d = new Date(dateString);
     const formatted = d.toISOString().split('T')[0];
     setSelectedDate(formatted);
@@ -1040,8 +1014,7 @@ export default function DatePicker({ onSelect }) {
       {selectedDate && <p className="mt-2">Selected: {selectedDate}</p>}
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Retains raw dateString without UTC shifting', 'input': '', 'expected': 'setSelectedDate(dateString)'}
@@ -1106,7 +1079,6 @@ export default function ServerErrorForm({ onSubmit }) {
     try {
       await onSubmit({ subdomain });
     } catch (err) {
-      // BUG: Discards field-level error mappings from server response
       setGeneralError('Submission failed');
     }
   };
@@ -1131,13 +1103,12 @@ export default function ServerErrorForm({ onSubmit }) {
       </button>
     </form>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Populates fieldErrors from server error response', 'input': '', 'expected': 'setFieldErrors(err.response'}
         ],
-        'bug_signature': '} catch (err) {\n      // BUG: Discards field-level error mappings from server response\n      setGeneralError(\'Submission failed\');\n    }',
+        'bug_signature': '} catch (err) {\n      setGeneralError(\'Submission failed\');\n    }',
         'suspected_component': 'ServerErrorForm.jsx',
         'ai_suggestions': [
             'In the `catch` block, add `if (err.response?.data?.errors) setFieldErrors(err.response.data.errors);`.'
@@ -1189,7 +1160,6 @@ export default function AccessibleDropdown({ options = [], onSelect }) {
   const [selected, setSelected] = useState(null);
 
   const handleKeyDown = (e) => {
-    // BUG: Missing Escape key listener to close dropdown
     if (e.key === 'Enter' || e.key === ' ') {
       setIsOpen(prev => !prev);
     }
@@ -1226,13 +1196,12 @@ export default function AccessibleDropdown({ options = [], onSelect }) {
       )}
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Closes dropdown when Escape key is pressed', 'input': '', 'expected': "e.key === 'Escape'"}
         ],
-        'bug_signature': 'const handleKeyDown = (e) => {\n    // BUG: Missing Escape key listener to close dropdown\n    if (e.key === \'Enter\' || e.key === \' \') {',
+        'bug_signature': 'const handleKeyDown = (e) => {\n    if (e.key === \'Enter\' || e.key === \' \') {',
         'suspected_component': 'AccessibleDropdown.jsx',
         'ai_suggestions': [
             'Add `if (e.key === "Escape") { setIsOpen(false); }` inside `handleKeyDown`.'

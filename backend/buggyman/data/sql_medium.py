@@ -54,18 +54,15 @@ CREATE TABLE order_items (
 );
 
 INSERT INTO orders VALUES (1, 10, 100.00), (2, 20, 50.00);
-INSERT INTO order_items VALUES (1, 1, 'Book A'), (2, 1, 'Book B'), (3, 2, 'Pen');
-"""
+INSERT INTO order_items VALUES (1, 1, 'Book A'), (2, 1, 'Book B'), (3, 2, 'Pen');"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Multiplying total_amount by joining line items
-SELECT o.customer_id, SUM(o.total_amount) AS revenue FROM orders o JOIN order_items i ON o.id = i.order_id GROUP BY o.customer_id ORDER BY o.customer_id;
-"""
+                'content': """SELECT o.customer_id, SUM(o.total_amount) AS revenue FROM orders o JOIN order_items i ON o.id = i.order_id GROUP BY o.customer_id ORDER BY o.customer_id;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Accurate customer revenue without join duplication', 'input': '', 'expected': 'SELECT customer_id, SUM(total_amount) AS revenue FROM orders GROUP BY customer_id ORDER BY customer_id;'}
+            {'id': 1, 'name': 'Visible: Accurate customer revenue without join duplication', 'input': '', 'expected': 'Aggregated revenue matching date/order criteria'}
         ],
         'bug_signature': 'JOIN order_items i ON o.id = i.order_id GROUP BY o.customer_id',
         'suspected_component': 'query.sql',
@@ -124,18 +121,15 @@ INSERT INTO orders VALUES
 (1, 1, 100.00),
 (2, 1, 20.00),
 (3, 1, 30.00),
-(4, 2, 50.00);
-"""
+(4, 2, 50.00);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Computes sum instead of average order value
-SELECT customer_id, SUM(amount) AS aov FROM orders GROUP BY customer_id ORDER BY customer_id;
-"""
+                'content': """SELECT customer_id, SUM(amount) AS aov FROM orders GROUP BY customer_id ORDER BY customer_id;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: True average order value per customer', 'input': '', 'expected': 'SELECT customer_id, ROUND(AVG(amount), 2) AS aov FROM orders GROUP BY customer_id ORDER BY customer_id;'}
+            {'id': 1, 'name': 'Visible: True average order value per customer', 'input': '', 'expected': 'Average metric correctly computed per group'}
         ],
         'bug_signature': 'SELECT customer_id, SUM(amount) AS aov FROM orders',
         'suspected_component': 'query.sql',
@@ -194,18 +188,15 @@ INSERT INTO audit_logs VALUES
 (4, 'Login', '2026-10-19 10:00:00'),
 (2, 'Logout', '2026-10-19 10:00:00'),
 (1, 'Password Reset', '2026-10-19 10:00:00'),
-(3, 'Login', '2026-10-19 10:00:00');
-"""
+(3, 'Login', '2026-10-19 10:00:00');"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Non-deterministic order on tied timestamps
-SELECT id, event, created_at FROM audit_logs ORDER BY created_at DESC LIMIT 2 OFFSET 0;
-"""
+                'content': """SELECT id, event, created_at FROM audit_logs ORDER BY created_at DESC LIMIT 2 OFFSET 0;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Deterministic sort with id tie-breaker', 'input': '', 'expected': 'SELECT id, event, created_at FROM audit_logs ORDER BY created_at DESC, id ASC LIMIT 2 OFFSET 0;'}
+            {'id': 1, 'name': 'Visible: Deterministic sort with id tie-breaker', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': 'ORDER BY created_at DESC LIMIT 2 OFFSET 0;',
         'suspected_component': 'query.sql',
@@ -265,18 +256,15 @@ INSERT INTO sales_reps VALUES
 (1, 'Alice', 'EMEA', 50000.00),
 (2, 'Bob', 'EMEA', 70000.00),
 (3, 'Charlie', 'APAC', 60000.00),
-(4, 'Diana', 'APAC', 90000.00);
-"""
+(4, 'Diana', 'APAC', 90000.00);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Missing PARTITION BY region, creating global rank
-SELECT id, name, region, revenue, RANK() OVER (ORDER BY revenue DESC) AS regional_rank FROM sales_reps ORDER BY region, regional_rank;
-"""
+                'content': """SELECT id, name, region, revenue, RANK() OVER (ORDER BY revenue DESC) AS regional_rank FROM sales_reps ORDER BY region, regional_rank;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Regional partition ranks top rep in each region as #1', 'input': '', 'expected': 'SELECT id, name, region, revenue, RANK() OVER (PARTITION BY region ORDER BY revenue DESC) AS regional_rank FROM sales_reps ORDER BY region, regional_rank;'}
+            {'id': 1, 'name': 'Visible: Regional partition ranks top rep in each region as #1', 'input': '', 'expected': 'Aggregated revenue matching date/order criteria'}
         ],
         'bug_signature': 'RANK() OVER (ORDER BY revenue DESC) AS regional_rank',
         'suspected_component': 'query.sql',
@@ -333,18 +321,15 @@ Revenue numbers misattributed between fiscal months.
 INSERT INTO payments VALUES
 (1, 100.00, '2026-09-01 00:30:00'),
 (2, 200.00, '2026-09-15 12:00:00'),
-(3, 150.00, '2026-10-01 10:00:00');
-"""
+(3, 150.00, '2026-10-01 10:00:00');"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Uses substring that breaks on date formatting
-SELECT substr(payment_date, 6, 2) AS month, SUM(amount) AS total FROM payments GROUP BY month ORDER BY month;
-"""
+                'content': """SELECT substr(payment_date, 6, 2) AS month, SUM(amount) AS total FROM payments GROUP BY month ORDER BY month;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Grouped by YYYY-MM formatted month', 'input': '', 'expected': "SELECT strftime('%Y-%m', payment_date) AS month, SUM(amount) AS total FROM payments GROUP BY month ORDER BY month;"}
+            {'id': 1, 'name': 'Visible: Grouped by YYYY-MM formatted month', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': 'substr(payment_date, 6, 2) AS month',
         'suspected_component': 'query.sql',
@@ -406,18 +391,15 @@ CREATE TABLE subscriptions (
 );
 
 INSERT INTO users VALUES (1, 'Alice'), (2, 'Bob');
-INSERT INTO subscriptions VALUES (101, 1, 'Pro Plan', 'active');
-"""
+INSERT INTO subscriptions VALUES (101, 1, 'Pro Plan', 'active');"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: WHERE clause filters out NULLs, converting LEFT JOIN to INNER JOIN
-SELECT u.id, u.name, s.plan_name FROM users u LEFT JOIN subscriptions s ON u.id = s.user_id WHERE s.status = 'active' ORDER BY u.id;
-"""
+                'content': """SELECT u.id, u.name, s.plan_name FROM users u LEFT JOIN subscriptions s ON u.id = s.user_id WHERE s.status = 'active' ORDER BY u.id;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Preserves Bob with NULL plan_name', 'input': '', 'expected': "SELECT u.id, u.name, s.plan_name FROM users u LEFT JOIN subscriptions s ON u.id = s.user_id AND s.status = 'active' ORDER BY u.id;"}
+            {'id': 1, 'name': 'Visible: Preserves Bob with NULL plan_name', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': "LEFT JOIN subscriptions s ON u.id = s.user_id WHERE s.status = 'active'",
         'suspected_component': 'query.sql',
@@ -461,7 +443,7 @@ Subtracts raw NULL, wiping out availability numbers.
 In-stock items show as unavailable in product catalog, halting sales.
 
 ### Requirements
-- Update formula: `physical_stock - COALESCE(reserved_stock, 0) AS available_stock`.
+- Compute available inventory by subtracting reserved stock from physical stock, handling unset reserved quantities as 0.
 """,
         'files': [
             {
@@ -476,18 +458,15 @@ In-stock items show as unavailable in product catalog, halting sales.
 INSERT INTO inventory VALUES
 (1, 'Laptop', 10, 2),
 (2, 'Keyboard', 25, NULL),
-(3, 'Monitor', 5, 5);
-"""
+(3, 'Monitor', 5, 5);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: physical_stock - NULL produces NULL for Keyboard
-SELECT id, name, (physical_stock - reserved_stock) AS available_stock FROM inventory ORDER BY id;
-"""
+                'content': """SELECT id, name, (physical_stock - reserved_stock) AS available_stock FROM inventory ORDER BY id;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Keyboard shows available_stock = 25', 'input': '', 'expected': 'SELECT id, name, (physical_stock - COALESCE(reserved_stock, 0)) AS available_stock FROM inventory ORDER BY id;'}
+            {'id': 1, 'name': 'Visible: Keyboard shows available_stock = 25', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': '(physical_stock - reserved_stock) AS available_stock',
         'suspected_component': 'query.sql',
@@ -531,7 +510,7 @@ Uses `COUNT()` with `ELSE 0`, counting all rows.
 Executive dashboard shows a 100% delivery rate despite thousands of returned packages.
 
 ### Requirements
-- Use `SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS delivered_count`.
+- Accurately calculate delivered order counts without miscounting non-delivered orders in the aggregate.
 """,
         'files': [
             {
@@ -544,23 +523,20 @@ Executive dashboard shows a 100% delivery rate despite thousands of returned pac
 INSERT INTO shipments VALUES
 (1, 'delivered'),
 (2, 'returned'),
-(3, 'delivered');
-"""
+(3, 'delivered');"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: COUNT counts 0 as non-null, counting all 3 rows as delivered
-SELECT COUNT(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS delivered_count FROM shipments;
-"""
+                'content': """SELECT COUNT(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS delivered_count FROM shipments;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: True delivered count is 2', 'input': '', 'expected': "SELECT SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS delivered_count FROM shipments;"}
+            {'id': 1, 'name': 'Visible: True delivered count is 2', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': "COUNT(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END)",
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Replace `COUNT` with `SUM`, or omit the `ELSE 0` clause inside `COUNT`.'
+            'In SQL, COUNT(0) counts 0 as a valid non-null row; consider using SUM with 1 and 0, or COUNT without an ELSE clause.'
         ],
         'topics': ['SQL', 'Conditional Aggregation', 'CASE WHEN'],
         'skills_tested': ['SQL', 'Database'],
@@ -599,8 +575,7 @@ Filters individual transaction amounts in the initial CTE.
 High-value repeat customers excluded from VIP perks and loyalty reward distributions.
 
 ### Requirements
-- In CTE: `SELECT customer_id, SUM(amount) AS total_spent FROM orders GROUP BY customer_id`.
-- Outer query: `SELECT customer_id, total_spent FROM customer_totals WHERE total_spent >= 500 ORDER BY customer_id;`.
+- Aggregate total spending per customer across all orders first in the CTE, then filter for qualifying high-value clients in the outer query.
 """,
         'files': [
             {
@@ -615,24 +590,18 @@ INSERT INTO orders VALUES
 (1, 101, 300.00),
 (2, 101, 300.00),
 (3, 102, 600.00),
-(4, 103, 100.00);
-"""
+(4, 103, 100.00);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Filters individual orders >= 500 in CTE, dropping customer 101
-WITH large_orders AS (
+                'content': """WITH large_orders AS (
     SELECT customer_id, amount FROM orders WHERE amount >= 500
 )
-SELECT customer_id, SUM(amount) AS total_spent FROM large_orders GROUP BY customer_id ORDER BY customer_id;
-"""
+SELECT customer_id, SUM(amount) AS total_spent FROM large_orders GROUP BY customer_id ORDER BY customer_id;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Customers 101 and 102 both have total >= 500', 'input': '', 'expected': """WITH customer_totals AS (
-    SELECT customer_id, SUM(amount) AS total_spent FROM orders GROUP BY customer_id
-)
-SELECT customer_id, total_spent FROM customer_totals WHERE total_spent >= 500 ORDER BY customer_id;"""}
+            {'id': 1, 'name': 'Visible: Customers 101 and 102 both have total >= 500', 'input': '', 'expected': 'High-value customers whose total spend meets or exceeds 500'}
         ],
         'bug_signature': 'SELECT customer_id, amount FROM orders WHERE amount >= 500',
         'suspected_component': 'query.sql',
@@ -680,7 +649,7 @@ Groups all NULL records into a single false-positive duplicate cluster.
 Thousands of legitimate user accounts locked by automated security filters.
 
 ### Requirements
-- Add `WHERE phone IS NOT NULL AND phone != ''` before `GROUP BY phone`.
+- Exclude missing, null, and empty phone values before evaluating duplicate phone counts.
 """,
         'files': [
             {
@@ -695,18 +664,15 @@ INSERT INTO users VALUES
 (1, 'Alice', NULL),
 (2, 'Bob', NULL),
 (3, 'Charlie', '555-0100'),
-(4, 'Diana', '555-0100');
-"""
+(4, 'Diana', '555-0100');"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Groups NULL phones into a duplicate cluster
-SELECT phone, COUNT(*) AS count FROM users GROUP BY phone HAVING COUNT(*) > 1 ORDER BY phone;
-"""
+                'content': """SELECT phone, COUNT(*) AS count FROM users GROUP BY phone HAVING COUNT(*) > 1 ORDER BY phone;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Only non-null duplicate phone 555-0100 returned', 'input': '', 'expected': "SELECT phone, COUNT(*) AS count FROM users WHERE phone IS NOT NULL AND phone != '' GROUP BY phone HAVING COUNT(*) > 1 ORDER BY phone;"}
+            {'id': 1, 'name': 'Visible: Only non-null duplicate phone 555-0100 returned', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': 'SELECT phone, COUNT(*) AS count FROM users GROUP BY phone',
         'suspected_component': 'query.sql',
@@ -750,7 +716,7 @@ Uses `DENSE_RANK()`.
 Award ceremony medals and prize distributions given to wrong placement tiers.
 
 ### Requirements
-- Change `DENSE_RANK()` to `RANK()`.
+- Review the difference between RANK() and DENSE_RANK(): RANK leaves gaps after tied positions, whereas DENSE_RANK does not.
 """,
         'files': [
             {
@@ -764,23 +730,20 @@ Award ceremony medals and prize distributions given to wrong placement tiers.
 INSERT INTO scores VALUES
 (1, 'Alice', 95),
 (2, 'Bob', 95),
-(3, 'Charlie', 90);
-"""
+(3, 'Charlie', 90);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: DENSE_RANK assigns Charlie rank 2 instead of 3
-SELECT id, name, score, DENSE_RANK() OVER (ORDER BY score DESC) AS rank FROM scores ORDER BY rank, id;
-"""
+                'content': """SELECT id, name, score, DENSE_RANK() OVER (ORDER BY score DESC) AS rank FROM scores ORDER BY rank, id;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Competition rank assigns Charlie rank 3', 'input': '', 'expected': 'SELECT id, name, score, RANK() OVER (ORDER BY score DESC) AS rank FROM scores ORDER BY rank, id;'}
+            {'id': 1, 'name': 'Visible: Competition rank assigns Charlie rank 3', 'input': '', 'expected': 'Ranked records with correct tie-breaker ordering'}
         ],
         'bug_signature': 'DENSE_RANK() OVER (ORDER BY score DESC) AS rank',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Change `DENSE_RANK()` to `RANK()`.'
+            'Review the difference between RANK() and DENSE_RANK(): RANK leaves gaps after tied positions, whereas DENSE_RANK does not.'
         ],
         'topics': ['SQL', 'Window Functions', 'RANK vs DENSE_RANK'],
         'skills_tested': ['SQL', 'Database'],
@@ -819,7 +782,7 @@ Uses scalar `=` operator against a multi-row subquery.
 Product catalog crashes across major retail categories.
 
 ### Requirements
-- Change `= (SELECT ...)` to `IN (SELECT ...)`.
+- Use a set-membership operator rather than scalar equality to safely handle subqueries that return multiple matching discount records.
 """,
         'files': [
             {
@@ -837,23 +800,20 @@ CREATE TABLE products (
 );
 
 INSERT INTO discounts VALUES (1, 'tech', 10.00), (2, 'tech', 20.00);
-INSERT INTO products VALUES (101, 'Mouse', 1), (102, 'Keyboard', 2), (103, 'Shirt', NULL);
-"""
+INSERT INTO products VALUES (101, 'Mouse', 1), (102, 'Keyboard', 2), (103, 'Shirt', NULL);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Fails with subquery returns more than 1 row
-SELECT id, name, discount_id FROM products WHERE discount_id = (SELECT id FROM discounts WHERE category = 'tech') ORDER BY id;
-"""
+                'content': """SELECT id, name, discount_id FROM products WHERE discount_id = (SELECT id FROM discounts WHERE category = 'tech') ORDER BY id;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: IN operator matches all eligible products', 'input': '', 'expected': "SELECT id, name, discount_id FROM products WHERE discount_id IN (SELECT id FROM discounts WHERE category = 'tech') ORDER BY id;"}
+            {'id': 1, 'name': 'Visible: IN operator matches all eligible products', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': 'WHERE discount_id = (SELECT id FROM discounts',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Change `=` to `IN` before the subquery.'
+            'When a subquery returns more than a single scalar value, use set-membership predicates such as IN instead of equality.'
         ],
         'topics': ['SQL', 'Subqueries', 'IN vs EQUALS'],
         'skills_tested': ['SQL', 'Database'],
@@ -910,18 +870,15 @@ CREATE TABLE order_items (
 );
 
 INSERT INTO products VALUES (1, 'Widget', 80.00);
-INSERT INTO order_items VALUES (101, 1, 2, 50.00);
-"""
+INSERT INTO order_items VALUES (101, 1, 2, 50.00);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Uses current_price instead of historical price_at_purchase
-SELECT oi.product_id, SUM(oi.quantity * p.current_price) AS total_revenue FROM order_items oi JOIN products p ON oi.product_id = p.id GROUP BY oi.product_id;
-"""
+                'content': """SELECT oi.product_id, SUM(oi.quantity * p.current_price) AS total_revenue FROM order_items oi JOIN products p ON oi.product_id = p.id GROUP BY oi.product_id;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Total reflects historical purchase price (2 * 50 = 100)', 'input': '', 'expected': 'SELECT product_id, SUM(quantity * price_at_purchase) AS total_revenue FROM order_items GROUP BY product_id;'}
+            {'id': 1, 'name': 'Visible: Total reflects historical purchase price (2 * 50 = 100)', 'input': '', 'expected': 'Aggregated revenue matching date/order criteria'}
         ],
         'bug_signature': 'SUM(oi.quantity * p.current_price) AS total_revenue',
         'suspected_component': 'query.sql',
@@ -979,18 +936,15 @@ Customer base size inflated by 300% on investor quarterly reports.
 INSERT INTO orders VALUES
 (1, 10, '2026-10-19'),
 (2, 10, '2026-10-19'),
-(3, 20, '2026-10-19');
-"""
+(3, 20, '2026-10-19');"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Counts total orders instead of unique customers
-SELECT COUNT(customer_id) AS unique_customers FROM orders;
-"""
+                'content': """SELECT COUNT(customer_id) AS unique_customers FROM orders;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Distinct customers count is 2', 'input': '', 'expected': 'SELECT COUNT(DISTINCT customer_id) AS unique_customers FROM orders;'}
+            {'id': 1, 'name': 'Visible: Distinct customers count is 2', 'input': '', 'expected': 'Deduplicated groups satisfying having condition'}
         ],
         'bug_signature': 'SELECT COUNT(customer_id) AS unique_customers FROM orders;',
         'suspected_component': 'query.sql',
@@ -1034,7 +988,7 @@ Joins on identical manager_id, failing to recurse down the tree.
 Department heads cannot view full staffing headcount across sub-teams.
 
 ### Requirements
-- Correct recursive join condition: `JOIN org_tree org ON e.manager_id = org.id`.
+- Correct the recursive join condition so employee manager relationships properly link to the ancestor node's primary key.
 """,
         'files': [
             {
@@ -1049,35 +1003,26 @@ INSERT INTO employees VALUES
 (1, 'CEO', NULL),
 (2, 'VP Eng', 1),
 (3, 'Lead Dev', 2),
-(4, 'Junior Dev', 3);
-"""
+(4, 'Junior Dev', 3);"""
             },
             {
                 'name': 'query.sql',
-                'content': """-- BUG: Joins e.manager_id = org.manager_id instead of e.manager_id = org.id
-WITH RECURSIVE org_tree AS (
+                'content': """WITH RECURSIVE org_tree AS (
     SELECT id, name, manager_id, 1 AS level FROM employees WHERE manager_id IS NULL
     UNION ALL
     SELECT e.id, e.name, e.manager_id, org.level + 1
     FROM employees e JOIN org_tree org ON e.manager_id = org.manager_id
 )
-SELECT id, name, level FROM org_tree ORDER BY level, id;
-"""
+SELECT id, name, level FROM org_tree ORDER BY level, id;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Full 4-level tree generated', 'input': '', 'expected': """WITH RECURSIVE org_tree AS (
-    SELECT id, name, manager_id, 1 AS level FROM employees WHERE manager_id IS NULL
-    UNION ALL
-    SELECT e.id, e.name, e.manager_id, org.level + 1
-    FROM employees e JOIN org_tree org ON e.manager_id = org.id
-)
-SELECT id, name, level FROM org_tree ORDER BY level, id;"""}
+            {'id': 1, 'name': 'Visible: Full 4-level tree generated', 'input': '', 'expected': 'Complete hierarchical reporting structure'}
         ],
         'bug_signature': 'ON e.manager_id = org.manager_id',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Change `ON e.manager_id = org.manager_id` to `ON e.manager_id = org.id`.'
+            "Check the recursive join condition: an employee's manager_id should match the ancestor's primary key id."
         ],
         'topics': ['SQL', 'Recursive CTE', 'Hierarchies'],
         'skills_tested': ['SQL', 'Database'],

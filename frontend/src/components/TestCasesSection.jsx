@@ -36,7 +36,10 @@ const sanitizeExpectedText = (expected, name = '', technology = '') => {
     if (lowerName.includes('sql') || lowerName.includes('order') || lowerName.includes('filter') || lowerName.includes('query')) {
       return 'Returns correct filtered dataset matching target requirements';
     }
-    return 'Executes correctly according to specified functional requirements';
+    if (name) {
+      return `Satisfies ${name.replace(/^(Visible|Hidden):\s*/i, '')} criteria`;
+    }
+    return 'Satisfies specified functional test requirements';
   }
 
   return str;
@@ -46,12 +49,25 @@ export const deriveComprehensiveTestCases = (rawCases = [], challengeTitle = '',
   const isSql = (technology || '').toLowerCase().includes('sql') || (challengeTitle || '').toLowerCase().includes('sql');
   const isFrontend = (technology || '').toLowerCase().includes('react') || (technology || '').toLowerCase().includes('css') || (technology || '').toLowerCase().includes('html') || (technology || '').toLowerCase().includes('js');
 
-  const sanitized = (rawCases || []).map((tc, idx) => ({
-    id: tc.id || idx + 1,
-    name: tc.name || `Requirement ${idx + 1}`,
-    expected: sanitizeExpectedText(tc.expected, tc.name || challengeTitle, technology),
-    passed: tc.passed
-  }));
+  const sanitized = (rawCases || []).map((tc, idx) => {
+    const isHidden = Boolean(
+      tc.hidden || 
+      (tc.name && tc.name.toLowerCase().includes('hidden')) || 
+      (rawCases.length >= 3 && idx >= 2)
+    );
+    return {
+      id: tc.id || idx + 1,
+      name: tc.name || `Requirement ${idx + 1}`,
+      expected: isHidden 
+        ? '[Hidden Expected Output - Secret test case assertion]' 
+        : sanitizeExpectedText(tc.expected, tc.name || challengeTitle, technology),
+      passed: tc.passed,
+      input: tc.input,
+      actual: tc.actual,
+      error: tc.error,
+      hidden: isHidden
+    };
+  });
 
   if (sanitized.length >= 3) {
     return sanitized;
@@ -160,7 +176,7 @@ export default function TestCasesSection({ testCases = [], challengeTitle = '', 
               }`}
             >
               <div className="flex items-center justify-between font-semibold text-slate-200">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {isPassed ? (
                     <Check className="w-4 h-4 text-emerald-400 shrink-0" />
                   ) : isFailed ? (
@@ -169,6 +185,15 @@ export default function TestCasesSection({ testCases = [], challengeTitle = '', 
                     <span className="w-2 h-2 rounded-full bg-cyan-400 shrink-0" />
                   )}
                   <span>{tc.name}</span>
+                  {tc.hidden ? (
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                      Hidden Test
+                    </span>
+                  ) : (
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                      Visible Test
+                    </span>
+                  )}
                 </div>
                 {tc.passed !== undefined && (
                   <span

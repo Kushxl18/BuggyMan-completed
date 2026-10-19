@@ -261,6 +261,38 @@ export const challengeService = {
     return await request('/pvp/history', {
       method: 'GET'
     });
+  },
+
+  // Engagement & Reactions
+  getEngagement: async (challengeId) => {
+    return await request(`/challenges/${challengeId}/engagement`, {
+      method: 'GET'
+    });
+  },
+
+  toggleReaction: async (challengeId, reaction) => {
+    return await request(`/challenges/${challengeId}/reaction`, {
+      method: 'POST',
+      body: JSON.stringify({ reaction })
+    });
+  },
+
+  toggleStar: async (challengeId) => {
+    return await request(`/challenges/${challengeId}/star`, {
+      method: 'POST'
+    });
+  },
+
+  getSolution: async (challengeId) => {
+    return await request(`/challenges/${challengeId}/solution`, {
+      method: 'GET'
+    });
+  },
+
+  getSubmissions: async (challengeId) => {
+    return await request(`/challenges/${challengeId}/submissions`, {
+      method: 'GET'
+    });
   }
 };
 

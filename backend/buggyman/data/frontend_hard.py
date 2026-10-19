@@ -35,7 +35,7 @@ Component allows overlapping checkout invocations, creating duplicate transactio
 Overbooking of allocated seats and severe financial reconciliation overhead.
 
 ### Requirements
-- Implement an atomic execution lock (`if (processingRef.current) return; processingRef.current = true;`) or state guard to prevent concurrent execution.
+- Implement an execution guard or atomic lock to block concurrent overlapping checkout requests.
 """,
         'files': [{
             'name': 'CheckoutFlow.jsx',
@@ -46,7 +46,6 @@ export default function CheckoutFlow({ cart, api }) {
   const [orderId, setOrderId] = useState(null);
 
   const handleCheckout = async () => {
-    // BUG: Missing atomic lock allows concurrent overlapping checkout requests
     setStatus('processing');
     try {
       const res = await api.createOrder(cart);
@@ -70,13 +69,12 @@ export default function CheckoutFlow({ cart, api }) {
       {orderId && <p className="text-green-600 mt-2">Order Confirmed: {orderId}</p>}
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Guards against concurrent checkout with processing lock', 'input': '', 'expected': "status === 'processing'"}
         ],
-        'bug_signature': 'const handleCheckout = async () => {\n    // BUG: Missing atomic lock allows concurrent overlapping checkout requests\n    setStatus(\'processing\');',
+        'bug_signature': 'const handleCheckout = async () => {\n    setStatus(\'processing\');',
         'suspected_component': 'CheckoutFlow.jsx',
         'ai_suggestions': [
             'Add `if (status === "processing") return;` or use a ref lock at the top of `handleCheckout` and disable the button while processing.'
@@ -132,7 +130,6 @@ export default function SubscriptionWidget({ symbol, eventBus }) {
     };
 
     eventBus.subscribe(symbol, handleTick);
-    // BUG: Missing unsubscribe in cleanup function causes memory leak and zombie listeners
   }, [symbol, eventBus]);
 
   return (
@@ -141,13 +138,12 @@ export default function SubscriptionWidget({ symbol, eventBus }) {
       <p className="text-2xl font-mono">{price ? `$${price}` : 'Connecting...'}</p>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Cleans up subscription on unmount', 'input': '', 'expected': 'eventBus.unsubscribe'}
         ],
-        'bug_signature': 'eventBus.subscribe(symbol, handleTick);\n    // BUG: Missing unsubscribe in cleanup function causes memory leak and zombie listeners\n  }, [symbol, eventBus]);',
+        'bug_signature': 'eventBus.subscribe(symbol, handleTick);\n  }, [symbol, eventBus]);',
         'suspected_component': 'SubscriptionWidget.jsx',
         'ai_suggestions': [
             'Return a cleanup function from `useEffect`: `return () => eventBus.unsubscribe(symbol, handleTick);`.'
@@ -200,7 +196,6 @@ export async function logoutUser(authApi, onLoggedOut) {
   try {
     await authApi.logout();
     localStorage.removeItem('authToken');
-    // BUG: Leaves sensitive records in sessionCache across user logout
   } finally {
     if (onLoggedOut) onLoggedOut();
   }
@@ -218,8 +213,7 @@ export default function SessionCacheView({ currentUser, onLogout, authApi }) {
       </button>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Clears sessionCache on logout', 'input': '', 'expected': 'sessionCache.clear()'}
@@ -265,7 +259,7 @@ Reverts by subtracting from a stale or mutated counter value.
 Incorrect like counters and desynchronized like states across users.
 
 ### Requirements
-- Save `const previousLikes = likes;` prior to mutation and restore `setLikes(previousLikes)` in the catch block.
+- Snapshot previous state prior to optimistic updates and revert accurately to the snapshot if the network request fails.
 """,
         'files': [{
             'name': 'OptimisticFeed.jsx',
@@ -276,7 +270,6 @@ export default function OptimisticFeed({ initialLikes = 10, api }) {
   const [isLiked, setIsLiked] = useState(false);
 
   const handleToggleLike = async () => {
-    // BUG: Blindly mutating and decrementing without snapshot leads to corrupted counter
     setLikes(likes + 1);
     setIsLiked(true);
 
@@ -299,13 +292,12 @@ export default function OptimisticFeed({ initialLikes = 10, api }) {
       </button>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Captures previousLikes snapshot and restores on error', 'input': '', 'expected': 'previousLikes'}
         ],
-        'bug_signature': 'setLikes(likes + 1);\n    setIsLiked(true);\n\n    try {\n      await api.likePost();\n    } catch (err) {\n      // Reverting with stale value creates negative or out-of-sync counts\n      setLikes(likes - 1);',
+        'bug_signature': 'setLikes(likes + 1);\n    setIsLiked(true);\n\n    try {\n      await api.likePost();\n    } catch (err) {\n      setLikes(likes - 1);',
         'suspected_component': 'OptimisticFeed.jsx',
         'ai_suggestions': [
             'Store `const previousLikes = likes;` and `const previousIsLiked = isLiked;` before the async call.',
@@ -356,7 +348,6 @@ Executives make strategic pricing decisions based on incorrect and outdated metr
 export default function AnalyticsHub({ transactions = [] }) {
   const [tierFilter, setTierFilter] = useState('All');
 
-  // BUG: Empty dependency array in useMemo ignores transactions and filter updates
   const metrics = useMemo(() => {
     const filtered = tierFilter === 'All'
       ? transactions
@@ -380,8 +371,7 @@ export default function AnalyticsHub({ transactions = [] }) {
       </div>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Includes transactions and tierFilter in useMemo dependencies', 'input': '', 'expected': '[transactions, tierFilter]'}
@@ -427,7 +417,7 @@ Fires uncoordinated parallel refresh requests.
 Users get randomly logged out whenever tokens expire during dashboard navigation.
 
 ### Requirements
-- Store and share `let refreshPromise = null;` across concurrent requests, resetting it to null once resolved.
+- Share an in-flight token refresh promise across concurrent requests to avoid duplicate refresh calls.
 """,
         'files': [{
             'name': 'AuthManager.jsx',
@@ -439,20 +429,18 @@ export async function requestWithAuth(url, fetchApi, refreshApi) {
     return await fetchApi(url, currentToken);
   } catch (err) {
     if (err.status === 401) {
-      // BUG: Each concurrent request triggers its own refresh instead of sharing refreshPromise
       const newTokens = await refreshApi();
       currentToken = newTokens.accessToken;
       return await fetchApi(url, currentToken);
     }
     throw err;
   }
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Shares single in-flight refreshPromise across calls', 'input': '', 'expected': 'refreshPromise'}
         ],
-        'bug_signature': 'if (err.status === 401) {\n      // BUG: Each concurrent request triggers its own refresh instead of sharing refreshPromise\n      const newTokens = await refreshApi();',
+        'bug_signature': 'if (err.status === 401) {\n      const newTokens = await refreshApi();',
         'suspected_component': 'AuthManager.jsx',
         'ai_suggestions': [
             'Check `if (!refreshPromise) { refreshPromise = refreshApi().finally(() => { refreshPromise = null; }); }` and `await refreshPromise;`.'
@@ -493,7 +481,7 @@ Uses calculated row index as key.
 Engineers read wrong error timestamps and corrupted stack traces during production outages.
 
 ### Requirements
-- Change `key={startIndex + index}` to `key={item.id}`.
+- Ensure virtualized list items use unique stable entity keys rather than computed window offsets.
 """,
         'files': [{
             'name': 'VirtualList.jsx',
@@ -514,7 +502,6 @@ export default function VirtualList({ items = [], rowHeight = 35, viewportHeight
     >
       <div style={{ height: items.length * rowHeight, position: 'relative' }}>
         {visibleItems.map((item, index) => (
-          // BUG: Keying by virtualized index causes DOM reconciliation corruption on filter
           <div
             key={startIndex + index}
             style={{
@@ -531,8 +518,7 @@ export default function VirtualList({ items = [], rowHeight = 35, viewportHeight
       </div>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Uses stable item.id for virtualized row key', 'input': '', 'expected': 'key={item.id}'}
@@ -540,7 +526,7 @@ export default function VirtualList({ items = [], rowHeight = 35, viewportHeight
         'bug_signature': 'key={startIndex + index}',
         'suspected_component': 'VirtualList.jsx',
         'ai_suggestions': [
-            'Change `key={startIndex + index}` to `key={item.id}`.'
+            'Ensure virtualized list items use unique stable entity keys rather than computed window offsets.'
         ],
         'topics': ['React', 'Virtualization', 'Keys', 'Reconciliation'],
         'skills_tested': ['React', 'Frontend'],
@@ -599,7 +585,6 @@ export default function MultiStepCheckout({ flightId, seatNumber, api }) {
       await api.processPayment(reservation.id, paymentDetails);
       setStatus('confirmed');
     } catch (err) {
-      // BUG: Does not invoke compensating rollback to release reserved seat
       setError(err.message || 'Payment failed');
       setStatus('failed');
     }
@@ -618,13 +603,12 @@ export default function MultiStepCheckout({ flightId, seatNumber, api }) {
       </button>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Releases reserved seat on payment failure', 'input': '', 'expected': 'api.releaseSeat'}
         ],
-        'bug_signature': '} catch (err) {\n      // BUG: Does not invoke compensating rollback to release reserved seat\n      setError(err.message || \'Payment failed\');',
+        'bug_signature': '} catch (err) {\n      setError(err.message || \'Payment failed\');',
         'suspected_component': 'MultiStepCheckout.jsx',
         'ai_suggestions': [
             'Inside `catch (err)`, check `if (reservation) { await api.releaseSeat(reservation.id); }` before setting error.'
@@ -677,7 +661,6 @@ export default function RealtimeChat({ socket }) {
 
   useEffect(() => {
     const handleIncomingMessage = (event) => {
-      // BUG: Blindly applies incoming packet without validating sequence order
       setContent(event.text);
       lastSeq.current = event.seq;
     };
@@ -692,13 +675,12 @@ export default function RealtimeChat({ socket }) {
       <div className="p-2 bg-gray-100 rounded mt-2">{content}</div>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Rejects out-of-order events using sequence comparison', 'input': '', 'expected': 'event.seq <'}
         ],
-        'bug_signature': 'const handleIncomingMessage = (event) => {\n      // BUG: Blindly applies incoming packet without validating sequence order\n      setContent(event.text);',
+        'bug_signature': 'const handleIncomingMessage = (event) => {\n      setContent(event.text);',
         'suspected_component': 'RealtimeChat.jsx',
         'ai_suggestions': [
             'Add check `if (event.seq <= lastSeq.current) return;` before updating content.'
@@ -752,7 +734,6 @@ export default function AdminPanel({ user, api, onAccessDenied }) {
   const handleDelete = async () => {
     setIsDeleting(true);
     setErrorMessage('');
-    // BUG: Missing try/catch causes unhandled 403 rejection to crash the application
     await api.deleteAccount(user.id);
     setIsDeleting(false);
   };
@@ -770,13 +751,12 @@ export default function AdminPanel({ user, api, onAccessDenied }) {
       </button>
     </div>
   );
-}
-'''
+}'''
         }],
         'test_cases': [
             {'id': 1, 'name': 'Visible: Handles 403 Forbidden with try/catch and error message', 'input': '', 'expected': 'try {'}
         ],
-        'bug_signature': 'const handleDelete = async () => {\n    setIsDeleting(true);\n    setErrorMessage(\'\');\n    // BUG: Missing try/catch causes unhandled 403 rejection to crash the application\n    await api.deleteAccount(user.id);\n    setIsDeleting(false);\n  };',
+        'bug_signature': 'const handleDelete = async () => {\n    setIsDeleting(true);\n    setErrorMessage(\'\');\n    await api.deleteAccount(user.id);\n    setIsDeleting(false);\n  };',
         'suspected_component': 'AdminPanel.jsx',
         'ai_suggestions': [
             'Wrap `await api.deleteAccount(user.id)` in a `try...catch` block.',
