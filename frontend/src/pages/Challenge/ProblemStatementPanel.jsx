@@ -196,16 +196,16 @@ export default function ProblemStatementPanel({
   const displayedSubmissions = realSubmissions.length > 0 ? realSubmissions : submissions;
 
   return (
-    <div className="w-[450px] lg:w-[480px] xl:w-[520px] bg-slate-900 border-r border-slate-800 flex flex-col h-full select-none text-slate-100 shrink-0 relative overflow-hidden font-sans">
+    <div className="w-[450px] lg:w-[480px] xl:w-[520px] bg-[var(--bg-card)] border-r border-[var(--border-color)] flex flex-col h-full select-none text-[var(--text-primary)] shrink-0 relative overflow-hidden font-sans">
       {/* 1. LeetCode Style Tab Strip */}
-      <div className="h-10 bg-slate-950/90 border-b border-slate-800 flex items-center justify-between px-2 shrink-0">
+      <div className="h-10 bg-[var(--bg-main)] border-b border-[var(--border-color)] flex items-center justify-between px-2 shrink-0">
         <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
           <button
             onClick={() => handleTabChange('description')}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
               currentTab === 'description'
-                ? 'bg-slate-800/90 text-cyan-400 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                ? 'bg-[var(--bg-hover)] text-[var(--brand-cyan)] shadow-sm'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
             }`}
           >
             <FileText className="w-3.5 h-3.5 text-cyan-400" />
@@ -216,8 +216,8 @@ export default function ProblemStatementPanel({
             onClick={() => handleTabChange('submissions')}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
               currentTab === 'submissions'
-                ? 'bg-slate-800/90 text-emerald-400 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                ? 'bg-[var(--bg-hover)] text-[var(--color-success)] shadow-sm'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
             }`}
           >
             <History className="w-3.5 h-3.5 text-emerald-400" />
@@ -229,8 +229,8 @@ export default function ProblemStatementPanel({
               onClick={() => handleTabChange('files')}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
                 currentTab === 'files'
-                  ? 'bg-slate-800/90 text-cyan-400 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                  ? 'bg-[var(--bg-hover)] text-[var(--brand-cyan)] shadow-sm'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
               }`}
             >
               <FolderOpen className="w-3.5 h-3.5" />
@@ -390,9 +390,9 @@ export default function ProblemStatementPanel({
         {/* TAB 5: MULTI-FILE EXPLORER */}
         {currentTab === 'files' && (
           <div className="space-y-3">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
+            <div className="flex items-center gap-2 pb-2 border-b border-[var(--border-color)]">
               <FolderOpen className="w-4 h-4 text-cyan-400" />
-              <h3 className="font-bold text-sm text-slate-100">Workspace Files ({files.length})</h3>
+              <h3 className="font-bold text-sm text-[var(--text-primary)]">Workspace Files ({files.length})</h3>
             </div>
 
             <div className="space-y-1">
@@ -402,8 +402,8 @@ export default function ProblemStatementPanel({
                   onClick={() => onSelectFile && onSelectFile(file)}
                   className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-xs font-mono transition-all ${
                     file.name === activeFile?.name
-                      ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-300'
-                      : 'bg-slate-950/40 border-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                      ? 'bg-[var(--brand-cyan-bg)] border-[var(--brand-cyan)] text-[var(--brand-cyan)]'
+                      : 'bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
                   }`}
                 >
                   <div className="flex items-center gap-2">
