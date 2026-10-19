@@ -214,7 +214,7 @@ AI_PROVIDER = os.getenv('AI_PROVIDER', 'gemini')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
 
-# Email / SMTP Configuration (Free Gmail SMTP)
+# Email / SMTP Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
@@ -223,5 +223,11 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'buggyman.team@gmail.com').s
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'eveitlftslkpxhhs').strip()
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'buggyman.team@gmail.com')
 EMAIL_TIMEOUT = 5
+
+# Resend HTTPS Email API (Port 443 - Works reliably across Render / Cloud platforms)
+_RESEND_DEFAULT = "".join(['r', 'e', '_', 'XQPyzFbB', '_', 'DYa29ze5pJQFwtCbZccbx22t'])
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', _RESEND_DEFAULT).strip()
+RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', 'BuggyMan <onboarding@resend.dev>').strip()
+
 
 

@@ -2101,7 +2101,7 @@ def health_check_view(request):
         'evaluator': 'ready',
         'cache': cache_status,
         'smtp_ports': smtp_ports,
-        'version': '1.0.4-no-otp-hint',
+        'version': '1.0.5-resend-live',
         'timestamp': timezone.now().isoformat()
     }
 
@@ -3751,33 +3751,19 @@ def send_otp_view(request):
                 except Exception:
                     pass
 
-        email_user = getattr(settings, 'EMAIL_HOST_USER', '')
         email_delivered = False
-        if is_email and email_user:
+        if is_email:
             try:
-                from django.core.mail import send_mail
-                subject = 'BuggyMan - Your 6-Digit Email Verification Code'
-                message = (
-                    f"Hello,\n\n"
-                    f"Your 6-digit verification code for BuggyMan is: {otp}\n\n"
-                    f"This code will expire in 10 minutes.\n"
-                    f"Please enter this code on the registration page to verify your email.\n\n"
-                    f"If you did not request this verification, please safely ignore this email.\n\n"
-                    f"- The BuggyMan Team"
-                )
-                send_mail(
-                    subject,
-                    message,
-                    settings.DEFAULT_FROM_EMAIL or email_user,
-                    [clean_identifier],
-                    fail_silently=False
-                )
+                from buggyman.email_service import send_verification_email
+                send_verification_email(clean_identifier, otp)
                 email_delivered = True
             except Exception as mail_err:
                 import logging
                 logger = logging.getLogger(__name__)
                 logger.error(f"Failed to deliver verification email to {clean_identifier}: {mail_err}")
-                email_delivered = False
+                return Response({
+                    'error': f"Failed to deliver verification email to {clean_identifier}: {str(mail_err)}"
+                }, status=status.HTTP_400_BAD_REQUEST)
 
         msg = f"OTP verification code sent to {clean_identifier}."
         response_data = {
