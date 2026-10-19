@@ -2659,6 +2659,123 @@ class BugBytesStoreAndRewardsTestCase(TestCase):
         self.assertEqual(res.data['totalRewardedInr'], 10.00)
         self.assertEqual(res.data['netSimulatedCostInr'], 25.00)
 
+    def test_legitimate_email_registration_success(self):
+        res = self.client.post('/api/register', {
+            'username': 'cleanuser',
+            'email': 'clean.user@gmail.com',
+            'password': 'StrongPassword123!'
+        }, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        user_data = res.data['user']
+        self.assertEqual(user_data['email'], 'clean.user@gmail.com')
+        # A new user must have zero streak, zero challenges solved, zero score, and no pre-awarded badges
+        self.assertEqual(user_data['streak'], 0)
+        self.assertEqual(user_data['challengesSolved'], 0)
+        self.assertEqual(user_data['totalScore'], 0)
+        self.assertEqual(user_data['badges'], [])
+        # College and bio must NOT default to Jane Doe's data
+        self.assertEqual(user_data['college'], '')
+        self.assertEqual(user_data['bio'], '')
+
+    def test_illegitimate_email_registration_rejected(self):
+        invalid_emails = ['not-an-email', 'foo@bar', 'user@localhost', 'a@b', 'bad@.com', 'test@']
+        for bad_email in invalid_emails:
+            res = self.client.post('/api/register', {
+                'username': f'user_{abs(hash(bad_email)) % 100000}',
+                'email': bad_email,
+                'password': 'StrongPassword123!'
+            }, format='json')
+            self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST, f"Expected {bad_email} to be rejected")
+
+    def test_illegitimate_email_login_rejected(self):
+        res = self.client.post('/api/login', {
+            'email': 'invalid-email@',
+            'password': 'password123'
+        }, format='json')
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_check_availability_validates_email(self):
+        res = self.client.post('/api/check-availability', {
+            'email': 'not-a-valid-email'
+        }, format='json')
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(res.data.get('available', True))
+
+    def test_register_with_otp_flow(self):
+        # 1. Send OTP to valid email
+        res = self.client.post('/api/auth/otp/send', {
+            'email': 'otp.test@gmail.com',
+            'purpose': 'register'
+        }, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        otp = cache.get("reg_otp_otp.test@gmail.com")
+        self.assertTrue(bool(otp))
+
+        # 2. Try registering with invalid 6-digit OTP
+        fail_res = self.client.post('/api/auth/otp/register', {
+            'email': 'otp.test@gmail.com',
+            'username': 'otptestuser',
+            'password': 'StrongPassword123!',
+            'otp': '000000'
+        }, format='json')
+        self.assertEqual(fail_res.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 3. Register with valid OTP
+        success_res = self.client.post('/api/auth/otp/register', {
+            'email': 'otp.test@gmail.com',
+            'username': 'otptestuser',
+            'password': 'StrongPassword123!',
+            'otp': otp
+        }, format='json')
+        self.assertEqual(success_res.status_code, status.HTTP_201_CREATED)
+        user_data = success_res.data['user']
+        self.assertEqual(user_data['email'], 'otp.test@gmail.com')
+        self.assertEqual(user_data['streak'], 0)
+        self.assertEqual(user_data['challengesSolved'], 0)
+        self.assertEqual(user_data['totalScore'], 0)
+        self.assertEqual(user_data['badges'], [])
+
+        # 4. Invalidation check: reusing the same OTP must fail
+        reuse_res = self.client.post('/api/auth/otp/register', {
+            'email': 'otp.test2@gmail.com',
+            'username': 'otptestuser2',
+            'password': 'StrongPassword123!',
+            'otp': otp
+        }, format='json')
+        self.assertEqual(reuse_res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_forgot_password_otp_flow(self):
+        # Request reset OTP for existing user
+        res = self.client.post('/api/forgot-password/request', {
+            'email': self.user.email
+        }, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        user = User.objects.get(email=self.user.email)
+        self.assertTrue(bool(user.otp_code))
+
+        # Try reset with incorrect OTP
+        fail_res = self.client.post('/api/forgot-password/reset', {
+            'email': self.user.email,
+            'otp': '999999',
+            'password': 'NewStrongPassword123!'
+        }, format='json')
+        self.assertEqual(fail_res.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Reset with correct OTP
+        ok_res = self.client.post('/api/forgot-password/reset', {
+            'email': self.user.email,
+            'otp': user.otp_code,
+            'password': 'NewStrongPassword123!'
+        }, format='json')
+        self.assertEqual(ok_res.status_code, status.HTTP_200_OK)
+
+        # Verify new password works
+        login_res = self.client.post('/api/login', {
+            'email': self.user.email,
+            'password': 'NewStrongPassword123!'
+        }, format='json')
+        self.assertEqual(login_res.status_code, status.HTTP_200_OK)
+
 
 
 

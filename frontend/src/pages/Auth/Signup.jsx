@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Mail, Phone, KeyRound, User, Sparkles, Loader2, ArrowRight, ArrowLeft, CheckCircle2, Target, BookOpen, ShieldCheck } from 'lucide-react';
 import { authService } from '../../services/authService';
+import { isValidEmail, getEmailValidationError } from '../../utils/validators';
 
 const avatarOptions = [
   'https://images.unsplash.com/photo-1502685104226-ee32379fefbe?w=200',
@@ -78,6 +79,11 @@ export default function Signup({ setUser, addToast }) {
   const [error, setError] = useState('');
 
   const [account, setAccount] = useState({ username: '', email: '', password: '', confirmPassword: '', showPassword: false });
+  const [otp, setOtp] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [devOtpHint, setDevOtpHint] = useState('');
+  const [emailVerified, setEmailVerified] = useState(false);
+
   const [profile, setProfile] = useState({ displayName: '', bio: '', country: '', timezone: '', avatar: '' });
   const [personalization, setPersonalization] = useState({ 
     theme: 'dark', 
@@ -89,6 +95,16 @@ export default function Signup({ setUser, addToast }) {
   });
   const [previewAvatar, setPreviewAvatar] = useState('');
   const [zoom, setZoom] = useState(1);
+
+  useEffect(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const passwordStrength = useMemo(() => {
     const pwd = account.password;
@@ -118,31 +134,70 @@ export default function Signup({ setUser, addToast }) {
         setError('Choose a stronger password with uppercase, number, and special character.');
         return;
       }
-      if (!account.email.includes('@')) {
-        setError('Please enter a valid email address.');
+      const emailErr = getEmailValidationError(account.email);
+      if (emailErr) {
+        setError(emailErr);
         return;
       }
 
       setLoading(true);
       try {
         await authService.checkAvailability(account.username.trim(), account.email.trim());
+        const otpRes = await authService.sendOtp(account.email.trim(), 'register');
+        if (otpRes?.otpCode) {
+          setDevOtpHint(otpRes.otpCode);
+        }
+        setResendCooldown(60);
+        addToast(`Verification code sent to ${account.email.trim()}`, 'info');
+        setStep(2);
       } catch (err) {
-        setError(err.message || 'Username or email is already taken.');
-        return;
+        setError(err.message || 'Failed to send verification code. Please check that your email is valid.');
       } finally {
         setLoading(false);
       }
+      return;
     }
-    if (step === 2 && !profile.displayName.trim()) {
+
+    if (step === 2) {
+      const cleanOtp = otp.trim();
+      if (!cleanOtp || cleanOtp.length !== 6 || !/^\d{6}$/.test(cleanOtp)) {
+        setError('Please enter the 6-digit verification code sent to your email.');
+        return;
+      }
+      setEmailVerified(true);
+      setStep(3);
+      return;
+    }
+
+    if (step === 3 && !profile.displayName.trim()) {
       setError('Display name is required.');
       return;
     }
+
     setStep((prev) => prev + 1);
   };
 
   const handleBack = () => {
     setError('');
     setStep((prev) => Math.max(1, prev - 1));
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || loading) return;
+    setError('');
+    setLoading(true);
+    try {
+      const otpRes = await authService.sendOtp(account.email.trim(), 'register');
+      if (otpRes?.otpCode) {
+        setDevOtpHint(otpRes.otpCode);
+      }
+      setResendCooldown(60);
+      addToast(`New verification code sent to ${account.email.trim()}`, 'info');
+    } catch (err) {
+      setError(err.message || 'Failed to resend verification code.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegister = async () => {
@@ -153,6 +208,7 @@ export default function Signup({ setUser, addToast }) {
         username: account.username.trim(),
         email: account.email.trim(),
         password: account.password,
+        otp: otp.trim(),
         displayName: profile.displayName.trim(),
         bio: profile.bio.trim(),
         country: profile.country.trim(),
@@ -167,10 +223,10 @@ export default function Signup({ setUser, addToast }) {
       };
       const response = await authService.register(payload);
       setUser(response.user);
-      addToast('Welcome aboard! Your account has been created.', 'success');
+      addToast('Welcome aboard! Your account has been verified and created.', 'success');
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Registration failed. Please try again.');
+      setError(err.message || 'Registration failed. Please check your verification code.');
       addToast('Registration failed.', 'error');
     } finally {
       setLoading(false);
@@ -235,7 +291,7 @@ export default function Signup({ setUser, addToast }) {
             </p>
 
             <div className="space-y-4 text-xs font-semibold text-slate-400">
-              {['Account Details', 'Profile Info', 'Tell Us About Your Skills', 'Review & Confirm'].map((label, idx) => (
+              {['Account Details', 'Verify Email', 'Profile Info', 'Tell Us About Your Skills', 'Review & Confirm'].map((label, idx) => (
                 <div key={label} className={`flex items-center gap-3 ${step === idx + 1 ? 'text-slate-100' : ''}`}>
                   <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs ${step === idx + 1 ? 'bg-cyan-500 text-slate-950 font-bold' : step > idx + 1 ? 'bg-slate-800 text-cyan-400' : 'bg-slate-900 text-slate-600'}`}>
                     {idx + 1}
@@ -256,8 +312,12 @@ export default function Signup({ setUser, addToast }) {
             {step === 1 && (
               <div className="space-y-5">
                 <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold mb-3">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Mandatory Email OTP Verification</span>
+                  </div>
                   <h3 className="font-heading text-2xl font-bold text-slate-100">Create your account</h3>
-                  <p className="text-xs text-slate-400 mt-1">Start your engineering debugging journey</p>
+                  <p className="text-xs text-slate-400 mt-1">Start your engineering debugging journey • Verified via 6-digit email code</p>
                 </div>
 
                 <div className="space-y-4">
@@ -282,13 +342,17 @@ export default function Signup({ setUser, addToast }) {
                       <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
                       <input
                         type="email"
-                        placeholder="kushal@example.com"
+                        placeholder="name@gmail.com"
                         value={account.email}
                         onChange={(e) => setAccount((prev) => ({ ...prev, email: e.target.value }))}
                         className="w-full rounded-2xl border border-slate-800 bg-slate-950 py-3 pl-10 pr-4 text-sm text-slate-100 outline-none focus:border-cyan-400"
                         required
                       />
                     </div>
+                    <p className="text-[11px] text-cyan-400/80 mt-1.5 flex items-center gap-1 font-medium">
+                      <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                      A 6-digit security code will be sent to this email on the next step.
+                    </p>
                   </div>
 
 
@@ -348,6 +412,81 @@ export default function Signup({ setUser, addToast }) {
             )}
 
             {step === 2 && (
+              <div className="space-y-6">
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold mb-3">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Mandatory Email Verification</span>
+                  </div>
+                  <h3 className="font-heading text-2xl font-bold text-slate-100">Verify your email address</h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    We sent a 6-digit verification code to <span className="font-semibold text-cyan-300">{account.email}</span>
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="ml-2 text-cyan-400 hover:text-cyan-300 underline font-semibold"
+                    >
+                      (Edit email)
+                    </button>
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 mb-2 font-bold">
+                      Enter 6-Digit Code
+                    </label>
+                    <div className="relative">
+                      <KeyRound className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="••••••"
+                        value={otp}
+                        onChange={(e) => {
+                          const digitsOnly = e.target.value.replace(/[^0-9]/g, '');
+                          setOtp(digitsOnly);
+                        }}
+                        className="w-full rounded-2xl border border-slate-800 bg-slate-950 py-3.5 pl-12 pr-4 text-center font-mono text-xl tracking-[0.4em] text-cyan-300 outline-none focus:border-cyan-400"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  {devOtpHint && (
+                    <div className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-xs text-cyan-300 flex items-center justify-between">
+                      <span>Dev environment code: <span className="font-mono font-bold tracking-widest">{devOtpHint}</span></span>
+                      <button
+                        type="button"
+                        onClick={() => setOtp(devOtpHint)}
+                        className="text-[11px] underline font-semibold hover:text-cyan-200"
+                      >
+                        Auto-fill
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <span className="text-slate-400">Didn't receive the code?</span>
+                    {resendCooldown > 0 ? (
+                      <span className="text-slate-500 font-mono">Resend code in {resendCooldown}s</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResendOtp}
+                        disabled={loading}
+                        className="text-cyan-400 hover:text-cyan-300 font-semibold"
+                      >
+                        Resend Code
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
               <div className="space-y-5">
                 <div>
                   <h3 className="font-heading text-2xl font-bold text-slate-100">Personalize your profile</h3>
@@ -434,7 +573,7 @@ export default function Signup({ setUser, addToast }) {
               </div>
             )}
 
-            {step === 3 && (
+            {step === 4 && (
               <div className="space-y-6">
                 <div>
                   <h3 className="font-heading text-2xl font-bold text-slate-100">Tell us about your skills</h3>
@@ -519,7 +658,7 @@ export default function Signup({ setUser, addToast }) {
               </div>
             )}
 
-            {step === 4 && (
+            {step === 5 && (
               <div className="space-y-5">
                 <div>
                   <h3 className="font-heading text-2xl font-bold text-slate-100">Review & confirm</h3>
@@ -530,7 +669,12 @@ export default function Signup({ setUser, addToast }) {
                   <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-4">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">Account</p>
                     <p className="mt-2 text-slate-100 font-bold text-sm">{account.username}</p>
-                    <p className="text-slate-400 text-xs mt-1">{account.email}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-slate-400 text-xs">{account.email}</span>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                        <ShieldCheck className="w-3 h-3" /> Verified
+                      </span>
+                    </div>
                   </div>
                   <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-4">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">Profile</p>
@@ -577,14 +721,14 @@ export default function Signup({ setUser, addToast }) {
                 <span>Back</span>
               </button>
               <div className="flex gap-3 w-full sm:w-auto">
-                {step < 4 ? (
+                {step < 5 ? (
                   <button
                     type="button"
                     onClick={handleNext}
                     disabled={loading}
                     className="button-primary w-full sm:w-auto py-3 flex items-center justify-center gap-2"
                   >
-                    <span>Continue</span>
+                    <span>{step === 1 ? 'Verify Email & Continue' : 'Continue'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 ) : (

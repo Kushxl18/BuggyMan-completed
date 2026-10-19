@@ -3,6 +3,7 @@ import sys
 import os
 import requests
 from django.db.models import Q, Avg, Count, Sum
+from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
@@ -72,6 +73,14 @@ def login_view(request):
     if not email or not password:
         return Response({'error': 'Email and password required'}, status=status.HTTP_400_BAD_REQUEST)
 
+    # Validate email format if input is provided as an email address
+    if '@' in email:
+        try:
+            from buggyman.validators import validate_legitimate_email
+            email = validate_legitimate_email(email)
+        except ValidationError as e:
+            return Response({'error': ', '.join(e.messages) if hasattr(e, 'messages') else str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
     user = User.objects.filter(email=email).first()
     if not user:
         user = User.objects.filter(username=email).first()
@@ -107,8 +116,27 @@ def register_view(request):
     if not email or not password:
         return Response({'error': 'Email and password are required'}, status=status.HTTP_400_BAD_REQUEST)
 
+    try:
+        from buggyman.validators import validate_legitimate_email
+        email = validate_legitimate_email(email)
+    except ValidationError as e:
+        return Response({'error': ', '.join(e.messages) if hasattr(e, 'messages') else str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
     if not username:
         username = email.split('@')[0]
+
+    otp = str(data.get('otp', '')).strip()
+    from django.core.cache import cache
+    sess_otp = request.session.get(f"reg_otp_{email}")
+    session_otp_val = sess_otp.get('otp') if isinstance(sess_otp, dict) else sess_otp
+    saved_otp = cache.get(f"reg_otp_{email}") or session_otp_val
+    email_user = getattr(settings, 'EMAIL_HOST_USER', '')
+
+    if email_user or otp or saved_otp:
+        if not otp or not saved_otp or str(saved_otp).strip() != str(otp).strip():
+            return Response({'error': 'Invalid or expired 6-digit verification code. Please check your inbox or request a new code.'}, status=status.HTTP_400_BAD_REQUEST)
+        cache.delete(f"reg_otp_{email}")
+        request.session.pop(f"reg_otp_{email}", None)
 
     if User.objects.filter(username=username).exists():
         return Response({'error': 'Username is already taken'}, status=status.HTTP_400_BAD_REQUEST)
@@ -132,7 +160,7 @@ def register_view(request):
         first_name=first_name,
         last_name=last_name,
         display_name=display_name,
-        college=data.get('college', 'State Technical University'),
+        college=data.get('college', ''),
         bio=bio,
         avatar=avatar,
         theme=theme,
@@ -143,19 +171,23 @@ def register_view(request):
         strengths=data.get('strengths', []),
         weaknesses=data.get('weaknesses', []),
         notifications_config=notifications_config,
-        skills={'React': 75, 'Django': 65, 'NodeJS': 50, 'CSS': 70},
+        skills={},
         activities=[{
             'id': int(time.time()),
             'text': 'Joined BuggyMan community',
             'time': 'Just now',
-            'xp': 50
+            'xp': 0
         }],
-        badges=[{
-            'name': 'First Bug Defeated',
-            'desc': 'Resolved your first bug',
-            'icon': '🐞',
-            'date': 'Today'
-        }]
+        badges=[]
+    )
+
+    # Create initial welcome notification for the new user
+    Notification.objects.create(
+        user=user,
+        title='Welcome to BuggyMan!',
+        message='Welcome aboard! Solve your first debugging challenge to earn badges and XP.',
+        type='system',
+        time='Just now'
     )
 
     token = generate_jwt_token(user)
@@ -171,6 +203,13 @@ def check_availability_view(request):
 
     if username and User.objects.filter(username__iexact=username).exists():
         return Response({'available': False, 'field': 'username', 'error': 'Username is already taken'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if email:
+        try:
+            from buggyman.validators import validate_legitimate_email
+            email = validate_legitimate_email(email)
+        except ValidationError as e:
+            return Response({'available': False, 'field': 'email', 'error': ', '.join(e.messages) if hasattr(e, 'messages') else str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     if email and User.objects.filter(email__iexact=email).exists():
         return Response({'available': False, 'field': 'email', 'error': 'Email is already registered'}, status=status.HTTP_400_BAD_REQUEST)
@@ -194,9 +233,14 @@ def profile_view(request):
                 return Response({'error': 'Username already taken'}, status=status.HTTP_400_BAD_REQUEST)
             user.username = data['username']
         if 'email' in data and data['email'] != user.email:
-            if User.objects.filter(email=data['email']).exclude(id=user.id).exists():
+            try:
+                from buggyman.validators import validate_legitimate_email
+                new_email = validate_legitimate_email(data['email'])
+            except ValidationError as e:
+                return Response({'error': ', '.join(e.messages) if hasattr(e, 'messages') else str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            if User.objects.filter(email=new_email).exclude(id=user.id).exists():
                 return Response({'error': 'Email already registered'}, status=status.HTTP_400_BAD_REQUEST)
-            user.email = data['email']
+            user.email = new_email
         if 'display_name' in data:
             user.display_name = data['display_name']
             parts = data['display_name'].strip().split(' ', 1)
@@ -1369,7 +1413,7 @@ def analytics_view(request):
         for cat_name, count_val in cat_counts.items():
             bug_stats_data.append({'name': cat_name, 'count': count_val})
 
-        if not bug_stats_data:
+        if not bug_stats_data and total_solved > 0:
             bug_stats_data = [
                 { 'name': 'State Management', 'count': easy_count },
                 { 'name': 'Styling & CSS', 'count': medium_count },
@@ -1387,9 +1431,9 @@ def analytics_view(request):
             'accuracy_rate': accuracy,
             'avgTime': formatted_avg_time,
             'avg_time': formatted_avg_time,
-            'streakDays': user.streak,
-            'streak': user.streak,
-            'streak_days': user.streak,
+            'streakDays': user.current_streak,
+            'streak': user.current_streak,
+            'streak_days': user.current_streak,
             'totalScore': user.total_score,
             'total_score': user.total_score,
             'weeklyProgress': weekly_progress_data,
@@ -1692,6 +1736,11 @@ def forgot_password_request_view(request):
     email = (request.data.get('email') or '').strip().lower()
     if not email:
         return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        from buggyman.validators import validate_legitimate_email
+        email = validate_legitimate_email(email)
+    except ValidationError as e:
+        return Response({'error': ', '.join(e.messages) if hasattr(e, 'messages') else str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
     user = User.objects.filter(email__iexact=email).first()
     if not user:
@@ -1717,17 +1766,18 @@ def forgot_password_request_view(request):
                 f"Your 6-digit verification code is: {otp}\n\n"
                 f"This code will expire in 10 minutes.\n"
                 f"If you did not request this reset, you can safely ignore this email.\n\n"
-                f"— The BuggyMan Team"
+                f"- The BuggyMan Team"
             )
             send_mail(
                 subject,
                 message,
-                settings.DEFAULT_FROM_EMAIL,
+                settings.DEFAULT_FROM_EMAIL or email_user,
                 [email],
-                fail_silently=True
+                fail_silently=False
             )
         except Exception as mail_err:
-            logger.warning(f"Failed to send email to {email}: {mail_err}")
+            logger.error(f"Failed to deliver reset email to {email}: {mail_err}")
+            return Response({'error': f"Failed to deliver reset code to {email}. Please check that the email exists and is valid."}, status=status.HTTP_400_BAD_REQUEST)
     
     # In development/DEBUG mode only, log to server terminal for developer convenience
     if getattr(settings, 'DEBUG', False):
@@ -3644,7 +3694,14 @@ def send_otp_view(request):
         return Response({'error': 'Email address or phone number is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
     is_email = '@' in identifier
-    clean_identifier = identifier.lower() if is_email else ''.join(c for c in identifier if c.isdigit() or c == '+')
+    if is_email:
+        try:
+            from buggyman.validators import validate_legitimate_email
+            clean_identifier = validate_legitimate_email(identifier)
+        except ValidationError as e:
+            return Response({'error': ', '.join(e.messages) if hasattr(e, 'messages') else str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        clean_identifier = ''.join(c for c in identifier if c.isdigit() or c == '+')
 
     # Find existing user if purpose is login
     user = None
@@ -3656,6 +3713,9 @@ def send_otp_view(request):
     # Generate secure 6-digit OTP
     otp = str(random.randint(100000, 999999))
     expiry = timezone.now() + datetime.timedelta(minutes=10)
+
+    from django.core.cache import cache
+    cache.set(f"reg_otp_{clean_identifier}", otp, timeout=600)
 
     if user:
         user.otp_code = otp
@@ -3669,18 +3729,50 @@ def send_otp_view(request):
         }
         request.session.modified = True
 
-    # For seamless demonstration & production testing:
-    # Always include the OTP in the response body so users and college evaluators
-    # can test without needing a paid SMS/Twilio gateway or SMTP setup!
+    email_user = getattr(settings, 'EMAIL_HOST_USER', '')
+    email_delivered = False
+    if is_email and email_user:
+        try:
+            from django.core.mail import send_mail
+            subject = 'BuggyMan - Your 6-Digit Email Verification Code'
+            message = (
+                f"Hello,\n\n"
+                f"Your 6-digit verification code for BuggyMan is: {otp}\n\n"
+                f"This code will expire in 10 minutes.\n"
+                f"Please enter this code on the registration page to verify your email.\n\n"
+                f"If you did not request this verification, please safely ignore this email.\n\n"
+                f"- The BuggyMan Team"
+            )
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL or email_user,
+                [clean_identifier],
+                fail_silently=False
+            )
+            email_delivered = True
+        except Exception as mail_err:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to deliver verification email to {clean_identifier}: {mail_err}")
+            return Response({
+                'error': f"Failed to deliver verification code to {clean_identifier}. Please ensure this email address is valid and exists."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
     msg = f"OTP verification code sent to {clean_identifier}."
-    return Response({
+    response_data = {
         'success': True,
         'message': msg,
         'identifier': clean_identifier,
         'isEmail': is_email,
         'userExists': bool(user),
-        'otpCode': otp  # Instant display for testing/evaluator convenience
-    }, status=status.HTTP_200_OK)
+        'emailDelivered': email_delivered
+    }
+    # Only expose otpCode in response if SMTP is NOT configured (dev fallback)
+    if not email_user:
+        response_data['otpCode'] = otp
+
+    return Response(response_data, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -3766,22 +3858,29 @@ def register_with_otp_view(request):
     if not email and not phone:
         return Response({'error': 'Email or phone number is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Verify OTP if provided
+    if email:
+        try:
+            from buggyman.validators import validate_legitimate_email
+            email = validate_legitimate_email(email)
+        except ValidationError as e:
+            return Response({'error': ', '.join(e.messages) if hasattr(e, 'messages') else str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Verify OTP strictly against cache, session, or pre-registered user
     identifier = email if email else phone
+    from django.core.cache import cache
+    cached_otp = cache.get(f"reg_otp_{identifier}")
+    sess_val = request.session.get(f"reg_otp_{identifier}")
+    session_otp = sess_val.get('otp') if isinstance(sess_val, dict) else sess_val
     user_with_otp = User.objects.filter(email__iexact=email).first() if email else User.objects.filter(phone=phone).first()
-    session_otp = request.session.get(f"reg_otp_{identifier}")
 
-    otp_valid = False
-    if otp:
-        if session_otp and session_otp.get('otp') == otp:
-            otp_valid = True
-        elif user_with_otp and user_with_otp.otp_code == otp:
-            otp_valid = True
-        elif len(otp) == 6:  # Allow valid 6-digit entered from toast
-            otp_valid = True
+    expected_otp = cached_otp or session_otp or (user_with_otp.otp_code if user_with_otp else None)
 
-    if not otp_valid and not password:
-        return Response({'error': 'Valid verification code is required.'}, status=status.HTTP_400_BAD_REQUEST)
+    if not otp or not expected_otp or str(expected_otp).strip() != str(otp).strip():
+        return Response({'error': 'Valid verification code is required. Please check your inbox or request a new code.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Invalidate OTP once verified
+    cache.delete(f"reg_otp_{identifier}")
+    request.session.pop(f"reg_otp_{identifier}", None)
 
     if not username:
         username = (email.split('@')[0] if email else f"user_{phone[-4:]}").lower()
@@ -3815,27 +3914,25 @@ def register_with_otp_view(request):
         last_name=last_name,
         display_name=display_name or username,
         phone=phone,
-        college=data.get('college', 'State Technical University'),
-        bio=data.get('bio', 'Aspiring software developer on BuggyMan.'),
+        college=data.get('college', ''),
+        bio=data.get('bio', ''),
         avatar=data.get('avatar', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'),
         theme='dark',
         accent_color='blue',
-        country=data.get('country', 'India'),
-        timezone=data.get('timezone', 'Asia/Kolkata'),
-        skills={'React': 75, 'Django': 65, 'NodeJS': 50, 'SQL': 60},
+        country=data.get('country', ''),
+        timezone=data.get('timezone', ''),
+        skills={},
+        total_score=0,
+        challenges_solved=0,
+        streak=0,
         bugbytes_balance=50,
         activities=[{
             'id': int(time.time()),
-            'text': 'Joined BuggyMan via OTP Verified Account',
+            'text': 'Joined BuggyMan community',
             'time': 'Just now',
-            'xp': 50
+            'xp': 0
         }],
-        badges=[{
-            'name': 'Verified Developer',
-            'desc': 'Verified identity with one-time password',
-            'icon': '🛡️',
-            'date': 'Today'
-        }]
+        badges=[]
     )
 
     if password:
@@ -3846,6 +3943,14 @@ def register_with_otp_view(request):
     user.otp_code = ''
     user.otp_expiry = None
     user.save()
+
+    Notification.objects.create(
+        user=user,
+        title='Welcome to BuggyMan!',
+        message='Welcome aboard! Solve your first debugging challenge to earn badges and XP.',
+        type='system',
+        time='Just now'
+    )
 
     token = generate_jwt_token(user)
     return Response({

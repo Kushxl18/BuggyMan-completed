@@ -31,6 +31,7 @@ import PvPBattle from './pages/PvPBattle';
 import PvPArena from './pages/PvPArena';
 
 import { authService } from './services/authService';
+import { challengeService } from './services/challengeService';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -52,12 +53,8 @@ export default function App() {
     }
   });
 
-  // Notifications state
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Achievement Unlocked', message: 'You have earned the "Five Day Streak" badge! Keep it up.', type: 'achievement', read: false, time: '2 hours ago' },
-    { id: 2, title: 'New Challenge Out', message: 'A new React custom hook challenge is now available: "Fix useFetch Hook".', type: 'challenge', read: false, time: '5 hours ago' },
-    { id: 3, title: 'Weekly Leaderboard Updated', message: 'See your placement on the global weekly rankings.', type: 'system', read: true, time: '1 day ago' }
-  ]);
+  // Notifications state: starts empty, dynamically populated for active user
+  const [notifications, setNotifications] = useState([]);
 
   // Load active session
   useEffect(() => {
@@ -69,6 +66,14 @@ export default function App() {
           setUser(u);
           if (u?.theme) {
             setTheme(u.theme);
+          }
+          try {
+            const notifs = await challengeService.getNotifications();
+            if (Array.isArray(notifs)) {
+              setNotifications(notifs);
+            }
+          } catch (notifErr) {
+            // Keep empty state if unable to fetch notifications
           }
         } catch (err) {
           localStorage.removeItem('token');

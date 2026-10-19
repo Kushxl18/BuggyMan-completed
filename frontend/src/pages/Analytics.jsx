@@ -128,34 +128,46 @@ export default function Analytics({ addToast }) {
         {/* Bug Category Breakdown (Pie Chart) */}
         <div className="lg:col-span-1 glass-card p-6 rounded-xl space-y-4 flex flex-col justify-between">
           <h3 className="font-heading font-bold text-sm text-slate-800 dark:text-[#F0F2F4]">Bug Types Encountered</h3>
-          <div className="h-52 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={bugStats}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={4}
-                  dataKey="count"
-                >
-                  {bugStats.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#D8DEE4', borderRadius: '8px', color: '#1F2328' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-[10px] font-semibold text-slate-600 dark:text-slate-400">
-            {bugStats.map((entry, index) => (
-              <div key={entry.name} className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                <span>{entry.name} ({entry.count})</span>
+          {bugStats && bugStats.length > 0 && bugStats.some(b => b.count > 0) ? (
+            <>
+              <div className="h-52 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={bugStats}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={4}
+                      dataKey="count"
+                    >
+                      {bugStats.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#D8DEE4', borderRadius: '8px', color: '#1F2328' }} />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-            ))}
-          </div>
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+                {bugStats.map((entry, index) => (
+                  <div key={entry.name} className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                    <span>{entry.name} ({entry.count})</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-2 min-h-[180px]">
+              <span className="text-2xl">📊</span>
+              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">No bug data recorded yet</p>
+              <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed">
+                Start solving debugging challenges across the arenas to build your bug category breakdown.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* AI Personalized Growth & Recommendation Card */}

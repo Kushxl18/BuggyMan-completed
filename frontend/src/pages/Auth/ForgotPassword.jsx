@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Shield, Key, CheckCircle2, Loader2 } from 'lucide-react';
 import { authService } from '../../services/authService';
+import { getEmailValidationError } from '../../utils/validators';
 
 const stepLabels = ['Verify Email', 'Reset Password'];
 
@@ -18,8 +19,9 @@ export default function ForgotPassword({ addToast }) {
   const handleRequestCode = async (e) => {
     e.preventDefault();
     setError('');
-    if (!email.trim()) {
-      setError('Please enter your registered email.');
+    const emailErr = getEmailValidationError(email);
+    if (emailErr) {
+      setError(emailErr);
       return;
     }
     setLoading(true);

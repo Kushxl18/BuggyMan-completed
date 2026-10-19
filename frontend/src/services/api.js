@@ -1,4 +1,5 @@
 // Custom Fetch API Client with Mock Fallback for local testing when backend is not running
+import { isValidEmail, getEmailValidationError } from '../utils/validators';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 const ENABLE_MOCK_FALLBACK = import.meta.env.VITE_ENABLE_MOCK_FALLBACK !== undefined
@@ -1432,66 +1433,58 @@ const INITIAL_MOCK_DATA = {
   ],
 
   user: {
-    name: 'Jane Doe',
-    username: 'janedoe',
-    email: 'jane.doe@college.edu',
-    college: 'State Technical University',
-    bio: 'Aspiring Full Stack Engineer. Lover of logic puzzles and debugging challenge marathons.',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-    totalScore: 780,
-    challengesSolved: 12,
-    streak: 5,
-    skills: {
-      React: 80,
-      Django: 60,
-      NodeJS: 45,
-      CSS: 70
-    },
+    name: 'New Developer',
+    username: 'developer',
+    email: 'developer@gmail.com',
+    college: '',
+    bio: '',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+    totalScore: 0,
+    total_score: 0,
+    challengesSolved: 0,
+    challenges_solved: 0,
+    streak: 0,
+    streakDays: 0,
+    streak_days: 0,
+    bestStreak: 0,
+    skills: {},
     activities: [
-      { id: 1, text: 'Completed "Fix React State Updates"', time: '2 hours ago', xp: 100 },
-      { id: 2, text: 'Unlocked "Bug Squasher" Badge', time: '1 day ago', xp: 50 },
-      { id: 3, text: 'Solved "Express Middlewares" challenge', time: '3 days ago', xp: 200 }
+      { id: 1, text: 'Joined BuggyMan community', time: 'Just now', xp: 0 }
     ],
-    badges: [
-      { name: 'First Bug Defeated', desc: 'Resolved your first bug', icon: '🐞', date: 'Jul 01, 2026' },
-      { name: 'Five Day Streak', desc: 'Debugged 5 days in a row', icon: '🔥', date: 'Jul 05, 2026' },
-      { name: 'AI Explorer', desc: 'Used AI hints 10 times', icon: '🤖', date: 'Jul 08, 2026' }
-    ]
+    badges: [],
+    bugbytes_balance: 50,
+    bugbytesBalance: 50,
+    onboardingCompleted: false,
+    onboarding_completed: false,
+    isNewUser: true
   },
+  users: [],
   leaderboard: [
     { rank: 1, name: 'Alex Rivera', score: 1450, streak: 12, solved: 22, college: 'MIT' },
     { rank: 2, name: 'Sam Chen', score: 1220, streak: 8, solved: 18, college: 'Stanford' },
-    { rank: 3, name: 'Jane Doe', score: 780, streak: 5, solved: 12, college: 'State Technical University' },
-    { rank: 4, name: 'Devon Smith', score: 650, streak: 3, solved: 9, college: 'Georgia Tech' },
-    { rank: 5, name: 'Li Wei', score: 580, streak: 2, solved: 7, college: 'Caltech' }
+    { rank: 3, name: 'Devon Smith', score: 650, streak: 3, solved: 9, college: 'Georgia Tech' },
+    { rank: 4, name: 'Li Wei', score: 580, streak: 2, solved: 7, college: 'Caltech' }
   ],
   notifications: [
-    { id: 1, title: 'Achievement Unlocked', message: 'You have earned the "Five Day Streak" badge! Keep it up.', type: 'achievement', read: false, time: '2 hours ago' },
-    { id: 2, title: 'New Challenge Out', message: 'A new React custom hook challenge is now available: "Fix useFetch Hook".', type: 'challenge', read: false, time: '5 hours ago' },
-    { id: 3, title: 'Weekly Leaderboard Updated', message: 'See your placement on the global weekly debugging ranks.', type: 'system', read: true, time: '1 day ago' }
+    { id: 1, title: 'Welcome to BuggyMan!', message: 'Welcome aboard! Solve your first debugging challenge to earn badges and XP.', type: 'system', read: false, time: 'Just now' }
   ],
   analytics: {
-    totalSolved: 12,
-    accuracy: 78,
+    totalSolved: 0,
+    accuracy: 0,
     timeTrend: [
-      { name: 'Mon', mins: 15 },
-      { name: 'Tue', mins: 22 },
-      { name: 'Wed', mins: 12 },
-      { name: 'Thu', mins: 30 },
-      { name: 'Fri', mins: 18 },
-      { name: 'Sat', mins: 25 },
-      { name: 'Sun', mins: 8 }
+      { name: 'Mon', mins: 0, solved: 0 },
+      { name: 'Tue', mins: 0, solved: 0 },
+      { name: 'Wed', mins: 0, solved: 0 },
+      { name: 'Thu', mins: 0, solved: 0 },
+      { name: 'Fri', mins: 0, solved: 0 },
+      { name: 'Sat', mins: 0, solved: 0 },
+      { name: 'Sun', mins: 0, solved: 0 }
     ],
-    bugStats: [
-      { name: 'State Management', count: 5 },
-      { name: 'Styling & CSS', count: 3 },
-      { name: 'APIs', count: 2 },
-      { name: 'Async Logic', count: 2 }
-    ],
+    bugStats: [],
     difficultyProgression: [
-      { name: 'Easy', completed: 8 },
-      { name: 'Medium', completed: 3 },
-      { name: 'Hard', completed: 1 }
+      { name: 'Easy', completed: 0 },
+      { name: 'Medium', completed: 0 },
+      { name: 'Hard', completed: 0 }
     ]
   },
   adminStats: {
@@ -1502,12 +1495,66 @@ const INITIAL_MOCK_DATA = {
   }
 };
 
-// Initialize localStorage with dummy databases if not present
+const MOCK_DEMO_USER = {
+  id: 101,
+  name: 'Jane Doe',
+  username: 'janedoe',
+  email: 'jane.doe@college.edu',
+  college: 'State Technical University',
+  bio: 'Aspiring Full Stack Engineer. Lover of logic puzzles and debugging challenge marathons.',
+  avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+  totalScore: 780,
+  total_score: 780,
+  challengesSolved: 12,
+  challenges_solved: 12,
+  streak: 5,
+  streakDays: 5,
+  streak_days: 5,
+  bestStreak: 5,
+  skills: {
+    React: 80,
+    Django: 60,
+    NodeJS: 45,
+    CSS: 70
+  },
+  activities: [
+    { id: 1, text: 'Completed "Fix React State Updates"', time: '2 hours ago', xp: 100 },
+    { id: 2, text: 'Unlocked "Bug Squasher" Badge', time: '1 day ago', xp: 50 },
+    { id: 3, text: 'Solved "Express Middlewares" challenge', time: '3 days ago', xp: 200 }
+  ],
+  badges: [
+    { name: 'First Bug Defeated', desc: 'Resolved your first bug', icon: '🐞', date: 'Jul 01, 2026' },
+    { name: 'Five Day Streak', desc: 'Debugged 5 days in a row', icon: '🔥', date: 'Jul 05, 2026' },
+    { name: 'AI Explorer', desc: 'Used AI hints 10 times', icon: '🤖', date: 'Jul 08, 2026' }
+  ],
+  bugbytes_balance: 50,
+  bugbytesBalance: 50,
+  onboardingCompleted: true,
+  onboarding_completed: true,
+  isNewUser: false
+};
+
+// Initialize localStorage with clean databases, clearing legacy polluted mock data
 const getMockDb = () => {
+  const legacyDb = localStorage.getItem('buggyman_mock_db');
+  if (legacyDb) {
+    try {
+      const parsed = JSON.parse(legacyDb);
+      // Auto-purge stale legacy database that gave new users 5-day streak and Jane Doe's stats
+      if ((parsed?.user?.streak === 5 && parsed?.user?.challengesSolved === 12) || !parsed?.schemaVersion || parsed.schemaVersion < 3) {
+        localStorage.removeItem('buggyman_mock_db');
+      }
+    } catch (e) {
+      localStorage.removeItem('buggyman_mock_db');
+    }
+  }
+
   const db = localStorage.getItem('buggyman_mock_db');
   if (!db) {
-    localStorage.setItem('buggyman_mock_db', JSON.stringify(INITIAL_MOCK_DATA));
-    return INITIAL_MOCK_DATA;
+    const fresh = JSON.parse(JSON.stringify(INITIAL_MOCK_DATA));
+    fresh.schemaVersion = 3;
+    localStorage.setItem('buggyman_mock_db', JSON.stringify(fresh));
+    return fresh;
   }
   return JSON.parse(db);
 };
@@ -1575,28 +1622,207 @@ function simulateMockApi(endpoint, options) {
     setTimeout(() => {
       // 1. Auth Mock APIs
       if (endpoint === '/login' && method === 'POST') {
-        const { email, password } = body;
+        const { email, password } = body || {};
         if (!email || !password) {
           reject(new Error('Email and password required'));
           return;
         }
+
+        const trimmed = email.trim();
+        if (trimmed.includes('@')) {
+          const emailErr = getEmailValidationError(trimmed);
+          if (emailErr) {
+            reject(new Error(emailErr));
+            return;
+          }
+        }
+
         localStorage.setItem('token', 'mock_jwt_token_key');
-        resolve({ token: 'mock_jwt_token_key', user: db.user });
+
+        // Check if demo user
+        if (trimmed.toLowerCase() === 'janedoe' || trimmed.toLowerCase() === 'jane.doe@college.edu') {
+          resolve({ token: 'mock_jwt_token_key', user: MOCK_DEMO_USER, isNewUser: false });
+          return;
+        }
+
+        // Check registered mock users
+        const existing = (db.users || []).find(u => u.email.toLowerCase() === trimmed.toLowerCase() || u.username.toLowerCase() === trimmed.toLowerCase());
+        if (existing) {
+          db.user = existing;
+          updateMockDb(db);
+          resolve({ token: 'mock_jwt_token_key', user: existing, isNewUser: Boolean(!existing.onboardingCompleted) });
+          return;
+        }
+
+        // If active mock user matches
+        if (db.user && (db.user.email.toLowerCase() === trimmed.toLowerCase() || db.user.username.toLowerCase() === trimmed.toLowerCase())) {
+          resolve({ token: 'mock_jwt_token_key', user: db.user, isNewUser: Boolean(!db.user.onboardingCompleted) });
+          return;
+        }
+
+        resolve({ token: 'mock_jwt_token_key', user: db.user, isNewUser: Boolean(!db.user.onboardingCompleted) });
         return;
       }
 
       if (endpoint === '/register' && method === 'POST') {
-        const { displayName, fullName, email, password } = body;
-        const name = displayName || fullName;
-        if (!name || !email || !password) {
-          reject(new Error('All details are required'));
+        const { displayName, fullName, email, password } = body || {};
+        const name = displayName || fullName || '';
+        if (!email || !password) {
+          reject(new Error('Email and password are required'));
+          return;
+        }
+
+        const emailErr = getEmailValidationError(email);
+        if (emailErr) {
+          reject(new Error(emailErr));
+          return;
+        }
+
+        const trimmedEmail = email.trim().toLowerCase();
+        const username = (body.username || trimmedEmail.split('@')[0]).toLowerCase();
+
+        if ((db.users || []).some(u => u.email.toLowerCase() === trimmedEmail || u.username.toLowerCase() === username)) {
+          reject(new Error('Email or username is already registered'));
+          return;
+        }
+
+        if (body.otp) {
+          const storedOtp = sessionStorage.getItem(`mock_reg_otp_${trimmedEmail}`);
+          if (storedOtp && String(body.otp).trim() !== storedOtp) {
+            reject(new Error('Invalid or expired 6-digit verification code.'));
+            return;
+          }
+          sessionStorage.removeItem(`mock_reg_otp_${trimmedEmail}`);
+        }
+
+        const newUser = {
+          id: Date.now(),
+          name: name || username,
+          display_name: name || username,
+          username: username,
+          email: trimmedEmail,
+          college: body.college || '',
+          bio: body.bio || '',
+          avatar: body.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          totalScore: 0,
+          total_score: 0,
+          challengesSolved: 0,
+          challenges_solved: 0,
+          streak: 0,
+          streakDays: 0,
+          streak_days: 0,
+          bestStreak: 0,
+          skills: {},
+          activities: [
+            { id: Date.now(), text: 'Joined BuggyMan community', time: 'Just now', xp: 0 }
+          ],
+          badges: [],
+          strengths: body.strengths || [],
+          weaknesses: body.weaknesses || [],
+          interests: body.interests || [],
+          theme: body.theme || 'dark',
+          accent_color: body.accentColor || 'blue',
+          bugbytes_balance: 50,
+          bugbytesBalance: 50,
+          onboardingCompleted: false,
+          onboarding_completed: false,
+          isNewUser: true,
+          role: 'user',
+          isAdmin: false
+        };
+
+        db.user = newUser;
+        if (!db.users) db.users = [];
+        db.users.push(newUser);
+        db.notifications = [
+          { id: Date.now(), title: 'Welcome to BuggyMan!', message: 'Welcome aboard! Solve your first debugging challenge to earn badges and XP.', type: 'system', read: false, time: 'Just now' }
+        ];
+        db.analytics = {
+          totalSolved: 0,
+          accuracy: 0,
+          timeTrend: [
+            { name: 'Mon', mins: 0, solved: 0 },
+            { name: 'Tue', mins: 0, solved: 0 },
+            { name: 'Wed', mins: 0, solved: 0 },
+            { name: 'Thu', mins: 0, solved: 0 },
+            { name: 'Fri', mins: 0, solved: 0 },
+            { name: 'Sat', mins: 0, solved: 0 },
+            { name: 'Sun', mins: 0, solved: 0 }
+          ],
+          bugStats: [],
+          difficultyProgression: [
+            { name: 'Easy', completed: 0 },
+            { name: 'Medium', completed: 0 },
+            { name: 'Hard', completed: 0 }
+          ]
+        };
+
+        localStorage.setItem('token', 'mock_jwt_token_key');
+        updateMockDb(db);
+        resolve({ token: 'mock_jwt_token_key', user: newUser, isNewUser: true });
+        return;
+      }
+
+      if (endpoint === '/check-availability' && method === 'POST') {
+        const { username, email } = body || {};
+        if (email) {
+          const emailErr = getEmailValidationError(email);
+          if (emailErr) {
+            reject(new Error(emailErr));
+            return;
+          }
+          if ((db.users || []).some(u => u.email.toLowerCase() === email.trim().toLowerCase())) {
+            reject(new Error('Email is already registered'));
+            return;
+          }
+        }
+        if (username) {
+          if ((db.users || []).some(u => u.username.toLowerCase() === username.trim().toLowerCase())) {
+            reject(new Error('Username is already taken'));
+            return;
+          }
+        }
+        resolve({ available: true });
+        return;
+      }
+
+      if (endpoint === '/auth/otp/send' && method === 'POST') {
+        const { identifier, email, phone } = body || {};
+        const target = (identifier || email || phone || '').trim().toLowerCase();
+        if (!target) {
+          reject(new Error('Email address or phone number is required.'));
+          return;
+        }
+        if (target.includes('@')) {
+          const emailErr = getEmailValidationError(target);
+          if (emailErr) {
+            reject(new Error(emailErr));
+            return;
+          }
+        }
+        const mockOtp = String(Math.floor(100000 + Math.random() * 900000));
+        sessionStorage.setItem(`mock_reg_otp_${target}`, mockOtp);
+        resolve({
+          success: true,
+          message: `Verification code sent to ${target}.`,
+          identifier: target,
+          isEmail: target.includes('@'),
+          otpCode: mockOtp
+        });
+        return;
+      }
+
+      if (endpoint === '/auth/otp/verify-login' && method === 'POST') {
+        const { identifier, otp } = body || {};
+        const target = (identifier || '').trim().toLowerCase();
+        const storedOtp = sessionStorage.getItem(`mock_reg_otp_${target}`);
+        if (!otp || (storedOtp && String(otp).trim() !== storedOtp)) {
+          reject(new Error('Invalid verification code.'));
           return;
         }
         localStorage.setItem('token', 'mock_jwt_token_key');
-        db.user.name = name;
-        db.user.email = email;
-        updateMockDb(db);
-        resolve({ token: 'mock_jwt_token_key', user: db.user });
+        const user = db.user || MOCK_DEMO_USER;
+        resolve({ token: 'mock_jwt_token_key', user, message: 'Successfully authenticated with OTP.' });
         return;
       }
 

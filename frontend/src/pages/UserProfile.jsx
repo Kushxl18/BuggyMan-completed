@@ -361,20 +361,30 @@ export default function UserProfile({ addToast, setUser }) {
               {/* Badges Box */}
               <div className="glass-card p-6 rounded-xl space-y-4">
                 <h3 className="font-heading font-bold text-sm text-slate-800 dark:text-[#F0F2F4]">Earned Milestones & Badges</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {profile.badges?.map((badge) => (
-                    <div key={badge.name} className="glass-panel p-4 rounded-lg border border-slate-200 dark:border-[#292E33] text-center space-y-2 group transition-all duration-200">
-                      <div className="text-3xl text-gradient group-hover:scale-110 transition-transform">
-                        {badge.icon}
+                {profile.badges && profile.badges.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {profile.badges.map((badge) => (
+                      <div key={badge.name} className="glass-panel p-4 rounded-lg border border-slate-200 dark:border-[#292E33] text-center space-y-2 group transition-all duration-200">
+                        <div className="text-3xl text-gradient group-hover:scale-110 transition-transform">
+                          {badge.icon}
+                        </div>
+                        <div>
+                          <h4 className="font-heading font-bold text-xs text-slate-800 dark:text-[#F0F2F4]">{badge.name}</h4>
+                          <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">{badge.desc}</p>
+                          <span className="text-[9px] text-cyan-600 dark:text-cyan-400 font-bold block mt-2">{badge.date}</span>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-heading font-bold text-xs text-slate-800 dark:text-[#F0F2F4]">{badge.name}</h4>
-                        <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">{badge.desc}</p>
-                        <span className="text-[9px] text-cyan-600 dark:text-cyan-400 font-bold block mt-2">{badge.date}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center rounded-xl bg-slate-50 dark:bg-[#1B1F23] border border-slate-200 dark:border-[#292E33] space-y-2">
+                    <span className="text-2xl">🏆</span>
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">No badges earned yet</p>
+                    <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                      Solve debugging challenges and build daily streaks to unlock your first badges and achievements.
+                    </p>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -433,7 +443,7 @@ export default function UserProfile({ addToast, setUser }) {
               </div>
 
               {/* Bug Categories Pie Chart */}
-              {bugStats && bugStats.length > 0 && (
+              {bugStats && bugStats.length > 0 && bugStats.some(b => b.count > 0) ? (
                 <div className="glass-card p-6 rounded-xl space-y-4 flex flex-col justify-between">
                   <h3 className="font-heading font-bold text-sm text-slate-800 dark:text-[#F0F2F4]">Bug Types Encountered</h3>
                   <div className="h-48 w-full">
@@ -464,6 +474,12 @@ export default function UserProfile({ addToast, setUser }) {
                       </div>
                     ))}
                   </div>
+                </div>
+              ) : (
+                <div className="glass-card p-6 rounded-xl space-y-2 text-center min-h-[160px] flex flex-col items-center justify-center">
+                  <span className="text-2xl">📊</span>
+                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">No bug types recorded yet</p>
+                  <p className="text-[11px] text-slate-500 max-w-xs">Solve challenges to see your category breakdown here.</p>
                 </div>
               )}
 
