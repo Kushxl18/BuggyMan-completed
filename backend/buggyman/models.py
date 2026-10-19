@@ -63,20 +63,10 @@ class User(AbstractUser):
         is_onboarded = bool(self.onboarding_completed or self.is_onboarded)
         active_streak = self.current_streak
 
-        # Build dynamic skills matrix respecting user's declared strengths & weaknesses
+        # Build dynamic skills matrix respecting actual evaluated performance
         user_skills = self.skills
-        if not user_skills:
-            str_set = {s.strip().lower() for s in (self.strengths or []) if s.strip()}
-            wk_set = {w.strip().lower() for w in (self.weaknesses or []) if w.strip()}
-            base_skills = {}
-            for cat in ['Backend', 'SQL', 'Frontend', 'APIs', 'Security', 'Testing', 'DevOps']:
-                if any(s in cat.lower() or cat.lower() in s for s in str_set):
-                    base_skills[cat] = 75
-                elif any(w in cat.lower() or cat.lower() in w for w in wk_set):
-                    base_skills[cat] = 35
-                else:
-                    base_skills[cat] = 50
-            user_skills = base_skills
+        if not user_skills or self.challenges_solved == 0:
+            user_skills = {cat: 0 for cat in ['Backend', 'SQL', 'Frontend', 'APIs', 'Security', 'Testing', 'DevOps']}
 
         return {
             'id': self.id,

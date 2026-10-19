@@ -20,7 +20,8 @@ import {
   Target,
   Clock,
   Briefcase,
-  Layers
+  Layers,
+  Info
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -345,8 +346,16 @@ export default function UserProfile({ addToast, setUser }) {
                   <h3 className="font-heading font-bold text-sm text-slate-800 dark:text-[#F0F2F4]">Dynamic Skill Profiler Matrix</h3>
                   <span className="text-[10px] text-cyan-500 font-bold uppercase tracking-wider">0-100% Calculated Mastery</span>
                 </div>
+
+                {(!profile.challengesSolved || Object.values(profile.skills || {}).every(v => !v)) && (
+                  <div className="flex items-center gap-2.5 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-700 dark:text-cyan-300 text-xs">
+                    <Info className="w-4 h-4 shrink-0 text-cyan-500" />
+                    <span>Unassessed profile: Solve debugging challenges to calibrate and elevate your dynamic skill mastery.</span>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
-                  {profile.skills && Object.entries(profile.skills).map(([skill, val]) => (
+                  {Object.entries((profile.skills && Object.keys(profile.skills).length > 0) ? profile.skills : { 'Backend': 0, 'SQL': 0, 'Frontend': 0, 'APIs': 0, 'Security': 0, 'Testing': 0, 'DevOps': 0 }).map(([skill, val]) => (
                     <div key={skill} className="space-y-2">
                       <div className="flex justify-between text-xs font-semibold">
                         <span className="text-slate-600 dark:text-slate-400">{skill}</span>

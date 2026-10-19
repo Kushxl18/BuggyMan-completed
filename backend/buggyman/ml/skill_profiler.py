@@ -28,14 +28,14 @@ class SkillProfiler:
         user_weaknesses = [w.strip() for w in getattr(user, 'weaknesses', []) or []]
 
         # Cold start unseeded user with 0 submissions
-        if total_user_submissions == 0 and not user_strengths and not user_weaknesses:
+        if total_user_submissions == 0:
             return {
                 'userId': user.id,
                 'username': user.username,
                 'overallProficiency': 0,
                 'proficiencyLevel': 'Novice',
-                'strengths': [],
-                'weaknesses': [],
+                'strengths': user_strengths,
+                'weaknesses': user_weaknesses,
                 'categorySkills': {cat: 0 for cat in cls.CATEGORIES_BENCHMARK},
                 'technologySkills': {tech: 0 for tech in cls.TECH_BENCHMARKS},
                 'topicSkills': {},
@@ -49,32 +49,21 @@ class SkillProfiler:
                 s for s in submissions
                 if s.challenge and cls._matches_category(s.challenge, cat)
             ]
-            
-            baseline = 50
-            for str_item in user_strengths:
-                if cls._normalized(str_item) in cls._normalized(cat) or cls._normalized(cat) in cls._normalized(str_item):
-                    baseline = 75
-                    break
-            for wk_item in user_weaknesses:
-                if cls._normalized(wk_item) in cls._normalized(cat) or cls._normalized(cat) in cls._normalized(wk_item):
-                    baseline = 35
-                    break
 
             if not cat_subs:
-                category_skills[cat] = baseline if (user_strengths or user_weaknesses) else 0
+                category_skills[cat] = 0
             else:
                 solved_subs = [s for s in cat_subs if s.success]
                 solved_count = len({s.challenge_id for s in solved_subs})
                 attempts_count = len(cat_subs)
 
-                accuracy = (solved_count / max(1, attempts_count)) * 100
-                vol_bonus = min(30, solved_count * 10)
-                perf_score = min(100, round((accuracy * 0.7) + vol_bonus))
-
-                actual_weight = min(1.0, attempts_count * 0.25)
-                bl_weight = 1.0 - actual_weight
-                final_cat_score = round((perf_score * actual_weight) + (baseline * bl_weight))
-                category_skills[cat] = min(100, max(5, final_cat_score))
+                if solved_count == 0:
+                    category_skills[cat] = 10
+                else:
+                    accuracy = (solved_count / max(1, attempts_count)) * 100
+                    vol_bonus = min(30, solved_count * 10)
+                    perf_score = min(100, round((accuracy * 0.7) + vol_bonus))
+                    category_skills[cat] = min(100, max(15, perf_score))
 
         tech_skills = {}
         for tech in cls.TECH_BENCHMARKS:
@@ -83,15 +72,14 @@ class SkillProfiler:
                 if s.challenge and cls._normalize_tech(s.challenge.technology) == cls._normalize_tech(tech)
             ]
             if not tech_subs:
-                matched_cat = cls._tech_to_category(tech)
-                tech_skills[tech] = category_skills.get(matched_cat, 50 if (user_strengths or user_weaknesses) else 0)
+                tech_skills[tech] = 0
             else:
                 solved_challenges = {s.challenge_id for s in tech_subs if s.success}
                 total_attempts = len(tech_subs)
                 solved_count = len(solved_challenges)
 
                 if solved_count == 0:
-                    tech_skills[tech] = 20
+                    tech_skills[tech] = 10
                     continue
 
                 weighted_points = 0.0
@@ -117,14 +105,13 @@ class SkillProfiler:
                     continue
                 t_subs = [s for s in submissions if s.challenge and t in s.challenge.to_dict().get('topics', [])]
                 if not t_subs:
-                    cat_name = cls._tech_to_category(c.technology)
-                    topic_skills[t] = category_skills.get(cat_name, 50 if (user_strengths or user_weaknesses) else 0)
+                    topic_skills[t] = 0
                 else:
                     t_solved = [s for s in t_subs if s.success]
                     acc = len(t_solved) / len(t_subs)
                     topic_skills[t] = min(100, max(10, round(acc * 100)))
 
-        active_scores = list(category_skills.values())
+        active_scores = [v for v in category_skills.values() if v > 0]
         overall_score = round(sum(active_scores) / len(active_scores)) if active_scores else 0
 
         level = 'Novice'
@@ -158,7 +145,10 @@ class SkillProfiler:
         """
         matrix = cls.calculate_skill_matrix(user)
         if user and user.is_authenticated:
-            combined = {**matrix['technologySkills'], **matrix['categorySkills']}
+            if getattr(user, 'challenges_solved', 0) == 0:
+                combined = {cat: 0 for cat in ['Backend', 'SQL', 'Frontend', 'APIs', 'Security', 'Testing', 'DevOps']}
+            else:
+                combined = {**matrix['technologySkills'], **matrix['categorySkills']}
             user.skills = combined
             user.save(update_fields=['skills'])
         return matrix

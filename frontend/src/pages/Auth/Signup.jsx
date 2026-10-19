@@ -89,8 +89,8 @@ export default function Signup({ setUser, addToast }) {
     theme: 'dark', 
     accentColor: 'blue', 
     interests: [], 
-    strengths: ['Backend', 'SQL'], 
-    weaknesses: ['Frontend'], 
+    strengths: [], 
+    weaknesses: [], 
     notificationsConfig: { achievements: true, challenges: true, system: true } 
   });
   const [previewAvatar, setPreviewAvatar] = useState('');
