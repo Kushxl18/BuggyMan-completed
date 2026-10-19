@@ -1516,7 +1516,7 @@ def leaderboard_view(request):
             'score': u.total_score,
             'streak': u.streak,
             'solved': u.challenges_solved,
-            'college': u.college or 'State Technical University',
+            'college': u.college or '-',
             'avatar': u.avatar,
             'badgesCount': len(u.badges or [])
         })

@@ -84,7 +84,7 @@ export default function Signup({ setUser, addToast }) {
   const [devOtpHint, setDevOtpHint] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
 
-  const [profile, setProfile] = useState({ displayName: '', bio: '', country: '', timezone: '', avatar: '' });
+  const [profile, setProfile] = useState({ displayName: '', college: '', bio: '', country: '', timezone: '', avatar: '' });
   const [personalization, setPersonalization] = useState({ 
     theme: 'dark', 
     accentColor: 'blue', 
@@ -214,6 +214,7 @@ export default function Signup({ setUser, addToast }) {
         password: account.password,
         otp: otp.trim(),
         displayName: profile.displayName.trim(),
+        college: profile.college.trim(),
         bio: profile.bio.trim(),
         country: profile.country.trim(),
         timezone: profile.timezone.trim(),
@@ -501,6 +502,17 @@ export default function Signup({ setUser, addToast }) {
                       onChange={(e) => setProfile((prev) => ({ ...prev, displayName: e.target.value }))}
                       className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
                       required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 mb-1.5 font-bold">College / Institution</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. NIE, Stanford, MIT, IIT (or leave blank if self-taught)"
+                      value={profile.college}
+                      onChange={(e) => setProfile((prev) => ({ ...prev, college: e.target.value }))}
+                      className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
                     />
                   </div>
 

@@ -114,7 +114,7 @@ export default function Onboarding({ user, setUser, addToast }) {
           }
         : {
             display_name: formData.displayName.trim() || user?.username || 'Developer',
-            college: formData.college.trim() || 'Tech Institute',
+            college: formData.college.trim(),
             bio: formData.bio.trim() || 'Software Engineer and bug hunter on BuggyMan.',
             avatar: formData.avatar,
             country: formData.country,
