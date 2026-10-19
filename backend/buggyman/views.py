@@ -127,7 +127,7 @@ def register_view(request):
 
     otp = str(data.get('otp', '')).strip()
     from django.core.cache import cache
-    sess_otp = request.session.get(f"reg_otp_{email}")
+    sess_otp = request.session.get(f"reg_otp_{email}") if hasattr(request, 'session') else None
     session_otp_val = sess_otp.get('otp') if isinstance(sess_otp, dict) else sess_otp
     saved_otp = cache.get(f"reg_otp_{email}") or session_otp_val
     email_user = getattr(settings, 'EMAIL_HOST_USER', '')
@@ -136,7 +136,11 @@ def register_view(request):
         if not otp or not saved_otp or str(saved_otp).strip() != str(otp).strip():
             return Response({'error': 'Invalid or expired 6-digit verification code. Please check your inbox or request a new code.'}, status=status.HTTP_400_BAD_REQUEST)
         cache.delete(f"reg_otp_{email}")
-        request.session.pop(f"reg_otp_{email}", None)
+        if hasattr(request, 'session'):
+            try:
+                request.session.pop(f"reg_otp_{email}", None)
+            except Exception:
+                pass
 
     if User.objects.filter(username=username).exists():
         return Response({'error': 'Username is already taken'}, status=status.HTTP_400_BAD_REQUEST)
@@ -3722,12 +3726,16 @@ def send_otp_view(request):
         user.otp_expiry = expiry
         user.save(update_fields=['otp_code', 'otp_expiry'])
     else:
-        # Cache registration OTP on request session / temporary store
-        request.session[f"reg_otp_{clean_identifier}"] = {
-            'otp': otp,
-            'expiry': expiry.isoformat()
-        }
-        request.session.modified = True
+        # Cache registration OTP on request session / temporary store if session exists
+        if hasattr(request, 'session'):
+            try:
+                request.session[f"reg_otp_{clean_identifier}"] = {
+                    'otp': otp,
+                    'expiry': expiry.isoformat()
+                }
+                request.session.modified = True
+            except Exception:
+                pass
 
     email_user = getattr(settings, 'EMAIL_HOST_USER', '')
     email_delivered = False
@@ -3799,9 +3807,12 @@ def verify_otp_login_view(request):
         user = User.objects.filter(phone=clean_identifier).first()
 
     if not user:
-        # Check session if this was a registration OTP
-        saved = request.session.get(f"reg_otp_{clean_identifier}")
-        if saved and saved.get('otp') == otp:
+        # Check cache or session if this was a registration OTP
+        from django.core.cache import cache
+        cached_otp = cache.get(f"reg_otp_{clean_identifier}")
+        session_saved = request.session.get(f"reg_otp_{clean_identifier}") if hasattr(request, 'session') else None
+        
+        if (cached_otp and cached_otp == otp) or (session_saved and session_saved.get('otp') == otp):
             # Registration OTP verified!
             return Response({
                 'verified': True,
@@ -3866,7 +3877,7 @@ def register_with_otp_view(request):
     identifier = email if email else phone
     from django.core.cache import cache
     cached_otp = cache.get(f"reg_otp_{identifier}")
-    sess_val = request.session.get(f"reg_otp_{identifier}")
+    sess_val = request.session.get(f"reg_otp_{identifier}") if hasattr(request, 'session') else None
     session_otp = sess_val.get('otp') if isinstance(sess_val, dict) else sess_val
     user_with_otp = User.objects.filter(email__iexact=email).first() if email else User.objects.filter(phone=phone).first()
 
@@ -3877,7 +3888,11 @@ def register_with_otp_view(request):
 
     # Invalidate OTP once verified
     cache.delete(f"reg_otp_{identifier}")
-    request.session.pop(f"reg_otp_{identifier}", None)
+    if hasattr(request, 'session'):
+        try:
+            request.session.pop(f"reg_otp_{identifier}", None)
+        except Exception:
+            pass
 
     if not username:
         username = (email.split('@')[0] if email else f"user_{phone[-4:]}").lower()
