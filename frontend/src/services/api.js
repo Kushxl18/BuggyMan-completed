@@ -1639,12 +1639,6 @@ function simulateMockApi(endpoint, options) {
 
         localStorage.setItem('token', 'mock_jwt_token_key');
 
-        // Check if demo user
-        if (trimmed.toLowerCase() === 'janedoe' || trimmed.toLowerCase() === 'jane.doe@college.edu') {
-          resolve({ token: 'mock_jwt_token_key', user: MOCK_DEMO_USER, isNewUser: false });
-          return;
-        }
-
         // Check registered mock users
         const existing = (db.users || []).find(u => u.email.toLowerCase() === trimmed.toLowerCase() || u.username.toLowerCase() === trimmed.toLowerCase());
         if (existing) {
