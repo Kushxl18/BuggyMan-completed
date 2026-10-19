@@ -130,7 +130,7 @@ export default function Login({ setUser, addToast }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center relative px-4 bg-grid-pattern overflow-hidden">
+    <div className="min-h-screen bg-[var(--bg-main)] flex items-center justify-center relative px-4 bg-grid-pattern overflow-hidden">
       {/* Background Glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-indigo/10 blur-3xl rounded-full pointer-events-none" />
 
@@ -140,25 +140,25 @@ export default function Login({ setUser, addToast }) {
           <div className="inline-flex p-3 rounded-2xl bg-gradient-to-br from-brand-indigo to-brand-violet shadow-glow-indigo mb-4">
             <Bug className="w-8 h-8 text-white animate-pulse-glow" />
           </div>
-          <h2 className="font-heading font-bold text-3xl text-slate-100">Welcome Back</h2>
-          <p className="text-slate-400 text-sm mt-1.5">Sign in to your BuggyMan account</p>
+          <h2 className="font-heading font-bold text-3xl text-[var(--text-primary)]">Welcome Back</h2>
+          <p className="text-[var(--text-secondary)] text-sm mt-1.5">Sign in to your BuggyMan account</p>
         </div>
 
         {/* Login Card */}
-        <div className="glass-panel rounded-2xl p-8 border border-slate-800 shadow-2xl space-y-6">
+        <div className="glass-panel rounded-2xl p-8 border border-[var(--border-color)] shadow-2xl space-y-6">
           {/* Mode Switcher preserved for future activation
-          <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs font-semibold">
+          <div className="grid grid-cols-2 p-1 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs font-semibold">
             <button
               type="button"
               onClick={() => { setAuthMode('password'); setError(''); }}
-              className={`py-2.5 rounded-xl transition-all ${authMode === 'password' ? 'bg-brand-indigo text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+              className={`py-2.5 rounded-xl transition-all ${authMode === 'password' ? 'bg-[var(--brand-cyan)] text-white shadow-md' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
             >
               Password Login
             </button>
             <button
               type="button"
               onClick={() => { setAuthMode('otp'); setError(''); }}
-              className={`py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${authMode === 'otp' ? 'bg-cyan-500 text-slate-950 font-bold shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+              className={`py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${authMode === 'otp' ? 'bg-[var(--brand-cyan)] text-white font-bold shadow-md' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
             >
               <KeyRound className="w-3.5 h-3.5" />
               <span>Email OTP Login</span>
@@ -176,11 +176,11 @@ export default function Login({ setUser, addToast }) {
             <form onSubmit={handlePasswordSubmit} className="space-y-5">
               {/* Username / Email Field */}
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                   Username or Email
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[var(--text-muted)]">
                     <User className="w-4.5 h-4.5" />
                   </div>
                   <input
@@ -188,7 +188,7 @@ export default function Login({ setUser, addToast }) {
                     placeholder="Enter your username or email"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-950/60 border border-slate-800 focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-slate-100 rounded-xl outline-none transition-all placeholder:text-slate-600 text-sm"
+                    className="w-full pl-10 pr-4 py-3 bg-[var(--bg-main)] border border-[var(--border-color)] focus:border-[var(--brand-cyan)] focus:ring-1 focus:ring-[var(--brand-cyan-bg)] text-[var(--text-primary)] rounded-xl outline-none transition-all placeholder:text-[var(--text-muted)] text-sm"
                     autoComplete="username"
                     required
                   />
@@ -198,18 +198,18 @@ export default function Login({ setUser, addToast }) {
               {/* Password Field */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                     Password
                   </label>
                   <Link
                     to="/forgot-password"
-                    className="text-xs font-semibold text-brand-indigo hover:text-indigo-400 transition-colors"
+                    className="text-xs font-semibold text-[var(--brand-cyan)] hover:text-[var(--brand-cyan-hover)] transition-colors"
                   >
                     Forgot Password?
                   </Link>
                 </div>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[var(--text-muted)]">
                     <Lock className="w-4.5 h-4.5" />
                   </div>
                   <input
@@ -217,14 +217,14 @@ export default function Login({ setUser, addToast }) {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-3 bg-slate-950/60 border border-slate-800 focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-slate-100 rounded-xl outline-none transition-all placeholder:text-slate-600 text-sm"
+                    className="w-full pl-10 pr-10 py-3 bg-[var(--bg-main)] border border-[var(--border-color)] focus:border-[var(--brand-cyan)] focus:ring-1 focus:ring-[var(--brand-cyan-bg)] text-[var(--text-primary)] rounded-xl outline-none transition-all placeholder:text-[var(--text-muted)] text-sm"
                     autoComplete="current-password"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 transition-colors"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -238,9 +238,9 @@ export default function Login({ setUser, addToast }) {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-800 text-brand-indigo focus:ring-brand-indigo bg-slate-950 accent-brand-indigo"
+                  className="w-4 h-4 rounded border-[var(--border-color)] text-[var(--brand-cyan)] focus:ring-[var(--brand-cyan)] bg-[var(--bg-main)] accent-[var(--brand-cyan)]"
                 />
-                <label htmlFor="remember-me" className="ml-2.5 text-xs font-semibold text-slate-400 cursor-pointer select-none">
+                <label htmlFor="remember-me" className="ml-2.5 text-xs font-semibold text-[var(--text-secondary)] cursor-pointer select-none">
                   Remember my login session
                 </label>
               </div>
@@ -269,7 +269,7 @@ export default function Login({ setUser, addToast }) {
             <form onSubmit={otpSent ? handleOtpSubmit : handleSendOtp} className="space-y-5">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                     Email Address
                   </label>
                   {otpSent && (
@@ -283,7 +283,7 @@ export default function Login({ setUser, addToast }) {
                   )}
                 </div>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[var(--text-muted)]">
                     <Mail className="w-4.5 h-4.5" />
                   </div>
                   <input
@@ -292,7 +292,7 @@ export default function Login({ setUser, addToast }) {
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     disabled={otpSent}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-950/60 border border-slate-800 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-slate-100 rounded-xl outline-none transition-all placeholder:text-slate-600 text-sm disabled:opacity-60"
+                    className="w-full pl-10 pr-4 py-3 bg-[var(--bg-main)] border border-[var(--border-color)] focus:border-[var(--brand-cyan)] focus:ring-1 focus:ring-[var(--brand-cyan-bg)] text-[var(--text-primary)] rounded-xl outline-none transition-all placeholder:text-[var(--text-muted)] text-sm disabled:opacity-60"
                     required
                   />
                 </div>
@@ -300,11 +300,11 @@ export default function Login({ setUser, addToast }) {
 
               {otpSent && (
                 <div className="space-y-3">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                     6-Digit Verification Code
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[var(--text-muted)]">
                       <KeyRound className="w-4.5 h-4.5 text-cyan-400" />
                     </div>
                     <input
@@ -314,7 +314,7 @@ export default function Login({ setUser, addToast }) {
                       placeholder="••••••"
                       value={otp}
                       onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="w-full pl-10 pr-4 py-3 text-center font-mono text-lg tracking-[0.4em] bg-slate-950/60 border border-cyan-500/50 focus:border-cyan-400 text-cyan-300 rounded-xl outline-none"
+                      className="w-full pl-10 pr-4 py-3 text-center font-mono text-lg tracking-[0.4em] bg-[var(--bg-main)] border border-[var(--brand-cyan)] focus:border-[var(--brand-cyan)] text-[var(--brand-cyan)] rounded-xl outline-none"
                       autoFocus
                       required
                     />
@@ -323,9 +323,9 @@ export default function Login({ setUser, addToast }) {
 
 
                   <div className="flex items-center justify-between text-xs pt-1">
-                    <span className="text-slate-400">Didn't receive the email code?</span>
+                    <span className="text-[var(--text-secondary)]">Didn't receive the email code?</span>
                     {resendCooldown > 0 ? (
-                      <span className="text-slate-500 font-mono">Resend in {resendCooldown}s</span>
+                      <span className="text-[var(--text-muted)] font-mono">Resend in {resendCooldown}s</span>
                     ) : (
                       <button
                         type="button"
@@ -345,7 +345,7 @@ export default function Login({ setUser, addToast }) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="button-primary w-full py-3.5 font-semibold bg-cyan-600 hover:bg-cyan-500 text-slate-950 flex items-center justify-center gap-2"
+                  className="button-primary w-full py-3.5 font-semibold bg-[var(--brand-cyan)] hover:bg-[var(--brand-cyan-hover)] text-white flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -363,7 +363,7 @@ export default function Login({ setUser, addToast }) {
                 <button
                   type="submit"
                   disabled={loading || otp.trim().length !== 6}
-                  className="button-primary w-full py-3.5 font-semibold bg-cyan-600 hover:bg-cyan-500 text-slate-950 flex items-center justify-center gap-2"
+                  className="button-primary w-full py-3.5 font-semibold bg-[var(--brand-cyan)] hover:bg-[var(--brand-cyan-hover)] text-white flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -382,10 +382,10 @@ export default function Login({ setUser, addToast }) {
           )}
 
           {/* Direct to Registration */}
-          <div className="text-center mt-6 pt-6 border-t border-slate-800/80">
-            <p className="text-xs text-slate-400 font-medium">
+          <div className="text-center mt-6 pt-6 border-t border-[var(--border-color)]">
+            <p className="text-xs text-[var(--text-secondary)] font-medium">
               Don't have an account?{' '}
-              <Link to="/register" className="font-semibold text-brand-indigo hover:text-indigo-400 transition-colors">
+              <Link to="/register" className="font-semibold text-[var(--brand-cyan)] hover:text-[var(--brand-cyan-hover)] transition-colors">
                 Create new account
               </Link>
             </p>

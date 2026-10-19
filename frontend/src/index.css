@@ -237,16 +237,13 @@ header {
   color: var(--text-primary);
 }
 
-/* ----------------------------------------------------
-   BROWSER AUTOFILL DARK THEME OVERRIDE
-   Prevents Chrome/Edge from turning inputs bright white
-   ---------------------------------------------------- */
+/* Keep browser autofill aligned with the active theme. */
 input:-webkit-autofill,
 input:-webkit-autofill:hover, 
 input:-webkit-autofill:focus, 
 input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 1000px #020617 inset !important;
-  -webkit-text-fill-color: #f8fafc !important;
-  caret-color: #f8fafc !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-main) inset !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  caret-color: var(--text-primary) !important;
   transition: background-color 5000s ease-in-out 0s;
 }
