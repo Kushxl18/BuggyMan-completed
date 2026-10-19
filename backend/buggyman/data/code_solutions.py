@@ -243,26 +243,24 @@ solutions[17] = [{
 # 18. paginator.py
 solutions[18] = [{
     'name': 'paginator.py',
-    'content': '''def paginate_sorted_records(records, offset=0, limit=10):
-    sorted_records = sorted(records, key=lambda r: (r.get("priority", 0), r.get("id", 0)))
-    return sorted_records[offset:offset + limit]
+    'content': '''def sort_and_paginate_posts(posts, page=1, page_size=2):
+    sorted_posts = sorted(posts, key=lambda p: (-p['upvotes'], p['id']))
+    start = (page - 1) * page_size
+    return sorted_posts[start:start + page_size]
 '''
 }]
 
 # 19. webhook_dispatcher.py
 solutions[19] = [{
     'name': 'webhook_dispatcher.py',
-    'content': '''class WebhookDispatcher:
-    def __init__(self, processed_ids=None):
-        self.processed = processed_ids if processed_ids is not None else set()
-
-    def handle_event(self, event, handler_fn):
-        event_id = event.get("id")
-        if event_id in self.processed:
-            return False
-        self.processed.add(event_id)
-        handler_fn(event)
-        return True
+    'content': '''def handle_webhook_event(event, processed_events, order_actions):
+    event_id = event.get('id')
+    if event_id in processed_events:
+        return 'ALREADY_PROCESSED'
+    processed_events.add(event_id)
+    action = f"FULFILL_{event['order_id']}"
+    order_actions.append(action)
+    return 'PROCESSED'
 '''
 }]
 
@@ -304,42 +302,43 @@ solutions[22] = [{
 # 23. pipeline.py
 solutions[23] = [{
     'name': 'pipeline.py',
-    'content': '''def process_pipeline_records(records):
-    valid = []
-    dropped = []
-    for r in records:
-        if isinstance(r, dict) and r.get("id") and r.get("email"):
-            valid.append(r)
-        else:
-            dropped.append(r)
-    return {"valid": valid, "dropped": dropped}
+    'content': '''def process_timesheets(rows):
+    valid_records = []
+    quarantined_records = []
+    for r in rows:
+        try:
+            hours = float(r['hours'])
+            valid_records.append({'emp_id': r['emp_id'], 'hours': hours})
+        except Exception as err:
+            quarantined_records.append({'record': r, 'error': str(err)})
+    return {'valid': valid_records, 'quarantined': quarantined_records}
 '''
 }]
 
 # 24. worker_queue.py
 solutions[24] = [{
     'name': 'worker_queue.py',
-    'content': '''class WorkerQueue:
-    def __init__(self):
-        self.dead_letter_queue = []
-
-    def handle_failed_job(self, job, error):
-        self.dead_letter_queue.append({
-            "job": job,
-            "error": str(error)
-        })
+    'content': '''def execute_job(queue, job, job_fn):
+    try:
+        job_fn(job)
+        queue.ack(job['id'])
+        return True
+    except Exception as err:
+        queue.send_to_dlq(job, str(err))
+        return False
 '''
 }]
 
 # 25. account_transfer.py
 solutions[25] = [{
     'name': 'account_transfer.py',
-    'content': '''def transfer_funds(ledger, source_id, dest_id, amount):
-    if ledger.get_balance(source_id) < amount:
-        return False
-    with ledger.transaction():
-        ledger.debit(source_id, amount)
-        ledger.credit(dest_id, amount)
+    'content': '''def transfer_funds(balances, sender, receiver, amount):
+    if balances.get(sender, 0) < amount:
+        raise ValueError('Insufficient funds')
+    if receiver not in balances:
+        raise KeyError(f'Receiver {receiver} not found')
+    balances[sender] -= amount
+    balances[receiver] += amount
     return True
 '''
 }]
@@ -347,44 +346,45 @@ solutions[25] = [{
 # 26. data_fetcher.py
 solutions[26] = [{
     'name': 'data_fetcher.py',
-    'content': '''import asyncio
-
-async def fetch_user_data(client, user_id):
-    profile, perms = await asyncio.gather(
-        client.get_profile(user_id),
-        client.get_permissions(user_id)
-    )
-    return {"profile": profile, "permissions": perms}
+    'content': '''class AsyncResultStore:
+    def __init__(self):
+        self.current_result = None
+        self.latest_issued_seq = 0
+        self.last_applied_seq = 0
+    def apply_response(self, response_seq_id, data):
+        if response_seq_id < self.latest_issued_seq:
+            return False
+        self.current_result = data
+        self.last_applied_seq = response_seq_id
+        return True
 '''
 }]
 
 # 27. token_refresh.py
 solutions[27] = [{
     'name': 'token_refresh.py',
-    'content': '''class TokenRefreshManager:
-    def __init__(self, auth_client):
-        self.auth_client = auth_client
-        self._refresh_lock = False
-
-    def refresh(self):
-        if self._refresh_lock:
-            return self.auth_client.get_current_token()
-        self._refresh_lock = True
-        try:
-            return self.auth_client.perform_refresh()
-        finally:
-            self._refresh_lock = False
+    'content': '''class TokenManager:
+    def __init__(self, refresh_fn):
+        self.refresh_fn = refresh_fn
+        self.access_token = None
+        self.is_refreshing = False
+    def get_token(self):
+        if self.access_token is not None:
+            return self.access_token
+        fresh_token = self.refresh_fn()
+        self.access_token = fresh_token
+        return self.access_token
 '''
 }]
 
 # 28. config_merger.py
 solutions[28] = [{
     'name': 'config_merger.py',
-    'content': '''def deep_merge_configs(base, override):
+    'content': '''def deep_merge(base, override):
     result = dict(base)
     for k, v in override.items():
         if k in result and isinstance(result[k], dict) and isinstance(v, dict):
-            result[k] = deep_merge_configs(result[k], v)
+            result[k] = deep_merge(result[k], v)
         else:
             result[k] = v
     return result
@@ -394,26 +394,22 @@ solutions[28] = [{
 # 29. inventory_service.py
 solutions[29] = [{
     'name': 'inventory_service.py',
-    'content': '''def apply_inventory_adjustment(current_stock, delta):
-    new_stock = current_stock + delta
-    if new_stock < 0:
-        return False, current_stock
-    return True, new_stock
+    'content': '''def decrement_stock(inventory, item_id, qty):
+    if inventory.get(item_id, 0) < qty:
+        raise ValueError('Insufficient stock')
+    inventory[item_id] = inventory[item_id] - qty
+    return inventory[item_id]
 '''
 }]
 
 # 30. csv_exporter.py
 solutions[30] = [{
     'name': 'csv_exporter.py',
-    'content': '''import csv
-import io
-
-def export_records_to_csv(records, fieldnames):
+    'content': '''import csv, io
+def export_to_csv_row(fields):
     output = io.StringIO()
-    writer = csv.DictWriter(output, fieldnames=fieldnames, lineterminator='\\n')
-    writer.writeheader()
-    for r in records:
-        writer.writerow(r)
+    writer = csv.writer(output, lineterminator='\\n')
+    writer.writerow(fields)
     return output.getvalue()
 '''
 }]
@@ -421,29 +417,28 @@ def export_records_to_csv(records, fieldnames):
 # 31. batch_processor.py
 solutions[31] = [{
     'name': 'batch_processor.py',
-    'content': '''def execute_batch(items, process_fn):
+    'content': '''def process_batch(items, send_fn):
     succeeded = []
     failed = []
     for item in items:
         try:
-            res = process_fn(item)
-            succeeded.append(res)
-        except Exception as e:
-            failed.append({"item": item, "error": str(e)})
-    return {"succeeded": succeeded, "failed": failed}
+            send_fn(item)
+            succeeded.append(item['id'])
+        except Exception as err:
+            failed.append({'id': item['id'], 'error': str(err)})
+    return {'succeeded': succeeded, 'failed': failed}
 '''
 }]
 
 # 32. cursor_paginator.py
 solutions[32] = [{
     'name': 'cursor_paginator.py',
-    'content': '''def get_next_cursor(items, last_seen_cursor):
-    if not items:
-        return None
-    next_cursor = items[-1].get("cursor")
-    if next_cursor == last_seen_cursor:
-        return None
-    return next_cursor
+    'content': '''def build_page_response(records, page_size, last_id):
+    if not records or len(records) < page_size:
+        next_cursor = None
+    else:
+        next_cursor = f'cur_{last_id}'
+    return {'records': records, 'next_cursor': next_cursor}
 '''
 }]
 
@@ -461,22 +456,17 @@ solutions[33] = [{
 # 34. rate_limiter.py
 solutions[34] = [{
     'name': 'rate_limiter.py',
-    'content': '''import time
-
-class SlidingWindowRateLimiter:
-    def __init__(self, limit=10, window_seconds=60):
-        self.limit = limit
-        self.window = window_seconds
-        self.requests = {}
-
-    def is_allowed(self, client_id):
-        now = time.time()
-        client_reqs = [t for t in self.requests.get(client_id, []) if now - t < self.window]
-        if len(client_reqs) >= self.limit:
-            self.requests[client_id] = client_reqs
+    'content': '''class SlidingWindowLimiter:
+    def __init__(self, max_requests=100, window_size=60):
+        self.max_requests = max_requests
+        self.window_size = window_size
+        self.history = []
+    def allow_request(self, current_time):
+        cutoff = current_time - self.window_size
+        self.history = [t for t in self.history if t > cutoff]
+        if not (len(self.history) < self.max_requests):
             return False
-        client_reqs.append(now)
-        self.requests[client_id] = client_reqs
+        self.history.append(current_time)
         return True
 '''
 }]
@@ -484,59 +474,58 @@ class SlidingWindowRateLimiter:
 # 35. service_client.py
 solutions[35] = [{
     'name': 'service_client.py',
-    'content': '''def call_external_service(client, endpoint):
+    'content': '''def verify_credentials(auth_fn, username, password):
     try:
-        return client.request(endpoint)
-    except Exception as e:
-        import logging
-        logging.error(f"Service call failed: {e}", exc_info=True)
+        return auth_fn(username, password)
+    except ConnectionError:
         raise
+    except Exception:
+        return {'authenticated': False, 'error': 'Invalid credentials'}
 '''
 }]
 
 # 36. payment_gateway.py
 solutions[36] = [{
     'name': 'payment_gateway.py',
-    'content': '''class ConcurrentPaymentGateway:
-    def __init__(self, ledger):
-        self.ledger = ledger
-
-    def process_charge(self, account_id, amount, idempotency_key):
-        if self.ledger.has_processed(idempotency_key):
-            return self.ledger.get_transaction(idempotency_key)
-        with self.ledger.lock(account_id):
-            if self.ledger.has_processed(idempotency_key):
-                return self.ledger.get_transaction(idempotency_key)
-            return self.ledger.debit(account_id, amount, idempotency_key=idempotency_key)
+    'content': '''def process_payment(order_id, paid_orders, processing_locks, charge_fn):
+    if order_id in paid_orders:
+        return {'status': 'ALREADY_PAID'}
+    if order_id in processing_locks:
+        return {'status': 'LOCKED'}
+    processing_locks.add(order_id)
+    try:
+        res = charge_fn(order_id)
+        paid_orders.add(order_id)
+        return {'status': 'SUCCESS', 'charge_id': res}
+    finally:
+        processing_locks.discard(order_id)
 '''
 }]
 
 # 37. job_scheduler.py
 solutions[37] = [{
     'name': 'job_scheduler.py',
-    'content': '''class DistributedJobScheduler:
-    def __init__(self, lock_manager):
-        self.lock_manager = lock_manager
-
-    def execute_job(self, job_id, job_fn):
-        with self.lock_manager.acquire(job_id) as acquired:
-            if not acquired:
-                return False
-            job_fn()
-            return True
+    'content': '''def should_reassign_job(current_time, job_id, leases):
+    lease_info = leases.get(job_id)
+    if not lease_info:
+        return True
+    return current_time > lease_info['expires_at']
+def renew_lease(leases, job_id, current_time, extension=30):
+    if job_id in leases:
+        leases[job_id]['expires_at'] = current_time + extension
+        return True
+    return False
 '''
 }]
 
 # 38. inventory_allocator.py
 solutions[38] = [{
     'name': 'inventory_allocator.py',
-    'content': '''def allocate_inventory(db_session, item_id, quantity):
-    with db_session.begin():
-        item = db_session.query_for_update(item_id)
-        if item.available_stock < quantity:
-            return False
-        item.available_stock -= quantity
-        db_session.commit()
+    'content': '''def reserve_seats(inventory, flight_id, requested_seats):
+    available = inventory.get(flight_id, 0)
+    if available < requested_seats:
+        return False
+    inventory[flight_id] = available - requested_seats
     return True
 '''
 }]
@@ -544,28 +533,21 @@ solutions[38] = [{
 # 39. cache_aside.py
 solutions[39] = [{
     'name': 'cache_aside.py',
-    'content': '''def update_user_profile(db, cache, user_id, new_data):
-    db.update_user(user_id, new_data)
-    cache.delete(f"user:{user_id}")
+    'content': '''def update_user_bio(db, cache, user_id, new_bio):
+    db[user_id] = new_bio
+    cache.delete(f'user:{user_id}')
+    return True
 '''
 }]
 
 # 40. distributed_lock.py
 solutions[40] = [{
     'name': 'distributed_lock.py',
-    'content': '''class DistributedLock:
-    def __init__(self, redis_client):
-        self.redis = redis_client
-
-    def release_lock(self, lock_key, lock_owner_token):
-        script = """
-        if redis.call("get", KEYS[1]) == ARGV[1] then
-            return redis.call("del", KEYS[1])
-        else
-            return 0
-        end
-        """
-        return self.redis.eval(script, 1, lock_key, lock_owner_token)
+    'content': '''def release_lock(lock_storage, lock_key, owner_token):
+    if lock_storage.get(lock_key) == owner_token:
+        del lock_storage[lock_key]
+        return True
+    return False
 '''
 }]
 
@@ -580,144 +562,111 @@ solutions[41] = [{
 # 42. report_writer.py
 solutions[42] = [{
     'name': 'report_writer.py',
-    'content': '''import os
-import tempfile
-
-def write_atomic_report(filepath, content):
-    dir_name = os.path.dirname(filepath)
-    with tempfile.NamedTemporaryFile("w", dir=dir_name, delete=False) as tf:
-        tf.write(content)
-        temp_name = tf.name
-    os.replace(temp_name, filepath)
+    'content': '''def write_report_safely(file_system, dest_path, content, pid):
+    temp_path = f'{dest_path}.tmp.{pid}'
+    file_system[temp_path] = content
+    file_system[dest_path] = file_system.pop(temp_path)
+    return dest_path
 '''
 }]
 
 # 43. resource_manager.py
 solutions[43] = [{
     'name': 'resource_manager.py',
-    'content': '''import asyncio
-
-class AsyncResourceManager:
-    def __init__(self):
-        self.lock = asyncio.Lock()
-
-    async def transfer(self, source, target, amount):
-        async with self.lock:
-            source.balance -= amount
-            target.balance += amount
+    'content': '''def determine_lock_order(required_resources):
+    return sorted(list(required_resources))
 '''
 }]
 
 # 44. access_controller.py
 solutions[44] = [{
     'name': 'access_controller.py',
-    'content': '''def execute_privileged_operation(user, resource_id, op_fn):
-    if not user.has_permission("MODIFY", resource_id):
-        raise PermissionError("Access Denied")
-    return op_fn(resource_id)
+    'content': '''def elevate_user_role(user_db, actor, target, new_role, auth_checker):
+    if not auth_checker(actor):
+        raise PermissionError('Actor not authorized to grant roles')
+    user_db[target] = new_role
+    return True
 '''
 }]
 
 # 45. migration_runner.py
 solutions[45] = [{
     'name': 'migration_runner.py',
-    'content': '''def run_migration_batch(db, records):
-    with db.transaction():
-        for r in records:
-            db.insert(r)
+    'content': '''def migrate_batch(destination_db, checkpoint_store, batch):
+    for record in batch:
+        destination_db[record['id']] = record
+    if batch:
+        checkpoint_store['last_id'] = batch[-1]['id']
+    return True
 '''
 }]
 
 # 46. event_stream.py
 solutions[46] = [{
     'name': 'event_stream.py',
-    'content': '''class EventStreamProcessor:
-    def __init__(self):
-        self.expected_seq = 1
-        self.buffer = {}
-
-    def process_event(self, event, apply_fn):
-        seq = event.get("seq")
-        self.buffer[seq] = event
-        while self.expected_seq in self.buffer:
-            ev = self.buffer.pop(self.expected_seq)
-            apply_fn(ev)
-            self.expected_seq += 1
+    'content': '''def assign_event_shard(event, num_shards):
+    entity_id = str(event.get('entity_id', ''))
+    return hash(entity_id) % num_shards
 '''
 }]
 
 # 47. saga_coordinator.py
 solutions[47] = [{
     'name': 'saga_coordinator.py',
-    'content': '''class SagaCoordinator:
-    def execute_saga(self, steps):
-        executed = []
+    'content': '''def execute_saga(steps):
+    completed = []
+    for step in steps:
         try:
-            for forward_fn, compensate_fn in steps:
-                forward_fn()
-                executed.append(compensate_fn)
+            step.execute()
+            completed.append(step)
         except Exception:
-            for comp_fn in reversed(executed):
-                try:
-                    comp_fn()
-                except Exception:
-                    pass
+            for s in reversed(completed):
+                s.rollback()
             raise
+    return True
 '''
 }]
 
 # 48. stream_parser.py
 solutions[48] = [{
     'name': 'stream_parser.py',
-    'content': '''def parse_chunked_stream(stream):
-    for chunk in stream:
-        yield chunk.strip()
+    'content': '''def parse_stream_chunks(chunks):
+    buffer = ''
+    for c in chunks:
+        buffer += c
+        while '\\n' in buffer:
+            line, buffer = buffer.split('\\n', 1)
+            yield line
+    if buffer:
+        yield buffer
 '''
 }]
 
 # 49. account_service.py
 solutions[49] = [{
     'name': 'account_service.py',
-    'content': '''def update_account_status(db, account_id, new_status):
-    with db.transaction():
-        db.update_status(account_id, new_status)
-        db.log_audit(account_id, f"Status updated to {new_status}")
+    'content': '''def update_account(profile, new_email, new_phone):
+    if '@' not in new_email:
+        raise ValueError('Invalid email')
+    if not (new_phone and new_phone.isdigit() and len(new_phone) == 10):
+        raise ValueError('Invalid phone number')
+    profile['email'] = new_email
+    profile['phone'] = new_phone
+    return True
 '''
 }]
 
 # 50. seat_reservation.py
 solutions[50] = [{
     'name': 'seat_reservation.py',
-    'content': '''class SeatReservationSystem:
-    def __init__(self, total_seats):
-        self.available_seats = total_seats
-        self.reserved_seats = set()
-
-    def reserve(self, seat_number, user_id):
-        if seat_number in self.reserved_seats or self.available_seats <= 0:
-            return False
-        self.reserved_seats.add(seat_number)
-        self.available_seats -= 1
-        return True
+    'content': '''def reserve_seat(reservations, seat_id, user_id, current_time, ttl=300):
+    existing = reservations.get(seat_id)
+    if existing and existing.get('expires_at', 0) > current_time:
+        return False
+    reservations[seat_id] = {'user': user_id, 'expires_at': current_time + ttl}
+    return True
 '''
 }]
 
 def get_code_solutions():
     return solutions
-
-if __name__ == '__main__':
-    print("Validating all 50 solutions against EvaluationEngine...")
-    passed_count = 0
-    for cid in range(1, 51):
-        c = chs[cid]
-        sol = solutions[cid]
-        res = engine.evaluate(c, files=sol)
-        if res['success']:
-            passed_count += 1
-        else:
-            print(f"FAILED: ID {cid} {c['title']}")
-            print("  Error:", res.get('error'))
-            print("  AI Summary:", res.get('ai_summary'))
-            print("  Test Results:", res.get('test_results'))
-
-    print(f"\nFinal Result: {passed_count}/50 passed")

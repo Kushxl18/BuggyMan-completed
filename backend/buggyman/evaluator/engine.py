@@ -191,8 +191,8 @@ class EvaluationEngine:
             success = (tests_passed == tests_total) and not timed_out and (exit_code == 0) and not bug_signature_detected and not error
             score = int(round((tests_passed / tests_total) * points)) if success else 0
         else:
-            success = (exit_code == 0) and not timed_out and not error and not bug_signature_detected
-            score = points if success else 0
+            success = False
+            score = 0
 
         # Generate summary message
         if timed_out:

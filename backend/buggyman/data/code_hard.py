@@ -402,12 +402,18 @@ Corrupted financial compliance reports sent to regulators.
     return dest_path'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Writes to temp file then renames', 'input': '''fs = {}
-temp_path = f"report.csv.tmp.123"
-# Simulate safe atomic write: write to temp, then move to final
-fs[temp_path] = "HEADER\\nDATA"
-fs["report.csv"] = fs.pop(temp_path)
-"report.csv" in fs and temp_path not in fs''', 'expected': 'True', 'hidden': False}
+            {'id': 1, 'name': 'Visible: Writes to temp file then renames', 'input': '''class MockFS(dict):
+    def __init__(self):
+        super().__init__()
+        self.temp_used = False
+    def __setitem__(self, k, v):
+        if ".tmp." in str(k):
+            self.temp_used = True
+        super().__setitem__(k, v)
+
+fs = MockFS()
+write_report_safely(fs, "report.csv", "DATA", 123)
+fs.temp_used and fs.get("report.csv") == "DATA"''', 'expected': 'True', 'hidden': False}
         ],
         'bug_signature': 'file_system[dest_path] = content\n    return dest_path',
         'suspected_component': 'report_writer.py',
@@ -756,15 +762,8 @@ Server container memory exhaustion and pod crash-looping in Kubernetes.
     return lines'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Streaming generator yields lines without full accumulation', 'input': '''def clean_stream(chunks):
-    buffer = ""
-    for c in chunks:
-        buffer += c
-        while "\\n" in buffer:
-            line, buffer = buffer.split("\\n", 1)
-            yield line
-
-list(clean_stream(["line1\\nli", "ne2\\n", "line3\\n"])) == ["line1", "line2", "line3"]''', 'expected': 'True', 'hidden': False}
+            {'id': 1, 'name': 'Visible: Streaming generator yields lines without full accumulation', 'input': '''chunks = ["line1\\nli", "ne2\\n", "line3\\n"]
+list(parse_stream_chunks(chunks)) == ["line1", "line2", "line3"]''', 'expected': 'True', 'hidden': False}
         ],
         'bug_signature': 'all_chunks = []\n    lines = []\n    for chunk in chunks:\n        all_chunks.append(chunk)',
         'suspected_component': 'stream_parser.py',

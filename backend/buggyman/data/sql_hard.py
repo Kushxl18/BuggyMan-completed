@@ -357,7 +357,7 @@ INSERT INTO user_settings VALUES
             {'id': 1, 'name': 'Visible: Backfills NULL notification emails', 'input': '', 'expected': """UPDATE user_settings SET notification_email = 'no-reply@domain.com' WHERE notification_email IS NULL;
 SELECT id, user_id, notification_email FROM user_settings ORDER BY id;"""}
         ],
-        'bug_signature': 'UPDATE profiles SET country = (SELECT country FROM users WHERE id = profiles.user_id);',
+        'bug_signature': '',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
             'Add `UPDATE user_settings SET notification_email = \'no-reply@domain.com\' WHERE notification_email IS NULL;` before SELECT.'

@@ -121,39 +121,34 @@ for tc in test_cases:
                         res_obj = ast.literal_eval(actual_out)
                         passed = (exp_obj == res_obj)
                     except Exception:
-                        if len(expected) > 6 and expected in actual_out and not expected.strip('0123456789.').replace('-', '') == '':
-                            passed = True
+                        passed = False
             except Exception as eval_err:
                 fn_name = inp.strip()
                 if fn_name in user_globals and callable(user_globals[fn_name]):
-                    res = user_globals[fn_name]()
-                    actual_out = str(res).strip()
-                    if actual_out == expected:
-                        passed = True
-                    else:
-                        try:
-                            exp_obj = ast.literal_eval(expected)
-                            res_obj = ast.literal_eval(actual_out)
-                            passed = (exp_obj == res_obj)
-                        except Exception:
-                            passed = False
-                elif expected and (expected in str(user_globals) or expected in code_content):
-                    passed = True
-                    actual_out = expected
+                    try:
+                        res = user_globals[fn_name]()
+                        actual_out = str(res).strip()
+                        if actual_out == expected:
+                            passed = True
+                        else:
+                            try:
+                                exp_obj = ast.literal_eval(expected)
+                                res_obj = ast.literal_eval(actual_out)
+                                passed = (exp_obj == res_obj)
+                            except Exception:
+                                passed = False
+                    except Exception as fn_err:
+                        passed = False
+                        err_msg = str(fn_err)
+                        actual_out = f"Error: {{fn_err}}"
                 else:
-                    raise eval_err
-        elif expected:
-            # Fallback assertion against user globals or source execution
-            if expected in str(user_globals) or expected in code_content:
-                passed = True
-                actual_out = expected
-            else:
-                passed = False
-                actual_out = f"Expected '{{expected}}' not found in globals or code"
-                err_msg = actual_out
+                    passed = False
+                    err_msg = str(eval_err)
+                    actual_out = f"Error: {{eval_err}}"
         else:
-            passed = True
-            actual_out = "Execution clean"
+            passed = False
+            actual_out = "No test input provided for test case"
+            err_msg = actual_out
 
     except Exception as ex:
         passed = False
@@ -191,17 +186,16 @@ print(json.dumps(test_results))
                 parsed_tests = []
 
         if not parsed_tests and default_test_cases:
-            # Generate test results from execution status if harness didn't print valid JSON
-            success = (sandbox_result.exit_code == 0) and not sandbox_result.timed_out
+            # If harness failed or didn't output valid JSON, mark tests as failed
             for tc in default_test_cases:
                 parsed_tests.append({
                     'id': tc.get('id'),
                     'name': tc.get('name', 'Execution Test'),
-                    'passed': success,
+                    'passed': False,
                     'input': tc.get('input', ''),
                     'expected': tc.get('expected', ''),
-                    'actual': "Clean exit" if success else (stderr or "Execution failed"),
-                    'error': None if success else stderr
+                    'actual': stderr or "Execution failed before tests completed",
+                    'error': stderr or "Test runner failed"
                 })
 
         return {
@@ -307,9 +301,17 @@ const userCodeStr = fs.readFileSync('{primary_filename}', 'utf8');
 const strippedUserCode = userCodeStr.split('\\n')
     .filter(line => !line.toLowerCase().includes('buggy signature') && !line.toLowerCase().includes('fix bug in'))
     .join('\\n');
-const normUserCode = strippedUserCode.toLowerCase().replace(/\\s+/g, ' ');
+const codeNoComments = strippedUserCode
+    .replace(/\\/\\*[\\s\\S]*?\\*\\//g, '')
+    .split('\\n')
+    .map(line => {{
+        const idx = line.indexOf('//');
+        return idx !== -1 ? line.substring(0, idx) : line;
+    }})
+    .join('\\n');
+const normCleanCode = codeNoComments.toLowerCase().replace(/\\s+/g, ' ');
 const normBugSig = bugSignature.toLowerCase().replace(/\\s+/g, ' ').trim();
-const hasBug = (normBugSig && normUserCode.includes(normBugSig));
+const hasBug = Boolean(normBugSig && normCleanCode.includes(normBugSig));
 
 for (const tc of testCases) {{
     const tcId = tc.id;
@@ -328,38 +330,31 @@ for (const tc of testCases) {{
             passed = false;
             actual = `Bug signature still detected: '${{bugSignature}}'`;
             error = actual;
-        }} else if (expected && userCodeStr.includes(expected)) {{
-            passed = true;
-            actual = expected;
-        }} else if (expected === '' || expected === 'undefined') {{
-            passed = true;
-            actual = 'Clean execution';
-        }} else if (normUserCode.includes(normExpected)) {{
-            passed = true;
-            actual = expected;
-        }} else if (normExpected.includes('setcount') && (normUserCode.includes('setcount(') || normUserCode.includes('prev =>'))) {{
-            passed = true;
-            actual = 'Uses immutable state update';
-        }} else if (normExpected.includes('link') && (normUserCode.includes('<link') || normUserCode.includes('link'))) {{
-            passed = true;
-            actual = 'Uses React Router Link component';
-        }} else if (normExpected.includes('onclick') && (normUserCode.includes('onclick=') || normUserCode.includes('onclick={{'))) {{
-            passed = true;
-            actual = 'Uses valid event binding';
-        }} else if (normExpected.includes('lower') || normExpected.includes('case')) {{
-            if (normUserCode.includes('.tolowercase()')) {{
-                passed = true;
-                actual = 'Uses case-insensitive string matching';
-            }} else {{
+        }} else if (input && input.trim()) {{
+            try {{
+                const evalFn = new Function('exports', 'require', input);
+                const evalRes = evalFn(userExports, require);
+                const evalStr = String(evalRes !== undefined ? evalRes : '').trim();
+                if (evalStr === expected) {{
+                    passed = true;
+                    actual = evalStr;
+                }} else {{
+                    passed = false;
+                    actual = evalStr;
+                    error = `Expected '${{expected}}', got '${{evalStr}}'`;
+                }}
+            }} catch (evalErr) {{
                 passed = false;
-                actual = 'Missing case-insensitive search logic (.toLowerCase)';
+                error = evalErr.message;
+                actual = `Error: ${{evalErr.message}}`;
             }}
-        }} else if (normExpected.includes('clean') || normExpected.includes('renders') || normExpected.includes('without ui')) {{
+        }} else if (expected && (codeNoComments.includes(expected) || normCleanCode.includes(normExpected))) {{
             passed = true;
-            actual = 'Renders cleanly without UI or state errors';
+            actual = expected;
         }} else {{
             passed = false;
             actual = `Code did not satisfy expected assertion '${{expected}}'`;
+            error = actual;
         }}
     }} catch (e) {{
         passed = false;
@@ -411,18 +406,16 @@ console.log(JSON.stringify(testResults));
                     'error': stderr or "Execution failed"
                 })
         elif not parsed_tests and default_test_cases:
-            success = (sandbox_result.exit_code == 0) and not sandbox_result.timed_out
             for tc in default_test_cases:
                 exp = str(tc.get('expected', '')).strip()
-                passed = success and (not exp or exp.lower() in user_code.lower())
                 parsed_tests.append({
                     'id': tc.get('id'),
                     'name': tc.get('name', 'JS Execution Test'),
-                    'passed': passed,
+                    'passed': False,
                     'input': tc.get('input', ''),
                     'expected': exp,
-                    'actual': exp if passed else (stderr or "Execution failed"),
-                    'error': None if passed else stderr
+                    'actual': stderr or "Execution failed before tests completed",
+                    'error': stderr or "Execution failed"
                 })
 
         return {
@@ -538,9 +531,17 @@ class StaticCodeRuntimeAdapter(BaseRuntimeAdapter):
         clean_code_for_sig = "\n".join(clean_code_lines)
         if bug_sig and bug_sig.strip():
             norm_bug = re.sub(r'\s+', ' ', bug_sig).strip().lower()
-            norm_code = re.sub(r'\s+', ' ', clean_code_for_sig).strip().lower()
-            if norm_bug in norm_code:
+            norm_code_sig = re.sub(r'\s+', ' ', clean_code_for_sig).strip().lower()
+            if norm_bug in norm_code_sig:
                 has_bug = True
+
+        # Strip all single-line and multi-line comments for pattern verification
+        clean_code_no_comments = re.sub(r'/\*[\s\S]*?\*/', '', clean_code_for_sig)
+        clean_code_no_comments = "\n".join([
+            l[:l.index('//')] if '//' in l else l
+            for l in clean_code_no_comments.splitlines()
+        ])
+        norm_code = re.sub(r'\s+', ' ', clean_code_no_comments).lower()
 
         # 2. Evaluate test cases against AST, CSS, DOM and code patterns
         for tc in (test_cases or []):
@@ -555,43 +556,18 @@ class StaticCodeRuntimeAdapter(BaseRuntimeAdapter):
                 passed = False
                 actual = f"Bug signature still detected in code: '{bug_sig}'"
             elif not expected:
-                passed = True
-                actual = "Frontend verification clean"
+                passed = False
+                actual = "No verification criteria defined"
             else:
-                norm_code = re.sub(r'\s+', ' ', all_code).lower()
                 norm_expected = re.sub(r'\s+', ' ', expected).lower()
 
                 # Flexible AST / JSX / DOM / CSS pattern matching
-                if norm_expected in norm_code:
+                if norm_expected in norm_code or expected in clean_code_no_comments:
                     passed = True
                     actual = expected
                 else:
-                    # Alternative semantic check for React state / event patterns
-                    if "setcount" in norm_expected and ("setcount(" in norm_code or "prev =>" in norm_code):
-                        passed = True
-                        actual = "Uses immutable state update"
-                    elif "link" in norm_expected and ("<link" in norm_code or "link" in norm_code):
-                        passed = True
-                        actual = "Uses React Router Link component"
-                    elif "onclick" in norm_expected and ("onclick=" in norm_code or "onclick={" in norm_code):
-                        passed = True
-                        actual = "Uses valid event binding syntax"
-                    elif "grid" in norm_expected and ("repeat(1" in norm_code or "1fr" in norm_code):
-                        passed = True
-                        actual = "Uses responsive grid layout rule"
-                    elif "stoppropag" in norm_expected and ("stoppropag" in norm_code):
-                        passed = True
-                        actual = "Uses stopPropagation for overlay clicks"
-                    elif "case" in norm_expected or "lower" in norm_expected:
-                        if ".tolowercase()" in norm_code:
-                            passed = True
-                            actual = "Uses case-insensitive string matching"
-                    elif "renders cleanly" in norm_expected or "without ui" in norm_expected or "clean" in norm_expected:
-                        passed = True
-                        actual = "Renders cleanly without UI or state errors"
-                    else:
-                        passed = False
-                        actual = f"Failed verification check. Expected: '{expected}'"
+                    passed = False
+                    actual = f"Failed verification check. Expected: '{expected}'"
 
             parsed_tests.append({
                 'id': tc_id,
@@ -694,6 +670,22 @@ class SQLRuntimeAdapter(BaseRuntimeAdapter):
             ordered_comparison = challenge.get('ordered_comparison') if isinstance(challenge, dict) else getattr(challenge, 'ordered_comparison', False)
 
             if not expected_query:
+                chal_id = challenge.get('id') if isinstance(challenge, dict) else getattr(challenge, 'id', None)
+                chal_title = str(challenge.get('title') if isinstance(challenge, dict) else getattr(challenge, 'title', ''))
+                try:
+                    from buggyman.data.sql_challenges import get_sql_challenges
+                    for sc in get_sql_challenges():
+                        if (chal_id is not None and str(sc.get('id')) == str(chal_id)) or \
+                           (sc.get('title') and sc.get('title') == chal_title) or \
+                           (sc.get('title') and chal_title and (sc.get('title') in chal_title or chal_title in sc.get('title'))):
+                            expected_query = sc.get('expected_query')
+                            if sc.get('ordered_comparison'):
+                                ordered_comparison = True
+                            break
+                except Exception:
+                    pass
+
+            if not expected_query:
                 chal_id = str(challenge.get('id') if isinstance(challenge, dict) else getattr(challenge, 'id', '')).upper()
                 chal_title = str(challenge.get('title') if isinstance(challenge, dict) else getattr(challenge, 'title', '')).upper()
                 from buggyman.views import SPECIAL_CHALLENGE_CATALOG
@@ -706,7 +698,7 @@ class SQLRuntimeAdapter(BaseRuntimeAdapter):
 
             if not ordered_comparison:
                 chal_title = str(challenge.get('title') if isinstance(challenge, dict) else getattr(challenge, 'title', '')).lower()
-                if 'order' in chal_title or 'sort' in chal_title:
+                if 'order' in chal_title or 'sort' in chal_title or 'rank' in chal_title or 'top-' in chal_title:
                     ordered_comparison = True
 
             expected_columns = []
@@ -767,6 +759,8 @@ class SQLRuntimeAdapter(BaseRuntimeAdapter):
                     cols_ok = True
                     if expected_columns and last_columns:
                         cols_ok = ([c.lower() for c in last_columns] == [c.lower() for c in expected_columns])
+                    else:
+                        cols_ok = False
 
                     if ordered_comparison:
                         rows_ok = (last_rows == expected_rows)
@@ -781,28 +775,27 @@ class SQLRuntimeAdapter(BaseRuntimeAdapter):
                     passed = cols_ok and rows_ok
                     actual_output = stdout if passed else f"Returned {len(last_rows)} rows (Expected {len(expected_rows)} matching rows)."
                     if not passed:
-                        if not rows_ok and ordered_comparison:
+                        if not cols_ok:
+                            err_detail = f"Column schema mismatch. Expected columns: {expected_columns}, Got: {last_columns}"
+                        elif not rows_ok and ordered_comparison:
                             err_detail = f"Row order mismatch. Expected:\n{expected_table_str}\nGot:\n{stdout}"
                         elif not rows_ok:
                             err_detail = f"Result set mismatch. Expected rows:\n{expected_table_str}\nGot:\n{stdout}"
-                        elif not cols_ok:
-                            err_detail = f"Column schema mismatch. Expected columns: {expected_columns}, Got: {last_columns}"
                 else:
-                    if not expected_str or len(user_stmts) > 0:
-                        passed = True
-                        actual_output = stdout
-                    else:
-                        norm_expected = re.sub(r'\s+', ' ', expected_str).lower()
-                        norm_stdout = re.sub(r'\s+', ' ', stdout).lower()
-                        norm_code = re.sub(r'\s+', ' ', user_code).lower()
-
-                        if norm_expected in norm_stdout or norm_expected in norm_code:
+                    if expected_str:
+                        norm_expected = re.sub(r'\s+', ' ', expected_str).strip().lower()
+                        norm_stdout = re.sub(r'\s+', ' ', stdout).strip().lower()
+                        if norm_expected in norm_stdout:
                             passed = True
                             actual_output = expected_str
                         else:
                             passed = False
                             actual_output = f"Result did not satisfy assertion: '{expected_str}'"
                             err_detail = actual_output
+                    else:
+                        passed = False
+                        actual_output = "No valid assertion criteria found for SQL verification."
+                        err_detail = actual_output
 
                 parsed_tests.append({
                     'id': tc_id,
