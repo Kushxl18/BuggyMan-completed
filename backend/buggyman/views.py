@@ -300,25 +300,6 @@ def profile_view(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def challenges_list_view(request):
-    # Ensure catalog items are seeded in database if catalog challenges missing
-    if not Challenge.objects.filter(title__startswith='[RE-').exists():
-        for key, item in SPECIAL_CHALLENGE_CATALOG.items():
-            Challenge.objects.get_or_create(
-                title=f"[{key}] {item['title']}",
-                defaults={
-                    'description': item['description'],
-                    'difficulty': item['difficulty'],
-                    'technology': item['technology'],
-                    'category': item['category'],
-                    'time_estimate': item['time_estimate'],
-                    'points': item['points'],
-                    'files': item['files'],
-                    'test_cases': item['test_cases'],
-                    'bug_signature': item['bug_signature'],
-                    'suspected_component': item['suspected_component']
-                }
-            )
-
     user = get_authenticated_user(request)
     queryset = Challenge.objects.all().order_by('id')
 
@@ -348,10 +329,13 @@ def challenges_list_view(request):
         elif arena_low in ('frontend', 'studio', 'design'):
             queryset = queryset.filter(
                 Q(technology__in=['React', 'React Router', 'Web', 'CSS', 'HTML', 'Styling', 'Controlled Components']) |
-                Q(title__startswith='[RE-')
+                Q(title__startswith='[RE-') | Q(title__startswith='[FE-')
             )
         elif arena_low in ('debugging', 'backend', 'code'):
-            queryset = queryset.filter(technology__in=['Python', 'Django', 'NodeJS', 'JavaScript', 'Backend', 'FastAPI'])
+            queryset = queryset.filter(
+                Q(technology__in=['Python', 'Django', 'NodeJS', 'JavaScript', 'Backend', 'FastAPI']) |
+                Q(title__startswith='[PY-') | Q(title__startswith='[JS-') | Q(title__startswith='[CODE-')
+            )
     elif not search:
         queryset = queryset.exclude(title__startswith='[SQL-').exclude(title__startswith='[RE-').exclude(title__startswith='[FE-')
 

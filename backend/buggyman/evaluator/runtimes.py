@@ -27,8 +27,11 @@ class PythonRuntimeAdapter(BaseRuntimeAdapter):
         primary_file = py_files[0] if py_files else (files[0] if files else {'name': 'main.py', 'content': ''})
         primary_filename = primary_file.get('name', 'main.py')
 
+        c_dict = challenge if isinstance(challenge, dict) else (challenge.to_dict() if hasattr(challenge, 'to_dict') else {})
+        bug_sig = c_dict.get('bug_signature') or c_dict.get('bugSignature') or ""
+
         # 2. Build test runner harness script
-        test_harness_code = self._build_python_harness(primary_filename, test_cases)
+        test_harness_code = self._build_python_harness(primary_filename, test_cases, bug_sig)
         
         all_files = list(files)
         all_files.append({
@@ -45,18 +48,23 @@ class PythonRuntimeAdapter(BaseRuntimeAdapter):
         # 4. Parse harness results
         return self._parse_sandbox_output(sandbox_result, test_cases)
 
-    def _build_python_harness(self, primary_filename, test_cases):
+    def _build_python_harness(self, primary_filename, test_cases, bug_signature=""):
         raw_json = json.dumps(test_cases or [])
+        bug_sig_json = json.dumps(bug_signature or "")
 
         return f"""import sys
+import re
+import ast
 import json
 import traceback
 
 test_results = []
 test_cases = json.loads({repr(raw_json)})
+bug_signature = json.loads({repr(bug_sig_json)})
 
 # Import or execute target module
 user_globals = {{}}
+code_content = ""
 try:
     with open('{primary_filename}', 'r', encoding='utf-8') as f:
         code_content = f.read()
@@ -70,6 +78,18 @@ except Exception as e:
     traceback.print_exc(file=sys.stderr)
     sys.exit(1)
 
+clean_code_lines = [
+    l for l in code_content.splitlines()
+    if "buggy signature" not in l.lower() and "fix bug in" not in l.lower()
+]
+clean_code = "\\n".join(clean_code_lines)
+has_bug = False
+if bug_signature and bug_signature.strip():
+    norm_bug = re.sub(r'\\s+', ' ', bug_signature).strip().lower()
+    norm_code = re.sub(r'\\s+', ' ', clean_code).strip().lower()
+    if norm_bug in norm_code:
+        has_bug = True
+
 for tc in test_cases:
     tc_id = tc.get('id')
     tc_name = tc.get('name', f'Test {{tc_id}}')
@@ -80,31 +100,57 @@ for tc in test_cases:
     actual_out = ""
     err_msg = None
     try:
-        # Check if expression or function call in input
-        if inp and inp.strip():
+        if has_bug:
+            passed = False
+            actual_out = f"Bug signature still detected in code: '{{bug_signature}}'"
+            err_msg = actual_out
+        elif inp and inp.strip():
             try:
-                res = eval(inp.strip(), user_globals)
+                if "\\n" in inp.strip():
+                    lines = inp.strip().split("\\n")
+                    exec("\\n".join(lines[:-1]), user_globals)
+                    res = eval(lines[-1].strip(), user_globals)
+                else:
+                    res = eval(inp.strip(), user_globals)
                 actual_out = str(res).strip()
-                passed = (actual_out == expected) or (expected in actual_out)
+                if actual_out == expected:
+                    passed = True
+                else:
+                    try:
+                        exp_obj = ast.literal_eval(expected)
+                        res_obj = ast.literal_eval(actual_out)
+                        passed = (exp_obj == res_obj)
+                    except Exception:
+                        if len(expected) > 6 and expected in actual_out and not expected.strip('0123456789.').replace('-', '') == '':
+                            passed = True
             except Exception as eval_err:
                 fn_name = inp.strip()
                 if fn_name in user_globals and callable(user_globals[fn_name]):
                     res = user_globals[fn_name]()
                     actual_out = str(res).strip()
-                    passed = (actual_out == expected) or (expected in actual_out)
-                elif expected and expected in str(user_globals):
+                    if actual_out == expected:
+                        passed = True
+                    else:
+                        try:
+                            exp_obj = ast.literal_eval(expected)
+                            res_obj = ast.literal_eval(actual_out)
+                            passed = (exp_obj == res_obj)
+                        except Exception:
+                            passed = False
+                elif expected and (expected in str(user_globals) or expected in code_content):
                     passed = True
                     actual_out = expected
                 else:
                     raise eval_err
         elif expected:
             # Fallback assertion against user globals or source execution
-            if expected in str(user_globals):
+            if expected in str(user_globals) or expected in code_content:
                 passed = True
                 actual_out = expected
             else:
-                actual_out = "Execution succeeded"
-                passed = True
+                passed = False
+                actual_out = f"Expected '{{expected}}' not found in globals or code"
+                err_msg = actual_out
         else:
             passed = True
             actual_out = "Execution clean"
@@ -257,7 +303,10 @@ try {{
 }}
 
 const userCodeStr = fs.readFileSync('{primary_filename}', 'utf8');
-const normUserCode = userCodeStr.toLowerCase().replace(/\\s+/g, ' ');
+const strippedUserCode = userCodeStr.split('\\n')
+    .filter(line => !line.toLowerCase().includes('buggy signature') && !line.toLowerCase().includes('fix bug in'))
+    .join('\\n');
+const normUserCode = strippedUserCode.toLowerCase().replace(/\\s+/g, ' ');
 const normBugSig = bugSignature.toLowerCase().replace(/\\s+/g, ' ').trim();
 const hasBug = (normBugSig && normUserCode.includes(normBugSig));
 
@@ -479,10 +528,15 @@ class StaticCodeRuntimeAdapter(BaseRuntimeAdapter):
                 'test_results': parsed_tests
             }
 
-        # 1. Bug signature detection check
+        # 1. Bug signature detection check (strip template header comments)
+        clean_code_lines = [
+            l for l in all_code.splitlines()
+            if "buggy signature" not in l.lower() and "fix bug in" not in l.lower()
+        ]
+        clean_code_for_sig = "\n".join(clean_code_lines)
         if bug_sig and bug_sig.strip():
             norm_bug = re.sub(r'\s+', ' ', bug_sig).strip().lower()
-            norm_code = re.sub(r'\s+', ' ', all_code).strip().lower()
+            norm_code = re.sub(r'\s+', ' ', clean_code_for_sig).strip().lower()
             if norm_bug in norm_code:
                 has_bug = True
 
@@ -658,7 +712,15 @@ class SQLRuntimeAdapter(BaseRuntimeAdapter):
 
             if expected_query:
                 try:
-                    exp_cursor = conn.cursor()
+                    exp_conn = sqlite3.connect(":memory:")
+                    exp_conn.execute("PRAGMA foreign_keys = ON;")
+                    if setup_code and setup_code.strip():
+                        for stmt in setup_code.split(";"):
+                            s = stmt.strip()
+                            if s:
+                                exp_conn.execute(s)
+                        exp_conn.commit()
+                    exp_cursor = exp_conn.cursor()
                     for eq_stmt in expected_query.split(";"):
                         eq_clean = eq_stmt.strip()
                         if eq_clean:
@@ -667,8 +729,23 @@ class SQLRuntimeAdapter(BaseRuntimeAdapter):
                                 expected_columns = [d[0] for d in exp_cursor.description]
                                 expected_rows = exp_cursor.fetchall()
                                 expected_table_str = self._format_table(expected_columns, expected_rows)
+                    exp_conn.close()
                 except Exception:
                     pass
+
+            c_dict = challenge if isinstance(challenge, dict) else (challenge.to_dict() if hasattr(challenge, 'to_dict') else {})
+            bug_sig = c_dict.get('bug_signature') or c_dict.get('bugSignature') or ""
+            clean_code_lines = [
+                l for l in user_code.splitlines()
+                if "buggy signature" not in l.lower() and "fix bug in" not in l.lower()
+            ]
+            clean_code = "\n".join(clean_code_lines)
+            has_bug = False
+            if bug_sig and bug_sig.strip():
+                norm_bug = re.sub(r'\s+', ' ', bug_sig).strip().lower()
+                norm_code = re.sub(r'\s+', ' ', clean_code).strip().lower()
+                if norm_bug in norm_code:
+                    has_bug = True
 
             for tc in (test_cases or []):
                 tc_id = tc.get('id')
@@ -679,7 +756,11 @@ class SQLRuntimeAdapter(BaseRuntimeAdapter):
                 actual_output = ""
                 err_detail = None
 
-                if expected_rows or expected_columns:
+                if has_bug:
+                    passed = False
+                    actual_output = f"Bug signature still detected in query: '{bug_sig}'"
+                    err_detail = actual_output
+                elif expected_rows or expected_columns:
                     cols_ok = True
                     if expected_columns and last_columns:
                         cols_ok = ([c.lower() for c in last_columns] == [c.lower() for c in expected_columns])
@@ -733,12 +814,13 @@ class SQLRuntimeAdapter(BaseRuntimeAdapter):
             conn.close()
             exec_duration = round(max(0.005, (os.times().user + os.times().system) - start_time), 3)
 
+            all_passed = all(t['passed'] for t in parsed_tests) and not has_bug
             return {
-                'exit_code': 0,
+                'exit_code': 0 if all_passed else 1,
                 'stdout': stdout,
-                'stderr': '',
+                'stderr': '' if all_passed else ('Bug signature detected in query.' if has_bug else 'SQL test failed.'),
                 'timed_out': False,
-                'error': None,
+                'error': None if all_passed else ('Bug signature detected' if has_bug else 'Query result verification failed'),
                 'execution_time': exec_duration,
                 'test_results': parsed_tests,
                 'columns': last_columns,

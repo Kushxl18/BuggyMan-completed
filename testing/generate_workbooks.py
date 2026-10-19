@@ -87,7 +87,11 @@ def create_rtm():
         ["REQ-PVP-02", "Join PvP room via 6-character room code", "FEAT-PVP-03", "TC-PVP-002", "Functional", "Pass", "pvp_tests.log", "None"],
         ["REQ-PVP-03", "Synchronize test passing count across players", "FEAT-PVP-04", "TC-PVP-003", "Integration", "Pass", "pvp_tests.log", "None"],
         ["REQ-SEC-01", "API rate limiter throttles excessive requests", "FEAT-SEC-01", "TC-SEC-001", "Security", "Pass", "security_tests.log", "None"],
-        ["REQ-FE-01", "Vite production build succeeds with 0 errors", "FEAT-FE-01", "TC-FE-001", "Build", "Pass", "build_tests.log", "None"]
+        ["REQ-FE-01", "Vite production build succeeds with 0 errors", "FEAT-FE-01", "TC-FE-001", "Build", "Pass", "build_tests.log", "None"],
+        ["REQ-AUTH-09", "Enforce legitimate email domain and syntax validation", "FEAT-AUTH-01", "TC-AUTH-009", "Security", "Pass", "test_email_legitimacy.png", "BUG-005"],
+        ["REQ-AUTH-10", "Mandatory 6-digit Email OTP verification via SMTP", "FEAT-AUTH-01", "TC-AUTH-010", "Functional", "Pass", "test_otp_login_flow.png", "BUG-007"],
+        ["REQ-STAT-01", "New registered users initialize with zero streak/stats", "FEAT-USER-01", "TC-STAT-001", "Functional", "Pass", "test_user_profile_load.png", "BUG-006"],
+        ["REQ-E2E-01", "Selenium E2E automation verifies all core web journeys", "FEAT-E2E-01", "TC-SEL-001", "Automated E2E", "Pass", "selenium_tests.log", "None"]
     ]
     for row in data:
         ws.append(row)
@@ -111,6 +115,9 @@ def create_test_cases():
         ["TC-AUTH-006", "OAuth SSO", "Verify Google OAuth configuration", "P1", "Config configured", "GET /api/auth/oauth/config", "HTTP 200 + Google clientId & URL", "Pass"],
         ["TC-AUTH-007", "OAuth SSO", "Verify GitHub OAuth configuration", "P1", "Config configured", "GET /api/auth/oauth/config", "HTTP 200 + GitHub clientId & URL", "Pass"],
         ["TC-AUTH-008", "OAuth SSO", "Verify LinkedIn OAuth is fully absent", "P1", "LinkedIn removed", "GET /api/auth/oauth/config", "LinkedIn key omitted entirely", "Pass"],
+        ["TC-AUTH-009", "Authentication", "Enforce legitimate email check during signup & login", "P0", "Signup / Login page", "Enter fake format e.g. bajnjnjdn@invalid or test@foo.bar", "Rejected with friendly legitimacy error", "Pass"],
+        ["TC-AUTH-010", "Authentication", "Mandatory Email OTP verification via live Gmail SMTP", "P0", "Signup/Forgot Pwd", "Request 6-digit OTP to user email and verify code", "Dispatched to inbox, code verifies successfully", "Pass"],
+        ["TC-STAT-001", "Gamification", "Ensure clean zero-state for newly registered accounts", "P1", "Brand new user", "Navigate to profile / notifications", "0 streak, 0 XP, 0 solved, empty badges, no phantom stats", "Pass"],
         ["TC-EVAL-001", "Evaluation", "Execute correct Python code solution", "P0", "Challenge exists", "POST /api/challenges/<pk>/run with valid code", "HTTP 200 + success: true", "Pass"],
         ["TC-EVAL-002", "Evaluation", "Execute failing Python code solution", "P1", "Challenge exists", "POST /api/challenges/<pk>/run with wrong code", "HTTP 200 + success: false", "Pass"],
         ["TC-EVAL-003", "Sandbox", "Infinite loop terminates at 5s timeout", "P0", "Sandbox active", "POST /api/challenges/<pk>/run with while True", "Timeout captured gracefully", "Pass"],
@@ -128,7 +135,8 @@ def create_test_cases():
         ["TC-PVP-002", "PvP Battle", "Join battle room with valid room code", "P1", "Room waiting", "POST /api/pvp/join with room code", "Status transitions to MATCHED", "Pass"],
         ["TC-PVP-003", "PvP Battle", "Synchronize opponent test case progress", "P1", "Match in progress", "POST progress update + GET status", "Opponent sees updated test count", "Pass"],
         ["TC-SEC-001", "Security", "Rate limiter throttles rapid bursts", "P1", "API endpoint", "Send burst exceeding window limit", "HTTP 429 Too Many Requests", "Pass"],
-        ["TC-FE-001", "Frontend", "Vite production bundle compilation", "P0", "Source valid", "Run npm run build", "Exit code 0, dist/ created", "Pass"]
+        ["TC-FE-001", "Frontend", "Vite production bundle compilation", "P0", "Source valid", "Run npm run build", "Exit code 0, dist/ created", "Pass"],
+        ["TC-SEL-001", "Selenium E2E", "Automated browser testing across 8 user journeys", "P0", "Vite + Django active", "Run python testing/selenium_tests.py", "8 / 8 test cases pass, screenshots saved", "Pass"]
     ]
     for row in cases:
         ws.append(row)
@@ -169,7 +177,11 @@ def create_test_results():
         ["EXE-023", "TC-PVP-002", "PvP Room Join", "Unit/API", "Postgres/Neon", "2026-10-16", "Matched player 2 and status changed to MATCHED", "Pass", "Transition verified"],
         ["EXE-024", "TC-PVP-003", "PvP Progress Sync", "Unit/API", "Postgres/Neon", "2026-10-16", "Progress updated and retrieved on status call", "Pass", "Live polling verified"],
         ["EXE-025", "TC-SEC-001", "Rate Limiter Throttle", "Security", "Postgres/Neon", "2026-10-16", "HTTP 429 triggered on rapid request burst", "Pass", "Throttling guard verified"],
-        ["EXE-026", "TC-FE-001", "Vite Production Build", "Build", "Node.js v20", "2026-10-16", "2353 modules bundled with 0 errors in 9.5s", "Pass", "Production ready"]
+        ["EXE-026", "TC-FE-001", "Vite Production Build", "Build", "Node.js v20", "2026-10-16", "2353 modules bundled with 0 errors in 9.5s", "Pass", "Production ready"],
+        ["EXE-027", "TC-AUTH-009", "Legitimate Email Enforcement", "Security/UI", "Chrome / API", "2026-10-19", "Arbitrary emails blocked with clear error messaging", "Pass", "Regex and DNS domain validated"],
+        ["EXE-028", "TC-AUTH-010", "Mandatory Email OTP", "Integration", "Gmail SMTP / Redis", "2026-10-19", "6-digit OTP delivered and verified in login & signup", "Pass", "SMTP and cache functional"],
+        ["EXE-029", "TC-STAT-001", "Clean Zero-State Initialization", "Functional", "React / Postgres", "2026-10-19", "New users start with 0-day streak and blank stats", "Pass", "Zero phantom statistics"],
+        ["EXE-030", "TC-SEL-001", "Selenium E2E Test Suite", "Automated E2E", "Headless Chrome", "2026-10-19", "All 8 Selenium test suites passed with 8 screenshots", "Pass", "100% E2E automated pass"]
     ]
     for row in results:
         ws.append(row)
@@ -188,7 +200,10 @@ def create_bug_reports():
         ["BUG-001", "LinkedIn OAuth buttons visible after removal request", "Medium", "P1", "Resolved", "2026-10-15", "2026-10-15", "OAuth configuration still contained LinkedIn endpoints and UI assets", "Completely purged LinkedIn from views, OAuthButtons.jsx, Settings.jsx, and configs"],
         ["BUG-002", "Challenge solve refund returned BugBytes instead of real money", "High", "P0", "Resolved", "2026-10-14", "2026-10-14", "Refund transaction credited virtual BugBytes rather than INR refund amount", "Refactored refund reconciliation to strictly refund user's money (INR) without touching BugBytes balance"],
         ["BUG-003", "Streak calculation lapsed across timezone offsets", "Medium", "P2", "Resolved", "2026-10-15", "2026-10-15", "Raw UTC day diffing caused false resets around midnight", "Implemented timezone.localdate() with explicit 1-day diff tolerance"],
-        ["BUG-004", "Career Insights displayed static dummy data", "Medium", "P2", "Resolved", "2026-10-15", "2026-10-15", "Frontend failed to connect user profile strengths/weaknesses to recommendations", "Linked User profile interests, strengths, and weaknesses directly to Career Engine ML service"]
+        ["BUG-004", "Career Insights displayed static dummy data", "Medium", "P2", "Resolved", "2026-10-15", "2026-10-15", "Frontend failed to connect user profile strengths/weaknesses to recommendations", "Linked User profile interests, strengths, and weaknesses directly to Career Engine ML service"],
+        ["BUG-005", "Arbitrary / Fake emails accepted during signup and login", "High", "P1", "Resolved", "2026-10-19", "2026-10-19", "Absence of domain legitimacy regex in frontend and backend email validators", "Added strict email validator in frontend utils and Django backend rejecting invalid domains"],
+        ["BUG-006", "New user initialized with hardcoded 5-day streak and fake bio", "Medium", "P2", "Resolved", "2026-10-19", "2026-10-19", "Hardcoded mock notification in App.jsx and mock profile fields in views.py", "Cleared default notifications and initialized new users with 0 streak, 0 solved, empty badges"],
+        ["BUG-007", "OTP verification bypassed with arbitrary 6-digit number", "Critical", "P0", "Resolved", "2026-10-19", "2026-10-19", "views.py contained fallback 'elif len(otp) == 6: otp_valid = True' bypassing verification", "Removed mock bypass, hooked real Gmail SMTP credentials, enforced cache verification and single-use eviction"]
     ]
     for row in bugs:
         ws.append(row)
@@ -200,4 +215,5 @@ if __name__ == "__main__":
     create_test_cases()
     create_test_results()
     create_bug_reports()
-    print("All 4 QA workbooks generated successfully.")
+    print("All 4 QA workbooks updated and generated successfully.")
+

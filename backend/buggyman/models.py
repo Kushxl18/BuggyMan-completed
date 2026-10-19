@@ -132,9 +132,10 @@ class Challenge(models.Model):
 
     def to_dict(self):
         tech_lower = (self.technology or '').lower()
-        if 'sql' in tech_lower or 'database' in tech_lower:
+        title_str = str(self.title or '')
+        if 'sql' in tech_lower or 'database' in tech_lower or title_str.startswith('[SQL-'):
             page = 'SQL Lab'
-        elif 'css' in tech_lower or 'html' in tech_lower or 'frontend' in tech_lower:
+        elif any(k in tech_lower for k in ['react', 'css', 'html', 'frontend', 'ui']) or title_str.startswith('[FE-') or title_str.startswith('[RE-'):
             page = 'Frontend Studio'
         else:
             page = 'Code Challenges'
