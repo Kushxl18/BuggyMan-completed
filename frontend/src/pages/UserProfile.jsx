@@ -285,14 +285,14 @@ export default function UserProfile({ addToast, setUser }) {
               </div>
 
               {/* Compact Career Direction Summary Card */}
-              <div className="glass-panel p-5 rounded-xl border border-cyan-500/30 bg-slate-900/60 text-slate-100 flex items-center justify-between gap-4">
+              <div className="glass-panel p-5 rounded-xl border border-cyan-500/30 bg-cyan-50/40 dark:bg-slate-900/60 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                  <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400">
                     <Briefcase className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="font-heading font-bold text-xs text-slate-100">Career Direction & Role Suitability</h4>
-                    <p className="text-[11px] text-slate-400">Discover software roles aligned with your demonstrated skill profiler matrix.</p>
+                    <h4 className="font-heading font-bold text-xs text-slate-900 dark:text-slate-100">Career Direction & Role Suitability</h4>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">Discover software roles aligned with your demonstrated skill profiler matrix.</p>
                   </div>
                 </div>
                 <Link to="/career-insights" className="button-primary text-xs px-3.5 py-1.5 flex items-center gap-1.5 whitespace-nowrap shrink-0">

@@ -315,7 +315,7 @@ export default function PvPBattle({ user, addToast }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* CARD 1: Quick Match */}
-        <div className="relative group rounded-2xl bg-white dark:bg-gradient-to-b dark:from-cyan-950/30 dark:to-slate-900/60 border border-cyan-500/30 hover:border-cyan-500/60 p-6 transition-all duration-300 shadow-sm dark:shadow-lg flex flex-col justify-between">
+        <div className="relative group rounded-2xl bg-white dark:bg-slate-900/50 border border-cyan-500/30 hover:border-cyan-500/60 p-6 transition-all duration-300 shadow-sm dark:shadow-lg flex flex-col justify-between">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="p-3 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 dark:border-cyan-500/30 shadow-inner">
