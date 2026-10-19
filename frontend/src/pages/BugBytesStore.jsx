@@ -247,21 +247,21 @@ export default function BugBytesStore({ user, setUser, addToast }) {
   const claimableCount = missionsData.completedMissions?.length || 0;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)] p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
 
       {/* Hero Header & BugBytes Balance Summary */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 glass-panel p-6 rounded-3xl border border-slate-800 bg-slate-900/60">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 glass-panel p-6 rounded-3xl">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2.5">
             <div className="p-2.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
               <ShoppingBag className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-heading font-extrabold text-slate-100 flex items-center gap-2">
+              <h1 className="text-2xl font-heading font-extrabold text-[var(--text-primary)] flex items-center gap-2">
                 <span>BugBytes Store</span>
                 <span className="badge badge-cyan text-[10px]">MOCK STORE</span>
               </h1>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[var(--text-secondary)]">
                 Purchase virtual BugBytes to unlock AI debugging mentor hints & earn 100% money back through coding missions.
               </p>
             </div>
@@ -319,13 +319,13 @@ export default function BugBytesStore({ user, setUser, addToast }) {
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto select-none">
+      <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-2 overflow-x-auto select-none">
         <button
           onClick={() => setActiveTab('packages')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
             activeTab === 'packages'
               ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-glow-cyan'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
           }`}
         >
           <ShoppingBag className="w-4 h-4" />
@@ -337,7 +337,7 @@ export default function BugBytesStore({ user, setUser, addToast }) {
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 relative ${
             activeTab === 'missions'
               ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-glow-cyan'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
           }`}
         >
           <Award className="w-4 h-4" />
@@ -352,7 +352,7 @@ export default function BugBytesStore({ user, setUser, addToast }) {
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
             activeTab === 'purchases'
               ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-glow-cyan'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
           }`}
         >
           <CreditCard className="w-4 h-4" />
@@ -364,7 +364,7 @@ export default function BugBytesStore({ user, setUser, addToast }) {
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
             activeTab === 'rewards'
               ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-glow-cyan'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
           }`}
         >
           <Gift className="w-4 h-4" />
@@ -377,8 +377,8 @@ export default function BugBytesStore({ user, setUser, addToast }) {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-heading font-bold text-slate-100">Select a BugBytes Package</h2>
-              <p className="text-xs text-slate-400">Each purchase includes an optional Money-Back Challenge to recover 100% of your simulated purchase price.</p>
+              <h2 className="text-lg font-heading font-bold text-[var(--text-primary)]">Select a BugBytes Package</h2>
+              <p className="text-xs text-[var(--text-secondary)]">Each purchase includes an optional Money-Back Challenge to recover 100% of your simulated purchase price.</p>
             </div>
             <span className="text-[11px] text-slate-500 font-medium">All prices in INR (₹)</span>
           </div>
@@ -389,11 +389,11 @@ export default function BugBytesStore({ user, setUser, addToast }) {
               return (
                 <div 
                   key={pkg.id} 
-                  className={`glass-card p-6 rounded-3xl border flex flex-col justify-between transition-all duration-300 relative overflow-hidden group ${
-                    pkg.is_best_value 
-                      ? 'border-cyan-500/50 bg-slate-900/90 shadow-glow-cyan ring-1 ring-cyan-500/30' 
-                      : 'border-slate-800 bg-slate-900/60 hover:border-slate-700'
-                  }`}
+                  className={`glass-card p-6 rounded-3xl flex flex-col justify-between transition-all duration-300 relative overflow-hidden group ${
+  pkg.is_best_value
+    ? 'border-cyan-500/50 shadow-glow-cyan ring-1 ring-cyan-500/30'
+    : 'hover:border-[var(--brand-cyan)]'
+}`}
                 >
                   {pkg.is_best_value && (
                     <div className="absolute top-0 right-0 bg-gradient-to-l from-cyan-500 to-blue-600 text-white font-heading font-extrabold text-[9px] uppercase tracking-wider py-1 px-3 rounded-bl-xl shadow-md">
@@ -404,19 +404,19 @@ export default function BugBytesStore({ user, setUser, addToast }) {
                   <div className="space-y-4">
                     {/* Package Title & BugBytes */}
                     <div className="space-y-1">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">{pkg.name}</span>
+                      <span className="text-[10px] text-[var(--text-secondary)] font-bold uppercase tracking-wider block">{pkg.name}</span>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-heading font-extrabold text-slate-100">{pkg.bugbytes}</span>
+                        <span className="text-3xl font-heading font-extrabold text-[var(--text-primary)]">{pkg.bugbytes}</span>
                         <span className="text-amber-400 font-bold text-sm flex items-center gap-1">
                           <Bug className="w-4 h-4" /> BugBytes
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-400">₹{perByteCost} per BugByte credit</p>
+                      <p className="text-[11px] text-[var(--text-secondary)]">₹{perByteCost} per BugByte credit</p>
                     </div>
 
                     {/* Price tag */}
-                    <div className="py-2.5 px-3.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between">
-                      <span className="text-xs text-slate-400">Total Price:</span>
+                    <div className="py-2.5 px-3.5 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-color)] flex items-center justify-between">
+                      <span className="text-xs text-[var(--text-secondary)]">Total Price:</span>
                       <span className="text-xl font-heading font-extrabold text-cyan-400">₹{pkg.price_inr}</span>
                     </div>
 
@@ -426,8 +426,8 @@ export default function BugBytesStore({ user, setUser, addToast }) {
                         <Gift className="w-3.5 h-3.5 shrink-0" />
                         <span>100% Money-Back Mission</span>
                       </div>
-                      <p className="text-[11px] text-slate-300 leading-relaxed">
-                        Solve <strong className="text-emerald-300">{pkg.mission_challenge_count}</strong> {pkg.mission_difficulty} challenges within <strong className="text-emerald-300">{pkg.mission_days} days</strong> to get a simulated refund of <strong className="text-emerald-300">₹{pkg.reward_amount_inr}</strong>.
+                      <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                        Solve <strong className="text-[var(--color-success)]">{pkg.mission_challenge_count}</strong> {pkg.mission_difficulty} challenges within <strong className="text-[var(--color-success)]">{pkg.mission_days} days</strong> to get a simulated refund of <strong className="text-[var(--color-success)]">₹{pkg.reward_amount_inr}</strong>.
                       </p>
                     </div>
                   </div>
