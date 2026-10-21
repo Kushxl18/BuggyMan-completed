@@ -66,12 +66,13 @@ urlpatterns = [
     path('pvp/join', views.pvp_join_battle_view, name='pvp_join'),
     path('pvp/quick-match', views.pvp_quick_match_view, name='pvp_quick_match'),
     path('pvp/history', views.pvp_history_view, name='pvp_history'),
+    path('pvp/online-stats', views.pvp_online_stats_view, name='pvp_online_stats'),
+    path('pvp/heartbeat', views.pvp_online_stats_view, name='pvp_heartbeat'),
     path('pvp/<int:pk>/status', views.pvp_battle_status_view, name='pvp_battle_status'),
     path('pvp/<int:pk>/start', views.pvp_start_battle_view, name='pvp_start'),
     path('pvp/<int:pk>/progress', views.pvp_update_progress_view, name='pvp_update_progress'),
     path('pvp/<int:pk>/submit', views.pvp_submit_solution_view, name='pvp_submit'),
     path('pvp/<int:pk>/cancel', views.pvp_cancel_battle_view, name='pvp_cancel'),
-    path('pvp/<int:pk>/match-bot', views.pvp_match_bot_view, name='pvp_match_bot'),
 
     # OAuth 2.0 / SSO
     path('auth/oauth/config', views.oauth_config_view, name='oauth_config'),

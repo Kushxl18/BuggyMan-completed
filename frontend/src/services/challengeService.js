@@ -257,8 +257,14 @@ export const challengeService = {
     });
   },
 
-  matchBot: async (battleId) => {
-    return await request(`/pvp/${battleId}/match-bot`, {
+  getPvPOnlineStats: async () => {
+    return await request('/pvp/online-stats', {
+      method: 'GET'
+    });
+  },
+
+  sendHeartbeat: async () => {
+    return await request('/pvp/heartbeat', {
       method: 'POST'
     });
   },

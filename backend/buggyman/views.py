@@ -2863,27 +2863,65 @@ def _finish_battle_on_timeout(battle):
             return _finalize_pvp_battle(battle, is_draw=True)
 
 
-BOT_CHALLENGERS = [
-    {'username': 'bot_cybersamurai', 'display_name': 'CyberSamurai', 'avatar': 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150', 'rating': 1420},
-    {'username': 'bot_hexhacker', 'display_name': 'HexHacker', 'avatar': 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150', 'rating': 1380},
-    {'username': 'bot_bugbuster', 'display_name': 'BugBuster_X', 'avatar': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', 'rating': 1490},
-    {'username': 'bot_nullpointer', 'display_name': 'NullPointer', 'avatar': 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150', 'rating': 1350},
-    {'username': 'bot_codeninja', 'display_name': 'CodeNinja_99', 'avatar': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', 'rating': 1510},
-]
+# Real Online Presence Tracking (Thread-safe in-memory session presence)
+ONLINE_PRESENCE = {}  # {user_id: {'last_seen': datetime, 'username': str, 'name': str}}
 
-def _get_or_create_bot_user():
-    bot_info = random.choice(BOT_CHALLENGERS)
-    bot_user = User.objects.filter(username=bot_info['username']).first()
-    if not bot_user:
-        bot_user = User.objects.create_user(
-            username=bot_info['username'],
-            email=f"{bot_info['username']}@buggyman.ai",
-            password=uuid.uuid4().hex,
-            display_name=bot_info['display_name'],
-            avatar=bot_info['avatar'],
-            total_score=bot_info['rating']
-        )
-    return bot_user, bot_info
+def update_user_presence(user):
+    """Records authentic user activity timestamp for accurate online presence."""
+    if not user or not user.is_authenticated:
+        return
+    if user.username.startswith('bot_'):
+        return
+    now = timezone.now()
+    ONLINE_PRESENCE[user.id] = {
+        'last_seen': now,
+        'username': user.username,
+        'name': user.display_name or user.username
+    }
+
+def get_online_users_stats(current_user=None):
+    """Calculates authentic real-time user statistics with zero random numbers."""
+    now = timezone.now()
+    cutoff = now - timezone.timedelta(seconds=60)
+
+    # Prune stale entries (>60s)
+    stale_keys = [uid for uid, info in list(ONLINE_PRESENCE.items()) if info['last_seen'] < cutoff]
+    for uid in stale_keys:
+        ONLINE_PRESENCE.pop(uid, None)
+
+    active_user_ids = set(ONLINE_PRESENCE.keys())
+    if current_user and current_user.is_authenticated:
+        active_user_ids.add(current_user.id)
+        update_user_presence(current_user)
+
+    total_online = len(active_user_ids)
+    other_online = len([uid for uid in active_user_ids if not current_user or uid != current_user.id])
+
+    waiting_battles = PvPBattle.objects.filter(status='WAITING')
+    if current_user:
+        waiting_battles = waiting_battles.exclude(player1=current_user)
+    waiting_count = waiting_battles.count()
+
+    active_battles_count = PvPBattle.objects.filter(status='IN_PROGRESS').count()
+
+    return {
+        'totalOnline': total_online,
+        'otherOnline': other_online,
+        'waitingInQueue': waiting_count,
+        'activeBattles': active_battles_count,
+        'hasActiveOpponents': other_online > 0 or waiting_count > 0,
+    }
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def pvp_online_stats_view(request):
+    """Returns authentic real-time online presence and queue stats."""
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+    update_user_presence(user)
+    stats = get_online_users_stats(user)
+    return Response(stats, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -3062,13 +3100,12 @@ def pvp_quick_match_view(request):
     p1_prog = {'tests_passed': 0, 'tests_total': total_tests, 'submitted': False, 'solve_time': None}
     p2_prog = {'tests_passed': 0, 'tests_total': total_tests, 'submitted': False, 'solve_time': None}
 
-    bot_user, _ = _get_or_create_bot_user()
-
+    # No bot matching! Real humans only. Create WAITING battle for another player to join.
     new_battle = PvPBattle.objects.create(
         player1=user,
-        player2=bot_user,
+        player2=None,
         challenge=challenge,
-        status='MATCHED',
+        status='WAITING',
         room_code=room_code,
         difficulty_filter=difficulty,
         time_limit_seconds=time_limit,
@@ -3079,39 +3116,8 @@ def pvp_quick_match_view(request):
     )
 
     res = new_battle.to_dict()
-    res['action'] = 'matched'
+    res['action'] = 'created'
     return Response(res, status=status.HTTP_200_OK)
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def pvp_match_bot_view(request, pk):
-    """
-    Pairs a waiting battle with an AI challenger when requested from the lobby.
-    """
-    lim = apply_rate_limit(request, 'pvp', limit=30)
-    if lim:
-        return lim
-    user = get_authenticated_user(request)
-    if not user:
-        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
-
-    battle = PvPBattle.objects.filter(id=pk).first()
-    if not battle:
-        return Response({'error': 'Battle not found'}, status=status.HTTP_404_NOT_FOUND)
-
-    if battle.player1_id != user.id:
-        return Response({'error': 'Only room host can match with AI'}, status=status.HTTP_403_FORBIDDEN)
-
-    if battle.status != 'WAITING':
-        return Response(battle.to_dict(), status=status.HTTP_200_OK)
-
-    bot_user, _ = _get_or_create_bot_user()
-    battle.player2 = bot_user
-    battle.status = 'MATCHED'
-    battle.save()
-
-    return Response(battle.to_dict(), status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -3134,21 +3140,7 @@ def pvp_battle_status_view(request, pk):
         elapsed = (now - battle.started_at).total_seconds()
         if elapsed >= battle.time_limit_seconds:
             _finish_battle_on_timeout(battle)
-        else:
-            # Simulate bot progression if player2 is a bot
-            if battle.player2 and battle.player2.username.startswith('bot_'):
-                total_tests = len(battle.challenge.test_cases or []) if battle.challenge else 3
-                prog = battle.player2_progress or {}
-                cur_tests = prog.get('tests_passed', 0)
-                is_sub = prog.get('submitted', False)
-                if not is_sub and cur_tests < total_tests:
-                    step_secs = max(20, battle.time_limit_seconds // (total_tests + 2))
-                    target = min(total_tests, int(elapsed // step_secs))
-                    if target > cur_tests:
-                        prog['tests_passed'] = target
-                        prog['tests_total'] = total_tests
-                        battle.player2_progress = prog
-                        battle.save(update_fields=['player2_progress', 'updated_at'])
+
 
     return Response(battle.to_dict(), status=status.HTTP_200_OK)
 
