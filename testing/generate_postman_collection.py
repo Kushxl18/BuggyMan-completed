@@ -1,0 +1,509 @@
+import json
+import os
+
+collection = {
+    "info": {
+        "_postman_id": "buggyman-api-test-suite-2026",
+        "name": "BuggyMan API Automated Test Suite",
+        "description": "Comprehensive automated Postman API test collection for BuggyMan debugging platform covering authentication, challenge execution, SQL lab, frontend evaluations, career insights, PvP multiplayer, and store transactions.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {"key": "baseUrl", "value": "http://127.0.0.1:8000/api", "type": "string"},
+        {"key": "authToken", "value": "", "type": "string"},
+        {"key": "testEmail", "value": "qa@buggyman.test", "type": "string"},
+        {"key": "testPassword", "value": "Password123!", "type": "string"},
+        {"key": "activeBattleId", "value": "1", "type": "string"},
+        {"key": "activeRoomCode", "value": "", "type": "string"}
+    ],
+    "item": [
+        {
+            "name": "1. System Health",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {"raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status is 200 OK', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Backend reports healthy status', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql('healthy');",
+                                    "    pm.expect(jsonData.database).to.eql('connected');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "2. Authentication & Session",
+            "item": [
+                {
+                    "name": "Login - Valid QA Credentials",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"{{testEmail}}\",\n    \"password\": \"{{testPassword}}\"\n}"
+                        },
+                        "url": {"raw": "{{baseUrl}}/login", "host": ["{{baseUrl}}"], "path": ["login"]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Login returns 200 and auth token', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "    var data = pm.response.json();",
+                                    "    pm.expect(data.token).to.be.a('string');",
+                                    "    pm.expect(data.user).to.be.an('object');",
+                                    "    pm.collectionVariables.set('authToken', data.token);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Login - Invalid Password (401 Rejection)",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"{{testEmail}}\",\n    \"password\": \"WrongPassword123!\"\n}"
+                        },
+                        "url": {"raw": "{{baseUrl}}/login", "host": ["{{baseUrl}}"], "path": ["login"]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Rejected with 401 or 400', function () {",
+                                    "    pm.expect(pm.response.code).to.be.oneOf([400, 401]);",
+                                    "    var data = pm.response.json();",
+                                    "    pm.expect(data.error).to.include('Invalid');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Check Availability - Username",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"username\": \"qa_automation_user\"\n}"
+                        },
+                        "url": {"raw": "{{baseUrl}}/check-availability", "host": ["{{baseUrl}}"], "path": ["check-availability"]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Checks username availability correctly', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "    var data = pm.response.json();",
+                                    "    pm.expect(data.available).to.be.false;",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Forgot Password Request - Unregistered Email",
+                    "request": {
+                        "method": "POST",
+                        "header": [{"key": "Content-Type", "value": "application/json"}],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"nonexistent_qa_user_999@test.com\"\n}"
+                        },
+                        "url": {"raw": "{{baseUrl}}/forgot-password/request", "host": ["{{baseUrl}}"], "path": ["forgot-password", "request"]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Returns 404 for unknown email', function () {",
+                                    "    pm.response.to.have.status(404);",
+                                    "    var data = pm.response.json();",
+                                    "    pm.expect(data.error).to.be.a('string');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "3. User Profile & Career Insights",
+            "item": [
+                {
+                    "name": "Get User Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+                        "url": {"raw": "{{baseUrl}}/profile", "host": ["{{baseUrl}}"], "path": ["profile"]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Profile returns user details and score', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "    var data = pm.response.json();",
+                                    "    pm.expect(data.username).to.eql('qa_automation_user');",
+                                    "    pm.expect(data.email).to.eql('qa@buggyman.test');",
+                                    "    pm.expect(data.totalScore).to.be.a('number');",
+                                    "    pm.expect(data.bugbytesBalance).to.be.a('number');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Get Career Insights & Role Suitability",
+                    "request": {
+                        "method": "GET",
+                        "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+                        "url": {"raw": "{{baseUrl}}/career-insights", "host": ["{{baseUrl}}"], "path": ["career-insights"]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Career insights calculates top role match', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "    var data = pm.response.json();",
+                                    "    pm.expect(data.topMatch).to.be.an('object');",
+                                    "    pm.expect(data.topMatch.title).to.be.a('string');",
+                                    "    pm.expect(data.topMatch.matchScore).to.be.a('number');",
+                                    "    pm.expect(data.topMatch.marketDemand).to.be.a('string');",
+                                    "    pm.expect(data.roles).to.be.an('array');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Get User Skill Matrix",
+                    "request": {
+                        "method": "GET",
+                        "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+                        "url": {"raw": "{{baseUrl}}/profile/skill-matrix", "host": ["{{baseUrl}}"], "path": ["profile", "skill-matrix"]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Skill matrix returns categories and scores', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "    var data = pm.response.json();",
+                                    "    pm.expect(data).to.be.an('object');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "4. Challenge Catalogs & Recommendations",
+            "item": [
+                {
+                    "name": "List Code Challenges",
+                    "request": {
+                        "method": "GET",
+                        "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+                        "url": {"raw": "{{baseUrl}}/challenges?arena=code", "host": ["{{baseUrl}}"], "path": ["challenges"], "query": [{"key": "arena", "value": "code"}]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Returns list of challenges', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "    var data = pm.response.json();",
+                                    "    pm.expect(data).to.be.an('array');",
+                                    "    pm.expect(data.length).to.be.above(0);",
+                                    "    pm.expect(data[0]).to.have.property('id');",
+                                    "    pm.expect(data[0]).to.have.property('title');",
+                                    "    pm.expect(data[0]).to.have.property('difficulty');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Personalized Recommendations",
+                    "request": {
+                        "method": "GET",
+                        "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+                        "url": {"raw": "{{baseUrl}}/challenges/recommendations", "host": ["{{baseUrl}}"], "path": ["challenges", "recommendations"]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Returns tailored recommendations', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "    var data = pm.response.json();",
+                                    "    pm.expect(data).to.be.an('array');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "5. Code Evaluation Engine",
+            "item": [
+                {
+                    "name": "Run Challenge Code - Diagnostic Test",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {"key": "Authorization", "value": "Bearer {{authToken}}"},
+                            {"key": "Content-Type", "value": "application/json"}
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"code\": \"def solve(): return 42\\n\"\n}"
+                        },
+                        "url": {"raw": "{{baseUrl}}/challenges/1/run", "host": ["{{baseUrl}}"], "path": ["challenges", "1", "run"]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Evaluator executes code and returns test results', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "    var data = pm.response.json();",
+                                    "    pm.expect(data).to.have.property('tests_passed');",
+                                    "    pm.expect(data).to.have.property('tests_total');",
+                                    "    pm.expect(data).to.have.property('test_results');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "6. PvP Multiplayer Battles",
+            "item": [
+                {
+                    "name": "Get PvP Live Online Presence Stats",
+                    "request": {
+                        "method": "GET",
+                        "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+                        "url": {"raw": "{{baseUrl}}/pvp/stats/online", "host": ["{{baseUrl}}"], "path": ["pvp", "stats", "online"]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Returns real-time online developer counts', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "    var data = pm.response.json();",
+                                    "    pm.expect(data.totalOnline).to.be.a('number');",
+                                    "    pm.expect(data.waitingInQueue).to.be.a('number');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Create Private Battle Room",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {"key": "Authorization", "value": "Bearer {{authToken}}"},
+                            {"key": "Content-Type", "value": "application/json"}
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"difficultyFilter\": \"Easy\",\n    \"timeLimitSeconds\": 600\n}"
+                        },
+                        "url": {"raw": "{{baseUrl}}/pvp/create", "host": ["{{baseUrl}}"], "path": ["pvp", "create"]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Creates room with valid 6-char code', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "    var data = pm.response.json();",
+                                    "    pm.expect(data.roomCode || data.room_code).to.be.a('string');",
+                                    "    pm.expect((data.roomCode || data.room_code).length).to.eql(6);",
+                                    "    pm.collectionVariables.set('activeBattleId', String(data.id));",
+                                    "    pm.collectionVariables.set('activeRoomCode', data.roomCode || data.room_code);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Cancel Battle Room",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {"key": "Authorization", "value": "Bearer {{authToken}}"}
+                        ],
+                        "url": {"raw": "{{baseUrl}}/pvp/{{activeBattleId}}/cancel", "host": ["{{baseUrl}}"], "path": ["pvp", "{{activeBattleId}}", "cancel"]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Cancels battle cleanly', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "    var data = pm.response.json();",
+                                    "    pm.expect(data.status).to.eql('CANCELLED');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "7. BugBytes Store & Economy",
+            "item": [
+                {
+                    "name": "Get Store Packages",
+                    "request": {
+                        "method": "GET",
+                        "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+                        "url": {"raw": "{{baseUrl}}/store/packages", "host": ["{{baseUrl}}"], "path": ["store", "packages"]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Returns BugBytes credit packages', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "    var data = pm.response.json();",
+                                    "    pm.expect(data.packages).to.be.an('array');",
+                                    "    pm.expect(data.packages.length).to.be.above(0);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "8. Negative & Security Edge Cases",
+            "item": [
+                {
+                    "name": "Unauthorized Access (Missing Token)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {"raw": "{{baseUrl}}/profile", "host": ["{{baseUrl}}"], "path": ["profile"]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Returns 401 Unauthorized', function () {",
+                                    "    pm.response.to.have.status(401);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Nonexistent Challenge Detail (404 Not Found)",
+                    "request": {
+                        "method": "GET",
+                        "header": [{"key": "Authorization", "value": "Bearer {{authToken}}"}],
+                        "url": {"raw": "{{baseUrl}}/challenges/nonexistent_challenge_9999", "host": ["{{baseUrl}}"], "path": ["challenges", "nonexistent_challenge_9999"]}
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Returns 404 for invalid challenge id', function () {",
+                                    "    pm.response.to.have.status(404);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+
+dest_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "BuggyMan_API_Postman_Collection.json")
+with open(dest_path, "w", encoding="utf-8") as f:
+    json.dump(collection, f, indent=2)
+
+print(f"Generated Postman Collection at {dest_path}")

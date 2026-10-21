@@ -116,13 +116,11 @@ class EvaluationEngine:
             user_filename = suspected if suspected else ('query.sql' if ext == '.sql' else f'main{ext}')
             norm_files = [{'name': user_filename, 'content': code}]
 
-            # Only insert schema.sql if chal_files has secondary query files
-            has_secondary_sql = any(f.get('name', '').lower() not in ('schema.sql', 'setup.sql', 'seed.sql') for f in chal_files)
-            if has_secondary_sql:
-                for cf in chal_files:
-                    cf_name = cf.get('name', '')
-                    if cf_name.lower() in ('schema.sql', 'setup.sql', 'seed.sql'):
-                        norm_files.insert(0, cf)
+            user_filenames = {f['name'].lower() for f in norm_files}
+            for cf in chal_files:
+                cf_name = cf.get('name', '')
+                if cf_name.lower() in ('schema.sql', 'setup.sql', 'seed.sql') and cf_name.lower() not in user_filenames:
+                    norm_files.insert(0, cf)
         else:
             norm_files = list(chal_files)
 

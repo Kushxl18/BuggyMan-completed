@@ -894,12 +894,8 @@ def get_challenge_or_none(pk):
         )
         return chal
 
-    # 4. Fallback to first published challenge in DB
-    published_chal = Challenge.objects.filter(status='published').first()
-    if published_chal:
-        return published_chal
-
-    return Challenge.objects.first()
+    # 4. Challenge truly not found
+    return None
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
