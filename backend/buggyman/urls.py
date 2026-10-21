@@ -71,6 +71,7 @@ urlpatterns = [
     path('pvp/<int:pk>/progress', views.pvp_update_progress_view, name='pvp_update_progress'),
     path('pvp/<int:pk>/submit', views.pvp_submit_solution_view, name='pvp_submit'),
     path('pvp/<int:pk>/cancel', views.pvp_cancel_battle_view, name='pvp_cancel'),
+    path('pvp/<int:pk>/match-bot', views.pvp_match_bot_view, name='pvp_match_bot'),
 
     # OAuth 2.0 / SSO
     path('auth/oauth/config', views.oauth_config_view, name='oauth_config'),

@@ -690,9 +690,16 @@ class PvPBattle(models.Model):
         if self.status == 'IN_PROGRESS' and self.started_at:
             elapsed = (now - self.started_at).total_seconds()
             remaining = max(0, self.time_limit_seconds - int(elapsed))
+        elif self.status in ['WAITING', 'MATCHED']:
+            remaining = self.time_limit_seconds
+
+        p1_tests = (self.player1_progress or {}).get('tests_passed', 0)
+        p2_tests = (self.player2_progress or {}).get('tests_passed', 0)
+        total_tests = len(self.challenge.test_cases or []) if self.challenge else 3
 
         return {
             'id': self.id,
+            'battleId': self.id,
             'roomCode': self.room_code,
             'room_code': self.room_code,
             'status': self.status,
@@ -702,6 +709,11 @@ class PvPBattle(models.Model):
                 'name': self.player1.display_name or self.player1.username,
                 'avatar': self.player1.avatar or '',
                 'totalScore': self.player1.total_score,
+                'rating': 1450,
+                'testsPassed': p1_tests,
+                'tests_passed': p1_tests,
+                'totalTests': total_tests,
+                'hasSubmitted': bool((self.player1_progress or {}).get('submitted', False)),
             },
             'player2': {
                 'id': self.player2.id,
@@ -709,12 +721,20 @@ class PvPBattle(models.Model):
                 'name': self.player2.display_name or self.player2.username,
                 'avatar': self.player2.avatar or '',
                 'totalScore': self.player2.total_score,
+                'rating': 1420,
+                'testsPassed': p2_tests,
+                'tests_passed': p2_tests,
+                'totalTests': total_tests,
+                'hasSubmitted': bool((self.player2_progress or {}).get('submitted', False)),
             } if self.player2 else None,
             'challenge': self.challenge.to_dict() if self.challenge else None,
+            'timeLimit': self.time_limit_seconds,
+            'time_limit': self.time_limit_seconds,
             'timeLimitSeconds': self.time_limit_seconds,
             'time_limit_seconds': self.time_limit_seconds,
             'remainingSeconds': remaining,
             'remaining_seconds': remaining,
+            'timeRemaining': remaining,
             'startedAt': self.started_at.isoformat() if self.started_at else None,
             'endedAt': self.ended_at.isoformat() if self.ended_at else None,
             'winner': {
@@ -722,11 +742,24 @@ class PvPBattle(models.Model):
                 'username': self.winner.username,
                 'name': self.winner.display_name or self.winner.username,
             } if self.winner else None,
+            'winnerId': self.winner_id,
             'isDraw': self.is_draw,
-            'player1Progress': self.player1_progress or {},
-            'player2Progress': self.player2_progress or {},
+            'is_draw': self.is_draw,
+            'player1Progress': {
+                **(self.player1_progress or {}),
+                'testsPassed': (self.player1_progress or {}).get('tests_passed', 0),
+                'testsTotal': (self.player1_progress or {}).get('tests_total', 0),
+                'solveTime': (self.player1_progress or {}).get('solve_time', None),
+            },
+            'player2Progress': {
+                **(self.player2_progress or {}),
+                'testsPassed': (self.player2_progress or {}).get('tests_passed', 0),
+                'testsTotal': (self.player2_progress or {}).get('tests_total', 0),
+                'solveTime': (self.player2_progress or {}).get('solve_time', None),
+            },
             'xpReward': self.xp_reward,
             'bugbytesReward': self.bugbytes_reward,
+            'difficulty': self.difficulty_filter or (self.challenge.difficulty if self.challenge else 'Easy'),
             'difficultyFilter': self.difficulty_filter,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
         }

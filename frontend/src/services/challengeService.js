@@ -257,6 +257,12 @@ export const challengeService = {
     });
   },
 
+  matchBot: async (battleId) => {
+    return await request(`/pvp/${battleId}/match-bot`, {
+      method: 'POST'
+    });
+  },
+
   getPvPHistory: async () => {
     return await request('/pvp/history', {
       method: 'GET'

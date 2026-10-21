@@ -2863,6 +2863,29 @@ def _finish_battle_on_timeout(battle):
             return _finalize_pvp_battle(battle, is_draw=True)
 
 
+BOT_CHALLENGERS = [
+    {'username': 'bot_cybersamurai', 'display_name': 'CyberSamurai', 'avatar': 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150', 'rating': 1420},
+    {'username': 'bot_hexhacker', 'display_name': 'HexHacker', 'avatar': 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150', 'rating': 1380},
+    {'username': 'bot_bugbuster', 'display_name': 'BugBuster_X', 'avatar': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', 'rating': 1490},
+    {'username': 'bot_nullpointer', 'display_name': 'NullPointer', 'avatar': 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150', 'rating': 1350},
+    {'username': 'bot_codeninja', 'display_name': 'CodeNinja_99', 'avatar': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', 'rating': 1510},
+]
+
+def _get_or_create_bot_user():
+    bot_info = random.choice(BOT_CHALLENGERS)
+    bot_user = User.objects.filter(username=bot_info['username']).first()
+    if not bot_user:
+        bot_user = User.objects.create_user(
+            username=bot_info['username'],
+            email=f"{bot_info['username']}@buggyman.ai",
+            password=uuid.uuid4().hex,
+            display_name=bot_info['display_name'],
+            avatar=bot_info['avatar'],
+            total_score=bot_info['rating']
+        )
+    return bot_user, bot_info
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def pvp_create_battle_view(request):
@@ -2873,8 +2896,8 @@ def pvp_create_battle_view(request):
     if not user:
         return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
 
-    difficulty = (request.data.get('difficultyFilter') or request.data.get('difficulty_filter') or '').strip()
-    raw_time_limit = request.data.get('timeLimitSeconds') or request.data.get('time_limit_seconds') or 600
+    difficulty = (request.data.get('difficultyFilter') or request.data.get('difficulty_filter') or request.data.get('difficulty') or '').strip()
+    raw_time_limit = request.data.get('timeLimitSeconds') or request.data.get('time_limit_seconds') or request.data.get('timeLimit') or 600
     try:
         time_limit = int(raw_time_limit)
         if time_limit <= 0:
@@ -2975,8 +2998,8 @@ def pvp_quick_match_view(request):
     if not user:
         return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
 
-    difficulty = (request.data.get('difficultyFilter') or request.data.get('difficulty_filter') or '').strip()
-    raw_time_limit = request.data.get('timeLimitSeconds') or request.data.get('time_limit_seconds') or 600
+    difficulty = (request.data.get('difficultyFilter') or request.data.get('difficulty_filter') or request.data.get('difficulty') or '').strip()
+    raw_time_limit = request.data.get('timeLimitSeconds') or request.data.get('time_limit_seconds') or request.data.get('timeLimit') or 600
     try:
         time_limit = int(raw_time_limit)
         if time_limit <= 0:
@@ -2990,6 +3013,7 @@ def pvp_quick_match_view(request):
         created_at__lt=now - timezone.timedelta(minutes=5)
     ).update(status='EXPIRED')
 
+    # Look for another human player waiting in the queue
     waiting_qs = PvPBattle.objects.filter(status='WAITING').exclude(player1=user)
     if difficulty and difficulty.lower() != 'all':
         diff_qs = waiting_qs.filter(difficulty_filter__iexact=difficulty)
@@ -3012,6 +3036,7 @@ def pvp_quick_match_view(request):
         res['action'] = 'joined'
         return Response(res, status=status.HTTP_200_OK)
 
+    # If no other human is waiting, pair with an AI challenger instantly!
     challenges = Challenge.objects.filter(status='published')
     if difficulty and difficulty.lower() != 'all':
         filtered = challenges.filter(difficulty__iexact=difficulty)
@@ -3037,10 +3062,13 @@ def pvp_quick_match_view(request):
     p1_prog = {'tests_passed': 0, 'tests_total': total_tests, 'submitted': False, 'solve_time': None}
     p2_prog = {'tests_passed': 0, 'tests_total': total_tests, 'submitted': False, 'solve_time': None}
 
+    bot_user, _ = _get_or_create_bot_user()
+
     new_battle = PvPBattle.objects.create(
         player1=user,
+        player2=bot_user,
         challenge=challenge,
-        status='WAITING',
+        status='MATCHED',
         room_code=room_code,
         difficulty_filter=difficulty,
         time_limit_seconds=time_limit,
@@ -3051,8 +3079,39 @@ def pvp_quick_match_view(request):
     )
 
     res = new_battle.to_dict()
-    res['action'] = 'created'
-    return Response(res, status=status.HTTP_201_CREATED)
+    res['action'] = 'matched'
+    return Response(res, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def pvp_match_bot_view(request, pk):
+    """
+    Pairs a waiting battle with an AI challenger when requested from the lobby.
+    """
+    lim = apply_rate_limit(request, 'pvp', limit=30)
+    if lim:
+        return lim
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    battle = PvPBattle.objects.filter(id=pk).first()
+    if not battle:
+        return Response({'error': 'Battle not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if battle.player1_id != user.id:
+        return Response({'error': 'Only room host can match with AI'}, status=status.HTTP_403_FORBIDDEN)
+
+    if battle.status != 'WAITING':
+        return Response(battle.to_dict(), status=status.HTTP_200_OK)
+
+    bot_user, _ = _get_or_create_bot_user()
+    battle.player2 = bot_user
+    battle.status = 'MATCHED'
+    battle.save()
+
+    return Response(battle.to_dict(), status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -3075,6 +3134,21 @@ def pvp_battle_status_view(request, pk):
         elapsed = (now - battle.started_at).total_seconds()
         if elapsed >= battle.time_limit_seconds:
             _finish_battle_on_timeout(battle)
+        else:
+            # Simulate bot progression if player2 is a bot
+            if battle.player2 and battle.player2.username.startswith('bot_'):
+                total_tests = len(battle.challenge.test_cases or []) if battle.challenge else 3
+                prog = battle.player2_progress or {}
+                cur_tests = prog.get('tests_passed', 0)
+                is_sub = prog.get('submitted', False)
+                if not is_sub and cur_tests < total_tests:
+                    step_secs = max(20, battle.time_limit_seconds // (total_tests + 2))
+                    target = min(total_tests, int(elapsed // step_secs))
+                    if target > cur_tests:
+                        prog['tests_passed'] = target
+                        prog['tests_total'] = total_tests
+                        battle.player2_progress = prog
+                        battle.save(update_fields=['player2_progress', 'updated_at'])
 
     return Response(battle.to_dict(), status=status.HTTP_200_OK)
 
@@ -3094,13 +3168,20 @@ def pvp_start_battle_view(request, pk):
         return Response({'error': 'Battle not found'}, status=status.HTTP_404_NOT_FOUND)
 
     if user.id not in [battle.player1_id, battle.player2_id]:
-        return Response({'error': 'You are not a participant in this battle'}, status=status.HTTP_403_FORBIDDEN)
+        if battle.status == 'WAITING' and battle.player2 is None and battle.player1_id != user.id:
+            battle.player2 = user
+            battle.status = 'MATCHED'
+            battle.save()
+        else:
+            return Response({'error': 'You are not a participant in this battle'}, status=status.HTTP_403_FORBIDDEN)
 
     if battle.status == 'IN_PROGRESS':
         return Response(battle.to_dict(), status=status.HTTP_200_OK)
 
-    if battle.status != 'MATCHED' or not battle.player1 or not battle.player2:
-        return Response({'error': f'Battle is not ready to start (status: {battle.status})'}, status=status.HTTP_400_BAD_REQUEST)
+    if not battle.player2:
+        bot_user, _ = _get_or_create_bot_user()
+        battle.player2 = bot_user
+        battle.status = 'MATCHED'
 
     battle.status = 'IN_PROGRESS'
     battle.started_at = timezone.now()
@@ -3131,7 +3212,7 @@ def pvp_update_progress_view(request, pk):
 
     data = request.data
     tests_passed = data.get('testsPassed', data.get('tests_passed', 0))
-    tests_total = data.get('testsTotal', data.get('tests_total', len(battle.challenge.test_cases or [])))
+    tests_total = data.get('testsTotal', data.get('tests_total', data.get('totalTests', len(battle.challenge.test_cases or []))))
     submitted = data.get('submitted', False)
 
     try:
@@ -3271,6 +3352,10 @@ def pvp_submit_solution_view(request, pk):
 
     res = battle.to_dict()
     res['evaluation'] = eval_res
+    res['isWinner'] = (battle.winner_id == user.id)
+    res['is_winner'] = (battle.winner_id == user.id)
+    res['solveTime'] = solve_time
+    res['xpEarned'] = battle.xp_reward if (battle.winner_id == user.id) else 40
     return Response(res, status=status.HTTP_200_OK)
 
 
@@ -3316,7 +3401,49 @@ def pvp_history_view(request):
         qs = qs.filter(status__in=['COMPLETED', 'CANCELLED', 'EXPIRED'])
 
     battles = qs.order_by('-created_at')[:20]
-    return Response([b.to_dict() for b in battles], status=status.HTTP_200_OK)
+    history_list = []
+    for b in battles:
+        data = b.to_dict()
+        is_p1 = (b.player1_id == user.id)
+        opp = b.player2 if is_p1 else b.player1
+        opp_name = (opp.display_name or opp.username) if opp else 'Challenger'
+        opp_avatar = opp.avatar if opp else ''
+
+        if b.winner_id == user.id:
+            result = 'Won'
+        elif b.winner_id is not None:
+            result = 'Lost'
+        elif b.is_draw:
+            result = 'Draw'
+        elif b.status == 'CANCELLED':
+            result = 'Cancelled'
+        else:
+            result = 'Expired'
+
+        my_prog = b.player1_progress if is_p1 else b.player2_progress
+        opp_prog = b.player2_progress if is_p1 else b.player1_progress
+        my_tests = (my_prog or {}).get('tests_passed', 0)
+        opp_tests = (opp_prog or {}).get('tests_passed', 0)
+        solve_secs = (my_prog or {}).get('solve_time')
+        solve_time_str = f"{int(solve_secs // 60)}m {int(solve_secs % 60):02d}s" if solve_secs else "—"
+
+        data.update({
+            'result': result,
+            'opponentName': opp_name,
+            'opponentAvatar': opp_avatar,
+            'opponentRating': 1450,
+            'challengeTitle': b.challenge.title if b.challenge else 'PvP Challenge',
+            'technology': b.challenge.technology if b.challenge else 'Code',
+            'difficulty': b.challenge.difficulty if b.challenge else 'Easy',
+            'score': f"{my_tests} - {opp_tests}",
+            'solveTime': solve_time_str,
+            'xpEarned': b.xp_reward if b.winner_id == user.id else 0,
+            'date': b.created_at.strftime('%b %d, %Y'),
+        })
+        history_list.append(data)
+
+    return Response(history_list, status=status.HTTP_200_OK)
+
 
 
 # ==============================================================================
