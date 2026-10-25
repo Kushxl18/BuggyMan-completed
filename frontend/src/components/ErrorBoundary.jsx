@@ -57,7 +57,7 @@ export default class ErrorBoundary extends React.Component {
                 className="button-secondary text-xs px-4 py-2.5 flex items-center gap-2"
               >
                 <Home className="w-3.5 h-3.5" />
-                <span>Dashboard</span>
+                <span>Home</span>
               </a>
             </div>
           </div>

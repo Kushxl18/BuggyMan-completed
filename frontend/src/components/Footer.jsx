@@ -58,7 +58,7 @@ export default function Footer() {
     setIsSubmittingTicket(true);
     setTimeout(() => {
       setIsSubmittingTicket(false);
-      setTicketSubmittedId(`BM-${Math.floor(10000 + Math.random() * 90000)}`);
+      setTicketSubmittedId(`BUG-${Math.floor(10000 + Math.random() * 90000)}`);
       setTicketMessage('');
       setTicketEmail('');
     }, 600);

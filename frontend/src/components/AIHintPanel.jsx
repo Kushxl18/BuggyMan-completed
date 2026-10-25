@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Bug, Lock, CheckCircle2, AlertCircle, Loader2, Lightbulb, Compass, Brain, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Bot, Bug, Lock, CheckCircle2, AlertCircle, Loader2, Lightbulb, Compass, Brain, ShoppingBag, ArrowRight } from 'lucide-react';
 import { challengeService } from '../services/challengeService';
 
 export default function AIHintPanel({ challengeId, currentCode, testResults, user, setUser, addToast }) {
@@ -102,7 +102,7 @@ export default function AIHintPanel({ challengeId, currentCode, testResults, use
       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-            <Sparkles className="w-4 h-4" />
+            <Bot className="w-4 h-4" />
           </div>
           <div>
             <h3 className="font-heading font-bold text-sm text-slate-100 flex items-center gap-1.5">
@@ -191,10 +191,10 @@ export default function AIHintPanel({ challengeId, currentCode, testResults, use
                     <span>Thinking...</span>
                   </span>
                 ) : isUnlocked ? (
-                  <span className="text-emerald-400 font-bold">✓ Unlocked (Free Read)</span>
+                  <span className="text-emerald-400 font-bold">Unlocked (Free Read)</span>
                 ) : (
                   <span className={balance >= tier.cost ? 'text-cyan-400' : 'text-rose-400'}>
-                    {balance >= tier.cost ? `Unlock for ${tier.cost} 🐞` : `Need ${tier.cost} 🐞`}
+                    {balance >= tier.cost ? `Unlock for ${tier.cost} BB` : `Need ${tier.cost} BB`}
                   </span>
                 )}
               </div>
@@ -211,7 +211,7 @@ export default function AIHintPanel({ challengeId, currentCode, testResults, use
             <div key={hint.hint_level || hint.hintLevel} className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
               <div className="flex items-center justify-between text-xs border-b border-slate-800/80 pb-2">
                 <span className="font-heading font-bold text-cyan-400 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
+                  <Bot className="w-3.5 h-3.5" />
                   <span>Level {hint.hint_level || hint.hintLevel} Hint</span>
                 </span>
                 <span className="badge badge-emerald text-[9px]">UNLOCKED</span>

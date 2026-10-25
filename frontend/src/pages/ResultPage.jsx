@@ -14,7 +14,7 @@ import {
   FileCode,
   ChevronDown,
   ChevronUp,
-  LayoutDashboard,
+  Home,
   Tag,
   AlertOctagon
 } from 'lucide-react';
@@ -431,8 +431,8 @@ export default function ResultPage() {
           to="/dashboard"
           className="button-secondary text-xs px-4 py-2.5"
         >
-          <LayoutDashboard className="w-4 h-4" />
-          <span>Back to Dashboard</span>
+          <Home className="w-4 h-4" />
+          <span>Back to Home</span>
         </Link>
 
         <div className="flex items-center gap-3">

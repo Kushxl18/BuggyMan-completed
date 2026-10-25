@@ -256,10 +256,10 @@ if (loading) {
     <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)] p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
 
       {/* Hero Header & BugBytes Balance Summary */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 glass-panel p-6 rounded-3xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 glass-panel p-6 rounded-md">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+            <div className="p-2.5 rounded-md bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
               <ShoppingBag className="w-6 h-6" />
             </div>
             <div>
@@ -276,8 +276,8 @@ if (loading) {
 
         {/* Current Balance & Quick Stats */}
         <div className="flex items-center gap-4 shrink-0">
-          <div className="px-5 py-3 rounded-2xl bg-slate-900 border border-amber-500/30 flex items-center gap-3 shadow-lg">
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+          <div className="px-5 py-3 rounded-md bg-slate-900 border border-amber-500/30 flex items-center gap-3 shadow-lg">
+            <div className="p-2 rounded-md bg-amber-500/10 text-amber-400">
               <Bug className="w-5 h-5" />
             </div>
             <div>
@@ -292,7 +292,7 @@ if (loading) {
           {claimableCount > 0 && (
             <button
               onClick={() => setActiveTab('missions')}
-              className="px-4 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 flex items-center gap-2 animate-bounce text-xs font-bold"
+              className="px-4 py-3 rounded-md bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 flex items-center gap-2 animate-bounce text-xs font-bold"
             >
               <Gift className="w-4 h-4 text-emerald-400" />
               <span>{claimableCount} Reward Claimable!</span>
@@ -303,9 +303,9 @@ if (loading) {
 
       {/* ZERO BUGBYTES HELPER BANNER */}
       {balance === 0 && (
-        <div className="p-5 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="p-5 rounded-md border border-cyan-500/30 bg-cyan-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 shrink-0">
+            <div className="p-2 rounded-md bg-cyan-500/10 text-cyan-400 shrink-0">
               <Zap className="w-5 h-5" />
             </div>
             <div className="space-y-1">
@@ -328,9 +328,9 @@ if (loading) {
       <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-2 overflow-x-auto select-none">
         <button
           onClick={() => setActiveTab('packages')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${
             activeTab === 'packages'
-              ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-glow-cyan'
+              ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 '
               : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
           }`}
         >
@@ -340,9 +340,9 @@ if (loading) {
 
         <button
           onClick={() => setActiveTab('missions')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 relative ${
+          className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 relative ${
             activeTab === 'missions'
-              ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-glow-cyan'
+              ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 '
               : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
           }`}
         >
@@ -355,9 +355,9 @@ if (loading) {
 
         <button
           onClick={() => setActiveTab('purchases')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${
             activeTab === 'purchases'
-              ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-glow-cyan'
+              ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 '
               : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
           }`}
         >
@@ -367,9 +367,9 @@ if (loading) {
 
         <button
           onClick={() => setActiveTab('rewards')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${
             activeTab === 'rewards'
-              ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-glow-cyan'
+              ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 '
               : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
           }`}
         >
@@ -395,15 +395,15 @@ if (loading) {
               return (
                 <div 
                   key={pkg.id} 
-                  className={`glass-card p-6 rounded-3xl flex flex-col justify-between transition-all duration-300 relative overflow-hidden group ${
+                  className={`glass-card p-6 rounded-md flex flex-col justify-between transition-all duration-300 relative overflow-hidden group ${
   pkg.is_best_value
-    ? 'border-cyan-500/50 shadow-glow-cyan ring-1 ring-cyan-500/30'
+    ? 'border-cyan-500/50  ring-1 ring-cyan-500/30'
     : 'hover:border-[var(--brand-cyan)]'
 }`}
                 >
                   {pkg.is_best_value && (
                     <div className="absolute top-0 right-0 bg-gradient-to-l from-cyan-500 to-blue-600 text-white font-heading font-extrabold text-[9px] uppercase tracking-wider py-1 px-3 rounded-bl-xl shadow-md">
-                      Best Value (₹{perByteCost}/🐞)
+                      Best Value (₹{perByteCost}/BugBytes)
                     </div>
                   )}
 
@@ -421,13 +421,13 @@ if (loading) {
                     </div>
 
                     {/* Price tag */}
-                    <div className="py-2.5 px-3.5 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-color)] flex items-center justify-between">
+                    <div className="py-2.5 px-3.5 rounded-md bg-[var(--bg-hover)] border border-[var(--border-color)] flex items-center justify-between">
                       <span className="text-xs text-[var(--text-secondary)]">Total Price:</span>
                       <span className="text-xl font-heading font-extrabold text-cyan-400">₹{pkg.price_inr}</span>
                     </div>
 
                     {/* Money-back Mission Offer */}
-                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
+                    <div className="p-3 rounded-md bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
                       <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold font-heading">
                         <Gift className="w-3.5 h-3.5 shrink-0" />
                         <span>100% Money-Back Mission</span>
@@ -442,9 +442,9 @@ if (loading) {
                   <div className="mt-6 pt-4 border-t border-slate-800">
                     <button
                       onClick={() => handleOpenCheckout(pkg)}
-                      className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                      className={`w-full py-2.5 px-4 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                         pkg.is_best_value
-                          ? 'button-primary shadow-glow-cyan'
+                          ? 'button-primary '
                           : 'button-secondary'
                       }`}
                     >
@@ -482,7 +482,7 @@ if (loading) {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {missionsData.completedMissions.map((m) => (
-                  <div key={m.id} className="p-5 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 space-y-4">
+                  <div key={m.id} className="p-5 rounded-md border border-emerald-500/40 bg-emerald-500/10 space-y-4">
                     <div className="flex items-start justify-between">
                       <div>
                         <h4 className="font-heading font-bold text-sm text-emerald-300">{m.title}</h4>
@@ -530,7 +530,7 @@ if (loading) {
             </h3>
 
             {missionsData.activeMissions?.length === 0 ? (
-              <div className="glass-panel p-8 rounded-2xl border border-slate-800 text-center space-y-3">
+              <div className="glass-panel p-8 rounded-md border border-slate-800 text-center space-y-3">
                 <Award className="w-8 h-8 text-slate-600 mx-auto" />
                 <h4 className="text-sm font-heading font-bold text-slate-300">No Active Missions</h4>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
@@ -545,7 +545,7 @@ if (loading) {
                 {missionsData.activeMissions.map((m) => {
                   const progressPct = Math.min(100, Math.round((m.completed_count / m.required_count) * 100));
                   return (
-                    <div key={m.id} className="glass-card p-5 rounded-2xl border border-slate-800 bg-slate-900/70 space-y-4">
+                    <div key={m.id} className="glass-card p-5 rounded-md border border-slate-800 bg-slate-900/70 space-y-4">
                       <div className="flex items-start justify-between">
                         <div>
                           <h4 className="font-heading font-bold text-sm text-slate-100">{m.title}</h4>
@@ -603,7 +603,7 @@ if (loading) {
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Past Missions:</span>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {missionsData.claimedMissions.map((m) => (
-                  <div key={m.id} className="p-3.5 rounded-xl border border-slate-800 bg-slate-950 text-xs space-y-1">
+                  <div key={m.id} className="p-3.5 rounded-md border border-slate-800 bg-slate-950 text-xs space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-300 truncate">{m.title}</span>
                       <span className="badge badge-emerald text-[8px]">REWARD CLAIMED</span>
@@ -612,7 +612,7 @@ if (loading) {
                   </div>
                 ))}
                 {missionsData.expiredMissions.map((m) => (
-                  <div key={m.id} className="p-3.5 rounded-xl border border-slate-800 bg-slate-950 text-xs space-y-1 opacity-70">
+                  <div key={m.id} className="p-3.5 rounded-md border border-slate-800 bg-slate-950 text-xs space-y-1 opacity-70">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-400 truncate">{m.title}</span>
                       <span className="badge badge-rose text-[8px]">EXPIRED</span>
@@ -635,11 +635,11 @@ if (loading) {
           </div>
 
           {purchases.length === 0 ? (
-            <div className="glass-panel p-8 rounded-2xl border border-slate-800 text-center text-slate-400 text-xs">
+            <div className="glass-panel p-8 rounded-md border border-slate-800 text-center text-slate-400 text-xs">
               No purchase history yet. Complete a mock purchase to view transactions here.
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/60">
+            <div className="overflow-x-auto rounded-md border border-slate-800 bg-slate-900/60">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] font-bold border-b border-slate-800">
                   <tr>
@@ -664,7 +664,7 @@ if (loading) {
                       <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
                         <td className="p-4 font-mono text-[11px] text-cyan-400 font-semibold">{p.transactionReference}</td>
                         <td className="p-4 font-semibold text-slate-200">{p.packageName}</td>
-                        <td className="p-4 text-amber-400 font-bold">+{p.bugbytesAmount} 🐞</td>
+                        <td className="p-4 text-amber-400 font-bold">+{p.bugbytesAmount} BugBytes</td>
                         <td className="p-4 font-bold text-slate-100">₹{p.priceInr}</td>
                         <td className="p-4">
                           <div className="flex flex-col gap-0.5">
@@ -674,7 +674,7 @@ if (loading) {
                                   100% REFUNDED
                                 </span>
                                 <span className="text-[10px] text-emerald-400/90 font-medium">
-                                  ₹{p.refundAmountInr || p.priceInr} returned • Kept 🐞
+                                  ₹{p.refundAmountInr || p.priceInr} returned • Kept BugBytes
                                 </span>
                               </>
                             ) : isMissionCompleted ? (
@@ -719,12 +719,12 @@ if (loading) {
                                 <CheckCircle2 className="w-3.5 h-3.5" />
                                 <span>₹{p.priceInr} Refunded</span>
                               </span>
-                              <span className="text-[10px] text-amber-400/80 font-medium">Kept +{p.bugbytesAmount} 🐞</span>
+                              <span className="text-[10px] text-amber-400/80 font-medium">Kept +{p.bugbytesAmount} BugBytes</span>
                             </div>
                           ) : isMissionCompleted ? (
                             <button
                               onClick={() => handleOpenRefundModal(p)}
-                              className="px-3.5 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-md shadow-emerald-950/40"
+                              className="px-3.5 py-1.5 rounded-md border border-emerald-500/40 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-md shadow-emerald-950/40"
                             >
                               <RotateCcw className="w-3.5 h-3.5 text-emerald-300" />
                               <span>Claim ₹{p.priceInr} Refund</span>
@@ -732,7 +732,7 @@ if (loading) {
                           ) : isMissionActive ? (
                             <button
                               onClick={() => setActiveTab('missions')}
-                              className="px-3 py-1.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 text-xs font-semibold inline-flex items-center gap-1.5 transition-all"
+                              className="px-3 py-1.5 rounded-md border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 text-xs font-semibold inline-flex items-center gap-1.5 transition-all"
                             >
                               <Clock className="w-3.5 h-3.5" />
                               <span>Solve {mission.requiredCount - mission.completedCount} more</span>
@@ -764,15 +764,15 @@ if (loading) {
           {/* Financial summary cards */}
           {rewardsSummary && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-1">
+              <div className="glass-card p-5 rounded-md border border-slate-800 space-y-1">
                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Mock Purchases</span>
                 <span className="text-2xl font-heading font-extrabold text-slate-200">₹{rewardsSummary.totalPurchasedInr}</span>
               </div>
-              <div className="glass-card p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 space-y-1">
+              <div className="glass-card p-5 rounded-md border border-emerald-500/30 bg-emerald-500/5 space-y-1">
                 <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">Total Simulated Refunds</span>
                 <span className="text-2xl font-heading font-extrabold text-emerald-400">₹{rewardsSummary.totalRewardedInr}</span>
               </div>
-              <div className="glass-card p-5 rounded-2xl border border-cyan-500/30 bg-cyan-500/5 space-y-1">
+              <div className="glass-card p-5 rounded-md border border-cyan-500/30 bg-cyan-500/5 space-y-1">
                 <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider block">Net Simulated Cost</span>
                 <span className="text-2xl font-heading font-extrabold text-cyan-400">₹{rewardsSummary.netSimulatedCostInr}</span>
               </div>
@@ -786,13 +786,13 @@ if (loading) {
             </span>
 
             {(!rewardsSummary?.rewards || rewardsSummary.rewards.length === 0) ? (
-              <div className="glass-panel p-8 rounded-2xl border border-slate-800 text-center text-slate-500 text-xs">
+              <div className="glass-panel p-8 rounded-md border border-slate-800 text-center text-slate-500 text-xs">
                 No simulated rewards claimed yet. Complete a Money-Back Mission to generate refund vouchers.
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {rewardsSummary.rewards.map((r) => (
-                  <div key={r.id} className="p-5 rounded-2xl border border-emerald-500/30 bg-slate-900/80 space-y-3 relative overflow-hidden">
+                  <div key={r.id} className="p-5 rounded-md border border-emerald-500/30 bg-slate-900/80 space-y-3 relative overflow-hidden">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                       <div className="flex items-center gap-2">
                         <Gift className="w-4 h-4 text-emerald-400" />
@@ -830,7 +830,7 @@ if (loading) {
       {/* MOCK CHECKOUT MODAL */}
       {selectedPackage && checkoutSession && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 max-w-md w-full rounded-3xl p-6 shadow-2xl space-y-5 relative">
+          <div className="bg-slate-900 border border-slate-800 max-w-md w-full rounded-md p-6 shadow-2xl space-y-5 relative">
             <button 
               onClick={() => { setSelectedPackage(null); setCheckoutSession(null); }}
               className="absolute top-5 right-5 p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800"
@@ -849,7 +849,7 @@ if (loading) {
                 </div>
 
                 {/* Important Demo Notice */}
-                <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs text-amber-300 space-y-1">
+                <div className="p-3.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-xs text-amber-300 space-y-1">
                   <strong className="block font-bold flex items-center gap-1.5">
                     <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
                     <span>DEMO PAYMENT — NO REAL MONEY CHARGED</span>
@@ -860,14 +860,14 @@ if (loading) {
                 </div>
 
                 {/* Order Summary */}
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
+                <div className="p-4 rounded-md bg-slate-950 border border-slate-800 space-y-2 text-xs">
                   <div className="flex justify-between">
                     <span className="text-slate-400">Package:</span>
                     <span className="font-bold text-slate-200">{selectedPackage.name}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">BugBytes to Credit:</span>
-                    <span className="font-bold text-amber-400">+{selectedPackage.bugbytes} 🐞</span>
+                    <span className="font-bold text-amber-400">+{selectedPackage.bugbytes} BugBytes</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Mock Order Ref:</span>
@@ -880,7 +880,7 @@ if (loading) {
                 </div>
 
                 {/* 100% Money-Back Guarantee Feature Card */}
-                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/40 to-cyan-950/40 border border-emerald-500/40 space-y-1.5 shadow-sm">
+                <div className="p-3.5 rounded-md bg-gradient-to-r from-emerald-950/40 to-cyan-950/40 border border-emerald-500/40 space-y-1.5 shadow-sm">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-xs text-emerald-300 flex items-center gap-1.5">
                       <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -906,7 +906,7 @@ if (loading) {
                     <button
                       type="button"
                       onClick={() => setCheckoutPaymentMethod('upi')}
-                      className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                      className={`p-2 rounded-md border flex flex-col items-center justify-center gap-1 transition-all ${
                         checkoutPaymentMethod === 'upi'
                           ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300 shadow-sm shadow-cyan-500/20'
                           : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'
@@ -919,7 +919,7 @@ if (loading) {
                     <button
                       type="button"
                       onClick={() => setCheckoutPaymentMethod('card')}
-                      className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                      className={`p-2 rounded-md border flex flex-col items-center justify-center gap-1 transition-all ${
                         checkoutPaymentMethod === 'card'
                           ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300 shadow-sm shadow-cyan-500/20'
                           : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'
@@ -932,7 +932,7 @@ if (loading) {
                     <button
                       type="button"
                       onClick={() => setCheckoutPaymentMethod('netbanking')}
-                      className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                      className={`p-2 rounded-md border flex flex-col items-center justify-center gap-1 transition-all ${
                         checkoutPaymentMethod === 'netbanking'
                           ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300 shadow-sm shadow-cyan-500/20'
                           : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'
@@ -945,7 +945,7 @@ if (loading) {
 
                   {/* UPI Sub-Panel */}
                   {checkoutPaymentMethod === 'upi' && (
-                    <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5">
+                    <div className="p-3 rounded-md bg-slate-950 border border-slate-800 space-y-2.5">
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="text-slate-400 font-semibold">Select UPI App</span>
                         <span className="text-cyan-400 font-bold">Instant Autopay</span>
@@ -979,7 +979,7 @@ if (loading) {
                             type="text"
                             value={simUpiId}
                             onChange={(e) => setSimUpiId(e.target.value)}
-                            className="w-full px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
+                            className="w-full px-3 py-1.5 rounded-md bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
                             placeholder="username@bank"
                           />
                           <span className="absolute right-2.5 top-2 text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
@@ -992,7 +992,7 @@ if (loading) {
 
                   {/* Card Sub-Panel */}
                   {checkoutPaymentMethod === 'card' && (
-                    <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+                    <div className="p-3 rounded-md bg-slate-950 border border-slate-800 space-y-2">
                       <div className="space-y-1">
                         <div className="flex justify-between items-center text-[10px] text-slate-400">
                           <span>Simulated Card Number</span>
@@ -1002,7 +1002,7 @@ if (loading) {
                           type="text"
                           value={simCardNumber}
                           onChange={(e) => setSimCardNumber(e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500"
+                          className="w-full px-3 py-1.5 rounded-md bg-slate-900 border border-slate-800 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-2">
@@ -1012,7 +1012,7 @@ if (loading) {
                             type="text"
                             value={simCardExpiry}
                             onChange={(e) => setSimCardExpiry(e.target.value)}
-                            className="w-full px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500"
+                            className="w-full px-3 py-1.5 rounded-md bg-slate-900 border border-slate-800 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500"
                           />
                         </div>
                         <div className="space-y-1">
@@ -1022,7 +1022,7 @@ if (loading) {
                             value={simCardCvv}
                             onChange={(e) => setSimCardCvv(e.target.value)}
                             maxLength={4}
-                            className="w-full px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500"
+                            className="w-full px-3 py-1.5 rounded-md bg-slate-900 border border-slate-800 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500"
                           />
                         </div>
                       </div>
@@ -1031,7 +1031,7 @@ if (loading) {
 
                   {/* NetBanking Sub-Panel */}
                   {checkoutPaymentMethod === 'netbanking' && (
-                    <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+                    <div className="p-3 rounded-md bg-slate-950 border border-slate-800 space-y-2">
                       <span className="text-[10px] text-slate-400 block font-semibold">Select Bank</span>
                       <div className="grid grid-cols-3 gap-1.5">
                         {['HDFC Bank', 'SBI', 'ICICI Bank', 'Axis Bank', 'Kotak', 'PNB'].map(bank => (
@@ -1058,7 +1058,7 @@ if (loading) {
                   <button
                     onClick={() => handleSimulatePayment('SUCCESS')}
                     disabled={isProcessingCheckout}
-                    className="w-full py-3 px-4 rounded-xl button-primary bg-emerald-600 hover:bg-emerald-500 text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40"
+                    className="w-full py-3 px-4 rounded-md button-primary bg-emerald-600 hover:bg-emerald-500 text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40"
                   >
                     {isProcessingCheckout ? (
                       <>
@@ -1076,7 +1076,7 @@ if (loading) {
                   <button
                     onClick={() => handleSimulatePayment('FAILURE')}
                     disabled={isProcessingCheckout}
-                    className="w-full py-2.5 px-4 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-bold flex items-center justify-center gap-2 transition-all"
+                    className="w-full py-2.5 px-4 rounded-md border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-bold flex items-center justify-center gap-2 transition-all"
                   >
                     <AlertTriangle className="w-3.5 h-3.5" />
                     <span>Test Bank Decline (Simulate Failure)</span>
@@ -1096,10 +1096,10 @@ if (loading) {
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-left text-xs space-y-1.5">
+                <div className="p-3.5 rounded-md bg-slate-950 border border-slate-800 text-left text-xs space-y-1.5">
                   <div className="flex justify-between">
                     <span className="text-slate-400">New BugBytes Balance:</span>
-                    <span className="font-bold text-amber-400">{checkoutOutcome.newBalance} 🐞</span>
+                    <span className="font-bold text-amber-400">{checkoutOutcome.newBalance} BugBytes</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Transaction Reference:</span>
@@ -1107,7 +1107,7 @@ if (loading) {
                   </div>
                   {checkoutOutcome.rewardMission && (
                     <div className="pt-2 border-t border-slate-800 text-emerald-400 font-bold text-[11px]">
-                      ✓ {checkoutOutcome.rewardMission.title} activated!
+                       {checkoutOutcome.rewardMission.title} activated!
                     </div>
                   )}
                 </div>
@@ -1169,7 +1169,7 @@ if (loading) {
       {/* REWARD CLAIM CONFIRMATION MODAL */}
       {claimResult && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-          <div className="bg-slate-900 border border-emerald-500/30 max-w-md w-full rounded-3xl p-6 shadow-2xl space-y-5 text-center relative">
+          <div className="bg-slate-900 border border-emerald-500/30 max-w-md w-full rounded-md p-6 shadow-2xl space-y-5 text-center relative">
             <button 
               onClick={() => setClaimResult(null)}
               className="absolute top-5 right-5 p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800"
@@ -1188,7 +1188,7 @@ if (loading) {
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-left text-xs space-y-2">
+            <div className="p-4 rounded-md bg-slate-950 border border-slate-800 text-left text-xs space-y-2">
               <div className="flex justify-between">
                 <span className="text-slate-400">Refund Amount:</span>
                 <span className="font-heading font-extrabold text-emerald-400 text-base">
@@ -1205,7 +1205,7 @@ if (loading) {
               </div>
             </div>
 
-            <p className="text-[10px] text-amber-400/90 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
+            <p className="text-[10px] text-amber-400/90 bg-amber-500/10 p-2.5 rounded-md border border-amber-500/20">
               Notice: Prototype demonstration only. This is a simulated virtual refund record for academic grading.
             </p>
 
@@ -1225,7 +1225,7 @@ if (loading) {
       {/* 100% MONEY-BACK REFUND MODAL */}
       {refundTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-          <div className="bg-slate-900 border border-emerald-500/30 max-w-md w-full rounded-3xl p-6 shadow-2xl space-y-5 relative">
+          <div className="bg-slate-900 border border-emerald-500/30 max-w-md w-full rounded-md p-6 shadow-2xl space-y-5 relative">
             <button 
               onClick={() => { setRefundTarget(null); setRefundResult(null); }}
               className="absolute top-5 right-5 p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800"
@@ -1244,7 +1244,7 @@ if (loading) {
                 </div>
 
                 {/* Challenge Goal Achieved Banner */}
-                <div className="p-3.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-xs text-emerald-300 space-y-1">
+                <div className="p-3.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 text-xs text-emerald-300 space-y-1">
                   <strong className="block font-bold flex items-center gap-1.5 text-emerald-400">
                     <CheckCircle2 className="w-4 h-4 shrink-0" />
                     <span>CHALLENGES SOLVED ON TIME</span>
@@ -1255,7 +1255,7 @@ if (loading) {
                 </div>
 
                 {/* Calculation breakdown */}
-                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5 text-xs">
+                <div className="p-4 rounded-md bg-slate-950 border border-slate-800 space-y-2.5 text-xs">
                   <div className="flex justify-between">
                     <span className="text-slate-400">Order Reference:</span>
                     <span className="font-mono text-cyan-400 font-semibold">{refundTarget.transactionReference}</span>
@@ -1271,15 +1271,15 @@ if (loading) {
                   <div className="pt-2 border-t border-slate-800 space-y-1.5">
                     <div className="flex justify-between">
                       <span className="text-slate-400">BugBytes Retained:</span>
-                      <span className="font-bold text-amber-400">+{refundTarget.bugbytesAmount} 🐞 (100% Yours to Keep)</span>
+                      <span className="font-bold text-amber-400">+{refundTarget.bugbytesAmount} BugBytes (100% Yours to Keep)</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">BugBytes Deducted:</span>
-                      <span className="font-bold text-emerald-400">0 🐞 (No deduction!)</span>
+                      <span className="font-bold text-emerald-400">0 BugBytes (No deduction!)</span>
                     </div>
                     <div className="flex justify-between pt-1 border-t border-slate-800/80 font-bold">
                       <span className="text-slate-300">Your BugBytes Balance:</span>
-                      <span className="text-amber-400">{balance} 🐞</span>
+                      <span className="text-amber-400">{balance} BugBytes</span>
                     </div>
                   </div>
                 </div>
@@ -1294,7 +1294,7 @@ if (loading) {
                     onChange={(e) => setRefundReason(e.target.value)}
                     placeholder="e.g. Loved solving the challenges! Testing refund flow..."
                     rows={2}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 resize-none"
+                    className="w-full px-3 py-2 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 resize-none"
                   />
                 </div>
 
@@ -1311,7 +1311,7 @@ if (loading) {
                     type="button"
                     onClick={handleProcessRefund}
                     disabled={isProcessingRefund}
-                    className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all button-primary bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/40"
+                    className="flex-1 py-2.5 px-4 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-all button-primary bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/40"
                   >
                     {isProcessingRefund ? (
                       <>
@@ -1340,7 +1340,7 @@ if (loading) {
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-left text-xs space-y-2">
+                <div className="p-3.5 rounded-md bg-slate-950 border border-slate-800 text-left text-xs space-y-2">
                   <div className="flex justify-between">
                     <span className="text-slate-400">Order Reference:</span>
                     <span className="font-mono text-cyan-400 text-[11px]">{refundTarget.transactionReference}</span>
@@ -1351,11 +1351,11 @@ if (loading) {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">BugBytes Retained:</span>
-                    <span className="font-bold text-amber-400">+{refundTarget.bugbytesAmount} 🐞 (Retained)</span>
+                    <span className="font-bold text-amber-400">+{refundTarget.bugbytesAmount} BugBytes (Retained)</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Your BugBytes Balance:</span>
-                    <span className="font-bold text-amber-400">{balance} 🐞</span>
+                    <span className="font-bold text-amber-400">{balance} BugBytes</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Status:</span>

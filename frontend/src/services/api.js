@@ -1538,9 +1538,9 @@ const MOCK_DEMO_USER = {
     { id: 3, text: 'Solved "Express Middlewares" challenge', time: '3 days ago', xp: 200 }
   ],
   badges: [
-    { name: 'First Bug Defeated', desc: 'Resolved your first bug', icon: '🐞', date: 'Jul 01, 2026' },
-    { name: 'Five Day Streak', desc: 'Debugged 5 days in a row', icon: '🔥', date: 'Jul 05, 2026' },
-    { name: 'AI Explorer', desc: 'Used AI hints 10 times', icon: '🤖', date: 'Jul 08, 2026' }
+    { name: 'First Bug Defeated', desc: 'Resolved your first bug', icon: 'bug', date: 'Jul 01, 2026' },
+    { name: 'Five Day Streak', desc: 'Debugged 5 days in a row', icon: 'flame', date: 'Jul 05, 2026' },
+    { name: 'AI Explorer', desc: 'Used AI hints 10 times', icon: 'bot', date: 'Jul 08, 2026' }
   ],
   bugbytes_balance: 50,
   bugbytesBalance: 50,

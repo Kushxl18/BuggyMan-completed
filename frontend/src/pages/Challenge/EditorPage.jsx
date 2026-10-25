@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Play, 
+  Pause, 
   Send, 
   RotateCcw, 
-  Sparkles, 
+  Bot, 
   Timer as TimerIcon, 
   Menu,
   ChevronLeft,
@@ -80,6 +81,14 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
   const [lastRunResult, setLastRunResult] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [showHintPanel, setShowHintPanel] = useState(false);
+  const [isTimerRunning, setIsTimerRunning] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(`buggyman-timer-running-${id || '1'}`);
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
   const [timeElapsed, setTimeElapsed] = useState(() => {
     try {
       const saved = sessionStorage.getItem(`buggyman-timer-${id || '1'}`);
@@ -106,7 +115,7 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
     activeFileRef.current = activeFile;
   }, [activeFile]);
 
-  // Timer counting up in seconds with persistence
+  // Timer counting up in seconds with persistence & play/pause
   useEffect(() => {
     const currentTimerId = id || '1';
     try {
@@ -115,6 +124,8 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
     } catch {
       setTimeElapsed(0);
     }
+
+    if (!isTimerRunning) return;
 
     const timer = setInterval(() => {
       setTimeElapsed(prev => {
@@ -126,7 +137,17 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [id]);
+  }, [id, isTimerRunning]);
+
+  const toggleTimer = () => {
+    setIsTimerRunning(prev => {
+      const next = !prev;
+      try {
+        sessionStorage.setItem(`buggyman-timer-running-${id || '1'}`, next.toString());
+      } catch {}
+      return next;
+    });
+  };
 
   useEffect(() => {
     async function fetchChallenge() {
@@ -385,16 +406,7 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
       <div className="h-12 bg-slate-900/95 border-b border-slate-800 flex items-center justify-between px-3 shrink-0 text-slate-200">
         {/* Left: Problem List & Prev/Next Chevrons */}
         <div className="flex items-center gap-2">
-          {/* Logo */}
-          <div 
-            onClick={() => navigate('/challenges')}
-            className="flex items-center gap-2 cursor-pointer pr-2 border-r border-slate-800 mr-1"
-            title="BuggyMan Dashboard"
-          >
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-sm">
-              <span className="font-heading font-bold text-white text-xs">BM</span>
-            </div>
-          </div>
+
 
           {/* Problem List Button */}
           <button
@@ -465,7 +477,7 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
           <button
             onClick={handleSubmit}
             disabled={isRunning}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-sm hover:shadow-glow-emerald disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-sm  disabled:opacity-50"
             title="Submit Solution"
           >
             {isRunning ? (
@@ -484,12 +496,12 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
             onClick={() => setShowHintPanel(!showHintPanel)}
             className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg border transition-all ${
               showHintPanel
-                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-glow-cyan'
+                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 border-cyan-500/50'
                 : 'bg-slate-950 text-slate-400 hover:text-slate-200 border-slate-800 hover:bg-slate-800'
             }`}
             title="Ask AI Assistant"
           >
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <Bot className="w-3.5 h-3.5 text-cyan-400" />
             <span>AI Hint</span>
           </button>
 
@@ -502,11 +514,30 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
 
-          {/* Timer */}
-          <div className="flex items-center gap-1 px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-slate-300">
-            <TimerIcon className="w-3.5 h-3.5 text-slate-400" />
+          {/* Interactive Play/Pause Timer */}
+          <button
+            type="button"
+            onClick={toggleTimer}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono transition-colors border cursor-pointer ${
+              isTimerRunning
+                ? 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
+                : 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
+            }`}
+            title={isTimerRunning ? "Click to Pause Timer" : "Click to Resume Timer"}
+            aria-label={isTimerRunning ? "Pause Timer" : "Resume Timer"}
+          >
+            {isTimerRunning ? (
+              <Pause className="w-3 h-3 text-slate-400 shrink-0" />
+            ) : (
+              <Play className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
+            )}
             <span>{formatTime(timeElapsed)}</span>
-          </div>
+            {!isTimerRunning && (
+              <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-amber-400">
+                Paused
+              </span>
+            )}
+          </button>
 
           {/* XP / Score Badge */}
           <div className="hidden lg:flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs font-semibold text-amber-300">

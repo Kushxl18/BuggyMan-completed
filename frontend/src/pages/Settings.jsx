@@ -149,7 +149,7 @@ export default function Settings({ user, theme, toggleTheme, addToast, setUser, 
         </div>
 
         {/* Section Navigation Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-[#1B1F23] border border-slate-200 dark:border-[#292E33] rounded-xl self-start sm:self-auto">
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-[#1B1F23] border border-slate-200 dark:border-[#292E33] rounded-md self-start sm:self-auto">
           <button
             onClick={() => setActiveTab('general')}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -181,7 +181,7 @@ export default function Settings({ user, theme, toggleTheme, addToast, setUser, 
       {activeTab === 'general' && (
         <div className="space-y-6">
           {/* IDE Workspace Preferences */}
-          <div className="glass-card p-6 rounded-2xl space-y-4">
+          <div className="p-6 rounded-md bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] space-y-4">
             <h3 className="font-heading font-bold text-sm text-slate-800 dark:text-[#F0F2F4] flex items-center gap-2 border-b border-slate-200 dark:border-[#292E33] pb-3">
               <Sliders className="w-4.5 h-4.5 text-cyan-500" />
               <span>IDE Workspace Preferences</span>
@@ -245,7 +245,7 @@ export default function Settings({ user, theme, toggleTheme, addToast, setUser, 
           </div>
 
           {/* Application Theme */}
-          <div className="glass-card p-6 rounded-2xl space-y-4">
+          <div className="p-6 rounded-md bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] space-y-4">
             <h3 className="font-heading font-bold text-sm text-slate-800 dark:text-[#F0F2F4] flex items-center gap-2 border-b border-slate-200 dark:border-[#292E33] pb-3">
               <Sun className="w-4.5 h-4.5 text-cyan-500" />
               <span>Application Theme</span>
@@ -256,7 +256,7 @@ export default function Settings({ user, theme, toggleTheme, addToast, setUser, 
                 <p className="font-semibold text-slate-700 dark:text-slate-200">Appearance Mode</p>
                 <p className="text-[10px] text-slate-500">Select Dark, Light, or System theme.</p>
               </div>
-              <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-[#1B1F23] border border-slate-200 dark:border-[#292E33] rounded-xl">
+              <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-[#1B1F23] border border-slate-200 dark:border-[#292E33] rounded-md">
                 {['dark', 'light', 'system'].map((t) => (
                   <button
                     key={t}
@@ -277,7 +277,7 @@ export default function Settings({ user, theme, toggleTheme, addToast, setUser, 
 
 
           {/* Danger Zone */}
-          <div className="glass-card p-6 rounded-2xl border border-rose-500/25 space-y-4">
+          <div className="p-6 rounded-md bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] border border-rose-500/25 space-y-4">
             <h3 className="font-heading font-bold text-sm text-rose-500 flex items-center gap-2 border-b border-rose-500/15 pb-3">
               <LogOut className="w-4 h-4" />
               <span>Session Actions</span>
@@ -290,7 +290,7 @@ export default function Settings({ user, theme, toggleTheme, addToast, setUser, 
               </div>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500 border border-rose-500/30 hover:border-rose-500 text-rose-400 hover:text-white font-semibold rounded-xl transition-all duration-150 flex items-center gap-2 active:scale-95"
+                className="px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500 border border-rose-500/30 hover:border-rose-500 text-rose-400 hover:text-white font-semibold rounded-md transition-all duration-150 flex items-center gap-2 active:scale-95"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Logout</span>
@@ -304,7 +304,7 @@ export default function Settings({ user, theme, toggleTheme, addToast, setUser, 
       {activeTab === 'notifications' && (
         <div className="space-y-6">
           {/* Notification Alert Toggles */}
-          <div className="glass-card p-6 rounded-2xl space-y-4">
+          <div className="p-6 rounded-md bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] space-y-4">
             <h3 className="font-heading font-bold text-sm text-slate-800 dark:text-[#F0F2F4] flex items-center gap-2 border-b border-slate-200 dark:border-[#292E33] pb-3">
               <BellRing className="w-4.5 h-4.5 text-cyan-500" />
               <span>Notification Alert Preferences</span>
@@ -316,7 +316,7 @@ export default function Settings({ user, theme, toggleTheme, addToast, setUser, 
                 { key: 'challenges', label: 'New Challenges Released' },
                 { key: 'system', label: 'System Announcements' }
               ].map(item => (
-                <label key={item.key} className="flex items-center text-slate-700 dark:text-slate-300 cursor-pointer p-3 rounded-xl bg-slate-50 dark:bg-[#1B1F23] border border-slate-200 dark:border-[#292E33]">
+                <label key={item.key} className="flex items-center text-slate-700 dark:text-slate-300 cursor-pointer p-3 rounded-md bg-slate-50 dark:bg-[#1B1F23] border border-slate-200 dark:border-[#292E33]">
                   <input
                     type="checkbox"
                     checked={settings.notifications?.[item.key] ?? true}
@@ -330,7 +330,7 @@ export default function Settings({ user, theme, toggleTheme, addToast, setUser, 
           </div>
 
           {/* Notification Inbox Log */}
-          <div className="glass-card p-6 rounded-2xl space-y-5">
+          <div className="p-6 rounded-md bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-[#292E33] pb-4">
               <div>
                 <h3 className="font-heading font-bold text-base text-slate-800 dark:text-[#F0F2F4] flex items-center gap-2">
@@ -385,7 +385,7 @@ export default function Settings({ user, theme, toggleTheme, addToast, setUser, 
                   <div
                     key={n.id}
                     onClick={() => !n.read && handleMarkAsRead(n.id)}
-                    className={`p-4 rounded-xl border transition-all flex items-start gap-4 cursor-pointer relative group ${
+                    className={`p-4 rounded-md border transition-all flex items-start gap-4 cursor-pointer relative group ${
                       n.read 
                         ? 'border-slate-200 dark:border-[#292E33] bg-slate-50/50 dark:bg-[#15181B] opacity-80' 
                         : 'border-l-4 border-l-cyan-500 border-slate-200 dark:border-[#292E33] bg-white dark:bg-[#1B1F23] shadow-sm'
@@ -410,7 +410,7 @@ export default function Settings({ user, theme, toggleTheme, addToast, setUser, 
                 ))}
               </div>
             ) : (
-              <div className="glass-panel p-8 rounded-xl text-center text-slate-500 space-y-2">
+              <div className="glass-panel p-8 rounded-md text-center text-slate-500 space-y-2">
                 <CheckSquare className="w-8 h-8 text-cyan-500 mx-auto" />
                 <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">All caught up!</p>
                 <p className="text-[11px] text-slate-500">No notifications match this filter tag.</p>

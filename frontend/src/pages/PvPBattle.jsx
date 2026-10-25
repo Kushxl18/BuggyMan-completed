@@ -317,6 +317,7 @@ export default function PvPBattle({ user, addToast }) {
 
   // Cancel waiting battle
   const handleCancelBattle = async () => {
+    setIsWaitingModalOpen(false);
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
@@ -332,8 +333,6 @@ export default function PvPBattle({ user, addToast }) {
         await challengeService.cancelBattle(bId);
       } catch (e) {}
     }
-
-    setIsWaitingModalOpen(false);
     setActiveBattle(null);
     setMatchedOpponent(null);
     setMatchFoundCountdown(null);
@@ -387,8 +386,8 @@ export default function PvPBattle({ user, addToast }) {
   return (
     <div className="space-y-8 animate-fade-in pb-12">
       {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-white via-slate-50 to-cyan-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-950 border border-slate-200 dark:border-slate-800/80 p-8 shadow-sm dark:shadow-xl">
-        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-md bg-gradient-to-br from-white via-slate-50 to-cyan-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-950 border border-slate-200 dark:border-slate-800/80 p-8 shadow-sm dark:shadow-xl">
+        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 hidden" />
         <div className="absolute bottom-0 left-1/3 -mb-12 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -402,7 +401,7 @@ export default function PvPBattle({ user, addToast }) {
               {/* Truthful Real-Time Online Presence Pill */}
               {onlineStats.otherOnline > 0 ? (
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold shadow-sm">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 " />
                   <span>{onlineStats.otherOnline} Developer{onlineStats.otherOnline === 1 ? '' : 's'} Online</span>
                   {onlineStats.waitingInQueue > 0 && (
                     <span className="text-[10px] text-emerald-500 dark:text-emerald-300 font-mono">
@@ -419,7 +418,7 @@ export default function PvPBattle({ user, addToast }) {
             </div>
 
             <h1 className="text-3xl md:text-4xl font-heading font-extrabold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-3">
-              <span>⚔️</span> PvP Debugging Battle
+              <Swords className="w-7 h-7 text-rose-500 shrink-0 inline-block mr-2" /> PvP Debugging Battle
             </h1>
             <p className="text-slate-600 dark:text-slate-400 text-sm md:text-base leading-relaxed">
               Race in real-time against another developer to diagnose, isolate, and fix broken code first. Human vs. human — both developers receive the exact same bug report and codebase!
@@ -506,7 +505,7 @@ export default function PvPBattle({ user, addToast }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* 1. Quick Match Card */}
-        <div className="relative group overflow-hidden rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:border-cyan-500/40 transition-all duration-300">
+        <div className="relative group overflow-hidden rounded-md bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:border-cyan-500/40 transition-all duration-300">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
@@ -531,7 +530,7 @@ export default function PvPBattle({ user, addToast }) {
             <button
               onClick={handleQuickMatch}
               disabled={isQuickMatching}
-              className="w-full button-primary py-3 rounded-xl font-bold flex items-center justify-center gap-2 group-hover:shadow-glow-cyan transition-all"
+              className="w-full button-primary py-3 rounded-xl font-bold flex items-center justify-center gap-2 group-hover: transition-all"
             >
               {isQuickMatching ? (
                 <>
@@ -555,7 +554,7 @@ export default function PvPBattle({ user, addToast }) {
         </div>
 
         {/* 2. Create Room Card */}
-        <div className="relative group overflow-hidden rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:border-purple-500/40 transition-all duration-300">
+        <div className="relative group overflow-hidden rounded-md bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:border-purple-500/40 transition-all duration-300">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center">
@@ -601,7 +600,7 @@ export default function PvPBattle({ user, addToast }) {
         </div>
 
         {/* 3. Join Room Card */}
-        <div className="relative group overflow-hidden rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:border-emerald-500/40 transition-all duration-300">
+        <div className="relative group overflow-hidden rounded-md bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:border-emerald-500/40 transition-all duration-300">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
@@ -656,7 +655,7 @@ export default function PvPBattle({ user, addToast }) {
       </div>
 
       {/* Battle Rules & Mechanism Card */}
-      <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-3xl p-6">
+      <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-md p-6">
         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-4 flex items-center gap-2">
           <Shield className="w-4 h-4 text-cyan-500" />
           Multiplayer Rules & Scoring
@@ -805,16 +804,16 @@ export default function PvPBattle({ user, addToast }) {
       {/* WAITING ROOM & MATCHMAKING MODAL */}
       {isWaitingModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
             
             {/* Background glow orb */}
-            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 hidden" />
 
             {/* STATE 1: Opponent Found & Countdown */}
             {matchFoundCountdown !== null ? (
               <div className="text-center space-y-6 animate-fade-in py-4">
                 <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/10">
-                  <Swords className="w-8 h-8 animate-bounce" />
+                  <Swords className="w-8 h-8 " />
                 </div>
 
                 <div className="space-y-1">
@@ -938,8 +937,8 @@ export default function PvPBattle({ user, addToast }) {
                   /* 3A: Quick Match Automated Search (NO ROOM CODE - randomly pairs online players) */
                   <>
                     <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
-                      <div className="absolute inset-0 rounded-full bg-cyan-500/20 animate-ping opacity-75" />
-                      <div className="relative w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-950 border-2 border-cyan-500/50 flex items-center justify-center text-cyan-600 dark:text-cyan-400 shadow-glow-cyan">
+                      <div className="absolute inset-0 rounded-full bg-cyan-500/20  opacity-75" />
+                      <div className="relative w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-950 border-2 border-cyan-500/50 flex items-center justify-center text-cyan-600 dark:text-cyan-400 ">
                         <Swords className="w-7 h-7" />
                       </div>
                     </div>
@@ -948,9 +947,9 @@ export default function PvPBattle({ user, addToast }) {
                       <h3 className="text-xl font-heading font-extrabold text-slate-900 dark:text-slate-100 flex items-center justify-center gap-2">
                         <span>Searching for Opponent</span>
                         <span className="flex gap-1">
-                          <span className="w-1.5 h-1.5 bg-cyan-500 dark:bg-cyan-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                          <span className="w-1.5 h-1.5 bg-cyan-500 dark:bg-cyan-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                          <span className="w-1.5 h-1.5 bg-cyan-500 dark:bg-cyan-400 rounded-full animate-bounce"></span>
+                          <span className="w-1.5 h-1.5 bg-cyan-500 dark:bg-cyan-400 rounded-full bg-cyan-500"></span>
+                          <span className="w-1.5 h-1.5 bg-cyan-500 dark:bg-cyan-400 rounded-full bg-cyan-500"></span>
+                          <span className="w-1.5 h-1.5 bg-cyan-500 dark:bg-cyan-400 rounded-full "></span>
                         </span>
                       </h3>
                       <p className="text-xs text-slate-600 dark:text-slate-400">
@@ -996,9 +995,9 @@ export default function PvPBattle({ user, addToast }) {
                       <h3 className="text-xl font-heading font-extrabold text-slate-900 dark:text-slate-100 flex items-center justify-center gap-2">
                         <span>Private Battle Room</span>
                         <span className="flex gap-1">
-                          <span className="w-1.5 h-1.5 bg-purple-500 dark:bg-purple-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                          <span className="w-1.5 h-1.5 bg-purple-500 dark:bg-purple-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                          <span className="w-1.5 h-1.5 bg-purple-500 dark:bg-purple-400 rounded-full animate-bounce"></span>
+                          <span className="w-1.5 h-1.5 bg-purple-500 dark:bg-purple-400 rounded-full bg-cyan-500"></span>
+                          <span className="w-1.5 h-1.5 bg-purple-500 dark:bg-purple-400 rounded-full bg-cyan-500"></span>
+                          <span className="w-1.5 h-1.5 bg-purple-500 dark:bg-purple-400 rounded-full "></span>
                         </span>
                       </h3>
                       <p className="text-xs text-slate-600 dark:text-slate-400">

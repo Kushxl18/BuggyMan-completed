@@ -2,13 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Database, 
-  Sparkles, 
   Table, 
   Terminal, 
-  Layers,
   CheckCircle2,
-  AlertCircle,
-  Play
+  ArrowRight
 } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -55,21 +52,19 @@ export default function SQLChallenges({ addToast }) {
   });
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 dark:border-white/[0.06]">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="badge badge-cyan">DATABASE LAB</span>
-            <span className="badge badge-indigo text-[10px] uppercase font-bold">Personalized</span>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="badge badge-cyan font-mono text-[11px]">SQL LAB</span>
+            <span className="badge badge-gray font-mono text-[10px]">ADAPTIVE</span>
           </div>
-          <h1 className="font-heading font-extrabold text-2xl text-slate-800 dark:text-[#F0F2F4] flex items-center gap-2.5">
-            <Database className="w-7 h-7 text-cyan-500" />
-            <span>SQL Debugging & Query Optimization</span>
+          <h1 className="font-heading font-bold text-2xl text-slate-900 dark:text-[#E6EDF3] tracking-tight">
+            SQL Debugging & Query Optimization
           </h1>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            <span>SQL challenges adapted to your query & schema proficiency</span>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+            Production query scenarios: deadlock resolution, index optimization, and aggregation correctness.
           </p>
         </div>
 
@@ -77,38 +72,42 @@ export default function SQLChallenges({ addToast }) {
           value={searchVal}
           onChange={setSearchVal}
           onClear={() => setSearchVal('')}
-          placeholder="Search SQL challenges..."
+          placeholder="Filter SQL challenges by table or topic..."
         />
       </div>
 
       {/* Difficulty Filter Bar */}
-      <div className="flex flex-wrap items-center gap-3 glass-panel p-4 rounded-xl border border-slate-200 dark:border-[#292E33]">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mr-2">
-          <Layers className="w-3.5 h-3.5 text-cyan-500" />
-          <span>Difficulty:</span>
-        </span>
-        {['All', 'Easy', 'Medium', 'Hard'].map((d) => (
-          <button
-            key={d}
-            onClick={() => setSelectedDifficulty(d)}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-              selectedDifficulty === d
-                ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30'
-                : 'bg-white dark:bg-[#1B1F23] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-[#292E33]'
-            }`}
-          >
-            {d}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#161B22] p-2.5 rounded-md border border-slate-200 dark:border-[#30363D]">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-2">
+            Difficulty:
+          </span>
+          {['All', 'Easy', 'Medium', 'Hard'].map((d) => (
+            <button
+              key={d}
+              onClick={() => setSelectedDifficulty(d)}
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                selectedDifficulty === d
+                  ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 font-semibold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-[#E6EDF3] border border-transparent'
+              }`}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+        <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+          Showing {filteredChallenges.length} of {challenges.length} challenges
+        </div>
       </div>
 
       {/* Challenge Grid */}
       {loading ? (
-        <div className="flex-1 flex items-center justify-center min-h-[300px]">
+        <div className="flex items-center justify-center min-h-[300px]">
           <LoadingSpinner size="lg" />
         </div>
       ) : filteredChallenges.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredChallenges.map((chal) => {
             const cardTitle = chal.displayTitle || (chal.displayNumber ? `${chal.displayNumber}. ${chal.canonicalTitle || chal.title}` : chal.title);
             const cardTopics = (chal.topics && chal.topics.length > 0) 
@@ -119,67 +118,74 @@ export default function SQLChallenges({ addToast }) {
               : ['orders', 'customers'];
 
             return (
-              <div key={chal.id} className="glass-panel rounded-2xl p-5 flex flex-col justify-between hover:border-cyan-500/50 dark:hover:border-slate-700/80 transition-all duration-300 relative group shadow-sm dark:shadow-md">
-                <div className="relative z-10 space-y-3.5">
+              <div 
+                key={chal.id} 
+                className="glass-panel border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#10141F] rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 dark:hover:border-white/[0.18] hover:-translate-y-0.5 hover:shadow-xl dark:hover:shadow-black/50 transition-all duration-200 group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
+              >
+                <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <span className={`badge ${
                         chal.difficulty === 'Easy' ? 'badge-emerald' : chal.difficulty === 'Medium' ? 'badge-amber' : 'badge-rose'
                       }`}>
                         {chal.difficulty}
                       </span>
                       {chal.isSolved && (
-                        <span className="badge badge-emerald flex items-center gap-1">
+                        <span className="badge badge-emerald flex items-center gap-1 font-mono">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                          <span>PASSED</span>
+                          <span>RESOLVED</span>
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{chal.technology || 'SQL'}</span>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase">
+                      {chal.technology || 'SQL'}
+                    </span>
                   </div>
 
-                  <div className="space-y-2">
-                    <h3 className="font-heading font-bold text-base text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors leading-snug">
+                  <div>
+                    <h3 className="font-heading font-semibold text-sm text-slate-900 dark:text-[#E6EDF3] group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
                       {cardTitle}
                     </h3>
 
-                    {/* Topic Tags */}
-                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mr-0.5">Topics:</span>
+                    {/* Tables Involved */}
+                    <div className="flex items-center gap-1.5 mt-2 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                      <Table className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate">Tables: {tables.join(', ')}</span>
+                    </div>
+
+                    {/* Topics */}
+                    <div className="flex flex-wrap items-center gap-1 mt-2">
                       {cardTopics.map(t => (
-                        <span key={t} className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
+                        <span 
+                          key={t} 
+                          className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-50 dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 border border-slate-200/70 dark:border-white/[0.06]"
+                        >
                           {t}
                         </span>
                       ))}
                     </div>
-
-                    {/* Tables Involved */}
-                    <div className="flex items-center gap-1.5 pt-1 text-[11px] text-slate-600 dark:text-slate-400 font-mono">
-                      <Table className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
-                      <span className="truncate">Tables: {tables.join(', ')}</span>
-                    </div>
                   </div>
 
                   {chal.reason && (
-                    <p className="text-[11px] text-cyan-700 dark:text-cyan-400 font-medium pt-1 flex items-center gap-1.5 bg-cyan-500/5 dark:bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/10 dark:border-cyan-500/20">
-                      <Sparkles className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
-                      <span>{chal.reason}</span>
-                    </p>
+                    <div className="text-[11px] text-cyan-700 dark:text-cyan-300 font-mono p-2 rounded bg-cyan-500/5 dark:bg-cyan-500/10 border border-cyan-500/15">
+                      {chal.reason}
+                    </div>
                   )}
                 </div>
 
-                <div className="relative z-10 border-t border-slate-200 dark:border-slate-800/80 pt-4 mt-4 flex items-center justify-between">
-                  <div className="text-[10px] text-slate-600 dark:text-slate-400 font-bold space-y-0.5">
-                    <p className="uppercase">EST. TIME: <span className="text-slate-800 dark:text-slate-200 font-semibold">{chal.timeEstimate || '10 mins'}</span></p>
-                    <p className="uppercase">REWARD: <span className="text-cyan-700 dark:text-cyan-400 font-bold">{chal.points || 100} XP</span></p>
+                <div className="border-t border-slate-100 dark:border-white/[0.06] pt-3 mt-4 flex items-center justify-between">
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                    <span>{chal.timeEstimate || '10 min'}</span>
+                    <span className="mx-1.5">|</span>
+                    <span className="text-cyan-600 dark:text-cyan-400 font-semibold">{chal.points || 100} XP</span>
                   </div>
 
                   <Link 
                     to={`/challenge/${chal.id}`}
-                    className="button-primary px-4 py-2 text-xs"
+                    className="button-primary px-3 py-1.5 text-xs inline-flex items-center gap-1.5"
                   >
-                    <Terminal className="w-3.5 h-3.5" />
-                    <span>{chal.isSolved ? 'Review SQL Lab' : 'Launch SQL Lab'}</span>
+                    <span>{chal.isSolved ? 'Review Query' : 'Open Lab'}</span>
+                    <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
               </div>

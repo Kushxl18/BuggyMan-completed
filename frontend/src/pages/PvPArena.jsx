@@ -512,7 +512,7 @@ export default function PvPArena({ user, setUser, addToast, theme = 'dark', togg
 
     if (resultData.isWinner) {
 
-      if (addToast) addToast('🏆 VICTORY! All tests passed first!', 'success');
+      if (addToast) addToast('VICTORY! All tests passed first!', 'success');
 
       // Update user BugBytes / XP if setUser is available
 

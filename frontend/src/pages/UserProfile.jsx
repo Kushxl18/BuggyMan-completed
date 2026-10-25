@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   User, 
+  Bug, 
   Mail, 
   GraduationCap, 
   BookOpen, 
@@ -208,7 +209,7 @@ export default function UserProfile({ addToast, setUser }) {
             <img
               src={profile.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
               alt={profile.name}
-              className="w-24 h-24 rounded-2xl object-cover ring-4 ring-cyan-500/30 group-hover:ring-cyan-500 transition-all duration-200"
+              className="w-24 h-24 rounded-md object-cover ring-4 ring-cyan-500/30 group-hover:ring-cyan-500 transition-all duration-200"
             />
           </div>
 
@@ -271,7 +272,7 @@ export default function UserProfile({ addToast, setUser }) {
                 <div className="glass-card p-5 rounded-xl text-center space-y-1.5">
                   <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">BugBytes Balance</span>
                   <div className="inline-flex items-center gap-1.5 text-amber-500 font-heading font-extrabold text-xl">
-                    <span className="text-lg">🐞</span>
+                    <Bug className="w-4 h-4 text-amber-500" />
                     <span>{profile.bugbytes_balance ?? profile.bugbytesBalance ?? 50}</span>
                   </div>
                 </div>
@@ -387,7 +388,7 @@ export default function UserProfile({ addToast, setUser }) {
                   </div>
                 ) : (
                   <div className="p-6 text-center rounded-xl bg-slate-50 dark:bg-[#1B1F23] border border-slate-200 dark:border-[#292E33] space-y-2">
-                    <span className="text-2xl">🏆</span>
+                    <Award className="w-8 h-8 text-slate-400 opacity-50 mx-auto" />
                     <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">No badges earned yet</p>
                     <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
                       Solve debugging challenges and build daily streaks to unlock your first badges and achievements.
@@ -486,7 +487,7 @@ export default function UserProfile({ addToast, setUser }) {
                 </div>
               ) : (
                 <div className="glass-card p-6 rounded-xl space-y-2 text-center min-h-[160px] flex flex-col items-center justify-center">
-                  <span className="text-2xl">📊</span>
+                  <BarChart3 className="w-8 h-8 text-slate-400 opacity-50 mx-auto" />
                   <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">No bug types recorded yet</p>
                   <p className="text-[11px] text-slate-500 max-w-xs">Solve challenges to see your category breakdown here.</p>
                 </div>

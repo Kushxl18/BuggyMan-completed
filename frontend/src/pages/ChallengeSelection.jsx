@@ -1,22 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Code2, Play, Search, AlertCircle, ArrowRight, Sparkles, Loader2, Bot, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import FilterPanel from '../components/FilterPanel';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyState from '../components/EmptyState';
-import ErrorState from '../components/ErrorState';
 import { challengeService } from '../services/challengeService';
 
 export default function ChallengeSelection({ addToast }) {
   const [challenges, setChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
   const [searchVal, setSearchVal] = useState('');
-  
-  // Generator state
-  const [genDifficulty, setGenDifficulty] = useState('Easy');
-  const [genTech, setGenTech] = useState('React');
 
   // Filters
   const [selectedDifficulty, setSelectedDifficulty] = useState('All');
@@ -38,28 +32,12 @@ export default function ChallengeSelection({ addToast }) {
     loadChallenges();
   }, [addToast]);
 
-  const handleGenerateChallenge = async () => {
-    try {
-      setGenerating(true);
-      const newChal = await challengeService.generateChallenge({
-        difficulty: genDifficulty,
-        technology: genTech
-      });
-      setChallenges((prev) => [newChal, ...prev]);
-      addToast(`Generated new ${genDifficulty} ${genTech} challenge!`, 'success');
-    } catch (err) {
-      addToast('Failed to generate AI challenge.', 'error');
-    } finally {
-      setGenerating(false);
-    }
-  };
-
   const handleResetFilters = () => {
     setSearchVal('');
     setSelectedDifficulty('All');
     setSelectedTech('All');
     setSelectedCategory('All');
-    addToast('All filters cleared.', 'info');
+    addToast('Filters reset.', 'info');
   };
 
   const filteredChallenges = challenges.filter(c => {
@@ -83,17 +61,18 @@ export default function ChallengeSelection({ addToast }) {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-white/[0.06] pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="font-heading font-extrabold text-2xl text-slate-900 dark:text-slate-100">Debugging Arena</h1>
-            <span className="badge badge-indigo text-[10px] uppercase font-bold">Personalized</span>
+            <h1 className="font-semibold text-xl text-slate-900 dark:text-slate-100 tracking-tight">Debugging Arena</h1>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/70 dark:border-blue-900/60 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
+              Personalized
+            </span>
           </div>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-            <span>Challenges adapted to your skill profile & performance history</span>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Real-world code defect reproduction and repair sandboxes tailored to your skill profile.
           </p>
         </div>
         <SearchBar 
@@ -115,7 +94,7 @@ export default function ChallengeSelection({ addToast }) {
 
       {/* Grid of Challenges */}
       {filteredChallenges.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredChallenges.map((chal) => {
             const cardTitle = chal.displayTitle || (chal.displayNumber ? `${chal.displayNumber}. ${chal.canonicalTitle || chal.title}` : chal.title);
             const cardTopics = (chal.topics && chal.topics.length > 0) 
@@ -123,8 +102,11 @@ export default function ChallengeSelection({ addToast }) {
               : [chal.category || chal.technology].filter(Boolean);
 
             return (
-              <div key={chal.id} className="glass-panel rounded-2xl p-5 flex flex-col justify-between hover:border-cyan-500/50 dark:hover:border-slate-700/80 transition-all duration-300 relative group shadow-sm dark:shadow-md">
-                <div className="relative z-10 space-y-3.5">
+              <div 
+                key={chal.id} 
+                className="glass-panel border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#10141F] rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 dark:hover:border-white/[0.18] hover:-translate-y-0.5 hover:shadow-xl dark:hover:shadow-black/50 transition-all duration-200 group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
+              >
+                <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                       <span className={`badge ${
@@ -133,51 +115,41 @@ export default function ChallengeSelection({ addToast }) {
                         {chal.difficulty}
                       </span>
                       {chal.isSolved && (
-                        <span className="badge badge-emerald flex items-center gap-1">
+                        <span className="badge badge-emerald flex items-center gap-1 font-mono">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                           <span>PASSED</span>
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{chal.technology}</span>
+                    <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 uppercase">{chal.technology}</span>
                   </div>
 
-                  <div className="space-y-2">
-                    <h3 className="font-heading font-bold text-base text-slate-900 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors leading-snug">
+                  <div className="space-y-1.5">
+                    <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
                       {cardTitle}
                     </h3>
                     
                     {/* Topic Tags */}
-                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mr-0.5">Topics:</span>
+                    <div className="flex flex-wrap items-center gap-1 pt-1">
                       {cardTopics.map(t => (
-                        <span key={t} className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
+                        <span key={t} className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-50 dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 border border-slate-200/70 dark:border-white/[0.06]">
                           {t}
                         </span>
                       ))}
                     </div>
                   </div>
-
-                  {chal.reason && (
-                    <p className="text-[11px] text-cyan-700 dark:text-cyan-400 font-medium pt-1 flex items-center gap-1.5 bg-cyan-500/5 dark:bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/10 dark:border-cyan-500/20">
-                      <Sparkles className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
-                      <span>{chal.reason}</span>
-                    </p>
-                  )}
                 </div>
 
-                <div className="relative z-10 border-t border-slate-200 dark:border-slate-800/80 pt-4 mt-4 flex items-center justify-between">
-                  <div className="text-[10px] text-slate-600 dark:text-slate-400 font-bold space-y-0.5">
-                    <p className="uppercase">EST. TIME: <span className="text-slate-800 dark:text-slate-200 font-semibold">{chal.timeEstimate || '10 mins'}</span></p>
-                    <p className="uppercase">REWARD: <span className="text-cyan-700 dark:text-cyan-400 font-bold">{chal.points || 100} XP</span></p>
-                  </div>
-
-                  <Link 
+                <div className="pt-3 mt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
+                  <span className="text-[11px] font-mono text-slate-500 tabular-nums">
+                    {chal.points || 100} XP
+                  </span>
+                  <Link
                     to={`/challenge/${chal.id}`}
-                    className="button-primary px-4 py-2 text-xs"
+                    className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1 transition-colors group-hover:translate-x-0.5"
                   >
-                    <span>{chal.isSolved ? 'Review' : 'Start Challenge'}</span>
-                    <Play className="w-3 h-3 fill-white" />
+                    <span>Debug Issue</span>
+                    <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
               </div>
@@ -186,9 +158,9 @@ export default function ChallengeSelection({ addToast }) {
         </div>
       ) : (
         <EmptyState
-          title="No Challenges Found"
-          description="We couldn't find any challenges matching your search query or filter tags. Try resetting filters or generate a new challenge using AI!"
-          actionLabel="Clear All Filters"
+          title="No challenges found"
+          description="Try clearing your search query or adjusting your filters."
+          actionText="Clear Filters"
           onAction={handleResetFilters}
         />
       )}

@@ -1,23 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Bug, 
   Code2, 
   Database, 
   Palette, 
-  Sparkles, 
   ArrowRight, 
-  Search, 
-  CheckCircle2, 
-  TrendingUp, 
   User, 
   Briefcase, 
-  Zap, 
-  HelpCircle,
-  Play,
+  ChevronRight,
   Layers,
-  ShoppingBag,
-  Gift
+  Sparkles
 } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import OnboardingModal from '../components/OnboardingModal';
@@ -64,276 +56,278 @@ export default function Dashboard({ user, addToast }) {
   }
 
   const solvedCount = profile?.challengesSolved ?? profile?.challenges_solved ?? 0;
-  const isNewUser = solvedCount === 0;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-12 py-4 animate-fade-in relative">
+    <div className="max-w-6xl mx-auto space-y-5 py-1 animate-fade-in">
       <OnboardingModal 
         isOpen={showOnboardingModal} 
         onClose={() => setShowOnboardingModal(false)} 
       />
 
-      {/* 1. Hero Section */}
-      <div className="glass-panel p-8 md:p-12 rounded-3xl border border-slate-200 dark:border-cyan-500/30 bg-gradient-to-br from-white via-cyan-50/40 to-slate-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 relative overflow-hidden space-y-6 shadow-sm dark:shadow-xl">
-        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-12 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* 1. Workspace Header - Modern Linear/Vercel Studio Style */}
+      <div className="relative overflow-hidden border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#10141F] rounded-xl p-5 md:p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_4px_24px_rgba(0,0,0,0.1)]">
+        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-80 h-80 bg-blue-600/5 dark:bg-blue-500/[0.05] rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex items-center gap-2.5">
-          <span className="badge badge-cyan flex items-center gap-1.5 px-3 py-1">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-            <span>AI DEBUGGER LAB</span>
-          </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Hands-on Engineering Practice</span>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5 max-w-2xl">
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              Welcome to BuggyMan
+            </h1>
+            <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+              Interactive software debugging and diagnosis practice. Select an arena below to reproduce defects, examine test failures, and fix production issues.
+            </p>
+          </div>
+
+          <div className="relative z-10 flex items-center gap-2.5 self-start md:self-center shrink-0">
+            <Link
+              to="/challenges"
+              className="button-primary text-xs"
+            >
+              <span>Start Debugging</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+            <button
+              onClick={scrollToExplore}
+              className="button-secondary text-xs"
+            >
+              <span>Explore Arenas</span>
+            </button>
+          </div>
         </div>
 
-        <div className="relative z-10 space-y-3 max-w-3xl">
-          <h1 className="font-heading font-black text-3xl md:text-5xl text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
-            Welcome to <span className="text-cyan-600 dark:text-cyan-400">BuggyMan</span>
-          </h1>
-          <p className="text-base md:text-lg text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-            Find bugs. Fix real-world software problems. Build practical engineering skills.
+        {/* 4 Developer Metrics - Modernized Metric Cards */}
+        <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-5 border-t border-slate-200/70 dark:border-white/[0.06]">
+          <div className="p-3 rounded-lg bg-slate-50/80 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)] hover:border-slate-300 dark:hover:border-white/[0.12] transition-colors">
+            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">Challenges Solved</span>
+            <span className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 tabular-nums">{solvedCount}</span>
+          </div>
+          <div className="p-3 rounded-lg bg-slate-50/80 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)] hover:border-slate-300 dark:hover:border-white/[0.12] transition-colors">
+            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">Current Streak</span>
+            <span className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 tabular-nums">{profile?.streak || 0} days</span>
+          </div>
+          <div className="p-3 rounded-lg bg-slate-50/80 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)] hover:border-slate-300 dark:hover:border-white/[0.12] transition-colors">
+            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">Score</span>
+            <span className="text-xl font-bold font-mono text-blue-600 dark:text-blue-400 tabular-nums">{profile?.totalScore || 0} XP</span>
+          </div>
+          <div className="p-3 rounded-lg bg-slate-50/80 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)] hover:border-slate-300 dark:hover:border-white/[0.12] transition-colors">
+            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">BugBytes Balance</span>
+            <span className="text-xl font-bold font-mono text-slate-900 dark:text-slate-100 tabular-nums">{profile?.bugbytes_balance ?? profile?.bugbytesBalance ?? 50} BB</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Feature Implementation Arena Highlight Banner */}
+      <div className="border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#10141F] rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] hover:border-slate-300 dark:hover:border-white/[0.14] transition-all">
+        <div className="space-y-1.5 max-w-2xl">
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900/60">
+              New Coding Arena
+            </span>
+            <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">Multi-File Codebases</span>
+          </div>
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Feature Implementation Arena
+          </h2>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            Work with realistic multi-file repositories, receive full feature specifications, and ship production-grade implementations evaluated against 5-tier test suites.
+          </p>
+        </div>
+        <Link
+          to="/feature-challenges"
+          className="button-primary text-xs shrink-0 self-start md:self-center"
+        >
+          <span>Browse Feature Challenges</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+
+      {/* 2. Specialized Arenas - 3 Columns with Aligned Heights & Linear-Style Cards */}
+      <div id="explore-section" className="space-y-3">
+        <div>
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+            Three Specialized Debugging Arenas
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Targeted sandboxes designed for distinct software layers and real-world failure modes.
           </p>
         </div>
 
-        <div className="relative z-10 flex flex-wrap items-center gap-4 pt-2">
-          <Link
-            to="/challenges"
-            className="button-primary px-6 py-3 text-sm font-bold flex items-center gap-2 shadow-lg shadow-cyan-500/20"
-          >
-            <span>Start Debugging</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-          <button
-            onClick={scrollToExplore}
-            className="button-secondary px-6 py-3 text-sm font-semibold flex items-center gap-2"
-          >
-            <span>Explore BuggyMan</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 2. Explore BuggyMan (Three Feature Cards) */}
-      <div id="explore-section" className="space-y-6">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-cyan-500 font-heading block">Explore BuggyMan</span>
-          <h2 className="font-heading font-bold text-xl text-slate-800 dark:text-[#F0F2F4] mt-1">Three Specialized Debugging Arenas</h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Card 1: Code Challenges */}
-          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-[#292E33] hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between space-y-6 group">
-            <div className="space-y-4">
-              <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 w-fit">
-                <Code2 className="w-6 h-6" />
+          <div className="border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#10141F] rounded-xl p-5 flex flex-col justify-between hover:border-slate-300 dark:hover:border-white/[0.18] hover:-translate-y-0.5 hover:shadow-xl dark:hover:shadow-black/50 transition-all duration-200 h-full group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
+            <div className="space-y-3.5">
+              <div className="flex items-center justify-between">
+                <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-800 dark:text-slate-200 flex items-center justify-center shrink-0 border border-slate-200/70 dark:border-white/[0.08] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] group-hover:text-blue-500 transition-colors">
+                  <Code2 className="w-4 h-4" />
+                </div>
+                <span className="px-2 py-0.5 rounded text-[11px] font-mono text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border border-blue-200/70 dark:border-blue-900/60">
+                  Python / Node
+                </span>
               </div>
-              <div className="space-y-2">
-                <h3 className="font-heading font-bold text-lg text-slate-800 dark:text-[#F0F2F4] group-hover:text-cyan-500 transition-colors">
+              <div>
+                <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   Code Challenges
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Debug real-world software, backend logic, Python APIs, and Node.js backend issues.
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed min-h-[48px]">
+                  Debug backend application logic, API boundaries, async handlers, and data parsing defects in isolated sandboxes.
                 </p>
               </div>
             </div>
-            <Link
-              to="/challenges"
-              className="text-xs font-bold text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 hover:gap-2.5 transition-all"
-            >
-              <span>Explore Code Challenges</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            <div className="pt-3 mt-3 border-t border-slate-100 dark:border-white/[0.06]">
+              <Link
+                to="/challenges"
+                className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center justify-between group/link py-0.5"
+              >
+                <span>Explore Code Challenges</span>
+                <ChevronRight className="w-3.5 h-3.5 group-hover/link:translate-x-1 transition-transform" />
+              </Link>
+            </div>
           </div>
 
           {/* Card 2: SQL Lab */}
-          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-[#292E33] hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between space-y-6 group">
-            <div className="space-y-4">
-              <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 w-fit">
-                <Database className="w-6 h-6" />
+          <div className="border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#10141F] rounded-xl p-5 flex flex-col justify-between hover:border-slate-300 dark:hover:border-white/[0.18] hover:-translate-y-0.5 hover:shadow-xl dark:hover:shadow-black/50 transition-all duration-200 h-full group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
+            <div className="space-y-3.5">
+              <div className="flex items-center justify-between">
+                <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-800 dark:text-slate-200 flex items-center justify-center shrink-0 border border-slate-200/70 dark:border-white/[0.08] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] group-hover:text-blue-500 transition-colors">
+                  <Database className="w-4 h-4" />
+                </div>
+                <span className="px-2 py-0.5 rounded text-[11px] font-mono text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08]">
+                  SQLite / Relational
+                </span>
               </div>
-              <div className="space-y-2">
-                <h3 className="font-heading font-bold text-lg text-slate-800 dark:text-[#F0F2F4] group-hover:text-cyan-500 transition-colors">
+              <div>
+                <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   SQL Lab
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Find and fix real-world database queries, JOIN conditions, GROUP BY aggregations, and CTE performance bugs.
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed min-h-[48px]">
+                  Isolate and correct database query bugs: invalid JOIN relationships, GROUP BY aggregation traps, NULL edge cases, and CTEs.
                 </p>
               </div>
             </div>
-            <Link
-              to="/sql-challenges"
-              className="text-xs font-bold text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 hover:gap-2.5 transition-all"
-            >
-              <span>Explore SQL Lab</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            <div className="pt-3 mt-3 border-t border-slate-100 dark:border-white/[0.06]">
+              <Link
+                to="/sql-challenges"
+                className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center justify-between group/link py-0.5"
+              >
+                <span>Explore SQL Lab</span>
+                <ChevronRight className="w-3.5 h-3.5 group-hover/link:translate-x-1 transition-transform" />
+              </Link>
+            </div>
           </div>
 
           {/* Card 3: Frontend Studio */}
-          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-[#292E33] hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between space-y-6 group">
-            <div className="space-y-4">
-              <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 w-fit">
-                <Palette className="w-6 h-6" />
+          <div className="border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#10141F] rounded-xl p-5 flex flex-col justify-between hover:border-slate-300 dark:hover:border-white/[0.18] hover:-translate-y-0.5 hover:shadow-xl dark:hover:shadow-black/50 transition-all duration-200 h-full group shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
+            <div className="space-y-3.5">
+              <div className="flex items-center justify-between">
+                <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-800 dark:text-slate-200 flex items-center justify-center shrink-0 border border-slate-200/70 dark:border-white/[0.08] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] group-hover:text-blue-500 transition-colors">
+                  <Palette className="w-4 h-4" />
+                </div>
+                <span className="px-2 py-0.5 rounded text-[11px] font-mono text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08]">
+                  React / CSS
+                </span>
               </div>
-              <div className="space-y-2">
-                <h3 className="font-heading font-bold text-lg text-slate-800 dark:text-[#F0F2F4] group-hover:text-cyan-500 transition-colors">
+              <div>
+                <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   Frontend Studio
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Debug UI responsiveness, Flexbox/Grid layouts, glassmorphism CSS, state mutations, and component styling.
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed min-h-[48px]">
+                  Resolve component layout breakage, responsive viewport collapses, Flexbox/Grid alignment errors, and state synchronization bugs.
                 </p>
               </div>
             </div>
-            <Link
-              to="/design-challenges"
-              className="text-xs font-bold text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 hover:gap-2.5 transition-all"
-            >
-              <span>Explore Frontend Studio</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            <div className="pt-3 mt-3 border-t border-slate-100 dark:border-white/[0.06]">
+              <Link
+                to="/design-challenges"
+                className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center justify-between group/link py-0.5"
+              >
+                <span>Explore Frontend Studio</span>
+                <ChevronRight className="w-3.5 h-3.5 group-hover/link:translate-x-1 transition-transform" />
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 3. How BuggyMan Works */}
-      <div className="space-y-6">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-cyan-500 font-heading block">Workflow</span>
-          <h2 className="font-heading font-bold text-xl text-slate-800 dark:text-[#F0F2F4] mt-1">How BuggyMan Works</h2>
+      {/* 3. Engineering Workflow Guide - Standard Procedure */}
+      <div className="border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#10141F] rounded-xl p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
+        <div className="mb-3.5">
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-0.5">Standard Procedure</span>
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Debugging Workflow
+          </h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
             {
               step: '01',
-              title: 'Find the Bug',
-              desc: 'Understand the real-world scenario and read suspected component files.'
+              title: 'Reproduce Defect',
+              desc: 'Review the bug report scenario, examine failing test assertions, and inspect suspected files.'
             },
             {
               step: '02',
-              title: 'Investigate',
-              desc: 'Trace the issue, analyze error output, and isolate what is failing.'
+              title: 'Isolate Root Cause',
+              desc: 'Trace logic branch conditions, evaluate edge cases, and run diagnostic test suites.'
             },
             {
               step: '03',
-              title: 'Fix It',
-              desc: 'Implement the correct solution directly in Monaco IDE and run backend test suites.'
+              title: 'Implement Fix',
+              desc: 'Refactor broken functions in the Monaco IDE and re-run unit tests until 100% pass.'
             },
             {
               step: '04',
-              title: 'Build Your Skills',
-              desc: 'BuggyMan analyzes your performance and adapts future challenge recommendations.'
+              title: 'Verify & Benchmark',
+              desc: 'Submit solution for backend evaluation, earn verified XP, and update skill matrix rankings.'
             }
           ].map((item) => (
-            <div key={item.step} className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-[#292E33] space-y-3">
-              <span className="text-xs font-extrabold text-cyan-500 font-mono tracking-widest block">{item.step}</span>
-              <h3 className="font-heading font-bold text-sm text-slate-800 dark:text-[#F0F2F4]">{item.title}</h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{item.desc}</p>
+            <div key={item.step} className="p-3.5 rounded-lg border border-slate-200/70 dark:border-white/[0.06] bg-slate-50/60 dark:bg-white/[0.02] space-y-1.5 hover:border-slate-300 dark:hover:border-white/[0.12] transition-colors">
+              <span className="text-xs font-mono font-medium text-blue-600 dark:text-blue-400 block">{item.step}</span>
+              <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100">{item.title}</h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{item.desc}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* 4. Personalized Learning Section */}
-      <div className="glass-panel p-8 rounded-3xl border border-slate-200 dark:border-[#292E33] space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <span className="text-xs font-bold uppercase tracking-wider text-cyan-500 font-heading block">Personalized Engine</span>
-            <h2 className="font-heading font-bold text-xl text-slate-800 dark:text-[#F0F2F4]">Challenges That Adapt to You</h2>
+      {/* 4. Adaptive Learning & Career Direction Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Adaptive System */}
+        <div className="border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#10141F] rounded-xl p-5 flex flex-col justify-between space-y-3.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
+          <div className="space-y-1.5">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-0.5">Skill Profile</span>
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              Personalized Recommendation Engine
+            </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              BuggyMan learns from your strengths, weaknesses, and problem-solving performance to personalize the challenges you receive across all three arenas.
+              BuggyMan indexes your declared strengths, areas for improvement, and submission history to recommend challenges targeting your skill gaps.
             </p>
           </div>
           <Link
             to="/profile"
-            className="button-primary text-xs px-5 py-2.5 flex items-center justify-center gap-2 whitespace-nowrap self-start md:self-auto"
+            className="button-secondary text-xs self-start"
           >
-            <User className="w-4 h-4" />
-            <span>View My Profile</span>
+            <User className="w-3.5 h-3.5" />
+            <span>View Skill Matrix</span>
           </Link>
         </div>
 
-        {/* Visual Flow Diagram */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-center pt-2">
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#1B1F23] border border-slate-200 dark:border-[#292E33] text-xs font-semibold text-slate-700 dark:text-slate-300">
-            Strengths & Weaknesses
-          </div>
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#1B1F23] border border-slate-200 dark:border-[#292E33] text-xs font-semibold text-slate-700 dark:text-slate-300">
-            Problems You Solve
-          </div>
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#1B1F23] border border-slate-200 dark:border-[#292E33] text-xs font-semibold text-slate-700 dark:text-slate-300">
-            Performance Analysis
-          </div>
-          <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-xs font-bold text-cyan-600 dark:text-cyan-400">
-            Personalized Challenges
-          </div>
-        </div>
-      </div>
-
-      {/* 5. Career Direction Section */}
-      <div className="glass-panel p-8 rounded-3xl border border-slate-200 dark:border-[#292E33] space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <span className="text-xs font-bold uppercase tracking-wider text-cyan-500 font-heading block">Career Insights</span>
-            <h2 className="font-heading font-bold text-xl text-slate-800 dark:text-[#F0F2F4]">Turn Your Skills into Career Direction</h2>
+        {/* Career Insights */}
+        <div className="border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#10141F] rounded-xl p-5 flex flex-col justify-between space-y-3.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
+          <div className="space-y-1.5">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-0.5">Market Alignment</span>
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              Career Role Suitability
+            </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Discover software engineering roles that align with your demonstrated skill matrix and identify high-impact areas to improve.
+              Match your verified problem-solving capabilities against industry hiring benchmarks for Backend, Full Stack, Data, and Frontend engineering roles.
             </p>
           </div>
           <Link
             to="/career-insights"
-            className="button-primary text-xs px-5 py-2.5 flex items-center justify-center gap-2 whitespace-nowrap self-start md:self-auto"
+            className="button-secondary text-xs self-start"
           >
-            <Briefcase className="w-4 h-4" />
-            <span>Explore Career Insights</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* 6. BugBytes Store & Money-Back Rewards Widget */}
-      <div className="glass-panel p-6 md:p-8 rounded-3xl border border-amber-500/30 bg-gradient-to-br from-amber-50/70 via-white to-amber-50/30 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm dark:shadow-xl relative overflow-hidden">
-        <div className="space-y-2 max-w-2xl relative z-10">
-          <div className="flex items-center gap-2">
-            <span className="badge badge-amber text-[10px] font-bold uppercase tracking-wider">
-              AI HINT CREDITS & REWARDS
-            </span>
-            <span className="text-[11px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
-              <Bug className="w-3.5 h-3.5" />
-              <span>{profile?.bugbytes_balance ?? profile?.bugbytesBalance ?? 0} BugBytes Available</span>
-            </span>
-          </div>
-          <h2 className="font-heading font-bold text-xl text-slate-900 dark:text-slate-100">
-            BugBytes Store + Challenge-Based Money-Back Rewards
-          </h2>
-          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-            Need AI hints for tricky debugging sessions? Purchase mock BugBytes packages and recover 100% of your simulated purchase through coding missions.
-          </p>
-        </div>
-        <Link
-          to="/store"
-          className="button-primary bg-amber-600 hover:bg-amber-500 text-white text-xs px-5 py-2.5 flex items-center justify-center gap-2 whitespace-nowrap self-start md:self-auto font-bold shadow-lg shadow-amber-500/20 relative z-10"
-        >
-          <ShoppingBag className="w-4 h-4" />
-          <span>Open BugBytes Store</span>
-        </Link>
-      </div>
-
-      {/* 7. Getting Started / Continuation CTA */}
-      <div className="glass-panel p-8 rounded-3xl border border-slate-200 dark:border-cyan-500/30 bg-gradient-to-r from-cyan-50/40 via-white to-slate-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 text-center space-y-4 shadow-sm dark:shadow-xl">
-        <h3 className="font-heading font-bold text-xl text-slate-900 dark:text-slate-100">
-          {isNewUser ? 'Ready to start debugging?' : 'Continue your learning journey'}
-        </h3>
-        <p className="text-xs text-slate-600 dark:text-slate-300 max-w-lg mx-auto leading-relaxed">
-          {isNewUser 
-            ? 'Dive into your first interactive code challenge and start building real-world software troubleshooting skills.'
-            : 'Pick up right where you left off or explore customized challenges tailored to your latest performance.'}
-        </p>
-        <div className="pt-2">
-          <Link
-            to="/challenges"
-            className="button-primary px-6 py-3 text-xs font-bold inline-flex items-center gap-2 shadow-lg shadow-cyan-500/20"
-          >
-            <span>{isNewUser ? 'Start Your First Challenge' : 'Continue Debugging'}</span>
-            <ArrowRight className="w-4 h-4" />
+            <Briefcase className="w-3.5 h-3.5" />
+            <span>Open Career Insights</span>
           </Link>
         </div>
       </div>

@@ -1,8 +1,9 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, Phone, KeyRound, User, Sparkles, Loader2, ArrowRight, ArrowLeft, CheckCircle2, Target, BookOpen, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Phone, KeyRound, User, Bug, Loader2, ArrowRight, ArrowLeft, CheckCircle2, Target, BookOpen, ShieldCheck } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { isValidEmail, getEmailValidationError } from '../../utils/validators';
+import AuthBackground from '../../components/AuthBackground';
 
 const avatarOptions = [
   'https://images.unsplash.com/photo-1502685104226-ee32379fefbe?w=200',
@@ -277,13 +278,13 @@ export default function Signup({ setUser, addToast }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-5xl bg-slate-900/95 border border-slate-800 rounded-[32px] shadow-2xl overflow-hidden backdrop-blur-xl">
+    <AuthBackground>
+      <div className="w-full max-w-5xl bg-slate-900/85 dark:bg-[#0D1117]/85 backdrop-blur-md border border-white/10 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.08)] overflow-hidden my-4">
         <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr]">
-          <div className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-8 text-slate-100">
+          <div className="bg-slate-950/70 p-8 text-slate-100 border-r border-white/10">
             <div className="flex items-center gap-3 mb-6">
-              <div className="rounded-3xl bg-slate-800/90 p-3 shadow-glow-blue">
-                <Sparkles className="w-6 h-6 text-cyan-300" />
+              <div className="rounded-md bg-slate-800/90 p-3 ">
+                <Bug className="w-6 h-6 text-cyan-400" />
               </div>
               <div>
                 <h2 className="font-heading text-xl font-bold">BuggyMan</h2>
@@ -314,7 +315,7 @@ export default function Signup({ setUser, addToast }) {
 
           <div className="p-8 lg:p-10 flex flex-col justify-between">
             {error && (
-              <div className="mb-6 rounded-3xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-300">
+              <div className="mb-6 rounded-md border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-300">
                 {error}
               </div>
             )}
@@ -336,7 +337,7 @@ export default function Signup({ setUser, addToast }) {
                         placeholder="Enter your username"
                         value={account.username}
                         onChange={(e) => setAccount((prev) => ({ ...prev, username: e.target.value }))}
-                        className="w-full rounded-2xl border border-slate-800 bg-slate-950 py-3 pl-10 pr-4 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                        className="w-full rounded-md border border-slate-800 bg-slate-950 py-3 pl-10 pr-4 text-sm text-slate-100 outline-none focus:border-cyan-400"
                         required
                       />
                     </div>
@@ -351,7 +352,7 @@ export default function Signup({ setUser, addToast }) {
                         placeholder="Enter your email address"
                         value={account.email}
                         onChange={(e) => setAccount((prev) => ({ ...prev, email: e.target.value }))}
-                        className="w-full rounded-2xl border border-slate-800 bg-slate-950 py-3 pl-10 pr-4 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                        className="w-full rounded-md border border-slate-800 bg-slate-950 py-3 pl-10 pr-4 text-sm text-slate-100 outline-none focus:border-cyan-400"
                         required
                       />
                     </div>
@@ -373,7 +374,7 @@ export default function Signup({ setUser, addToast }) {
                           placeholder="••••••••"
                           value={account.password}
                           onChange={(e) => setAccount((prev) => ({ ...prev, password: e.target.value }))}
-                          className="w-full rounded-2xl border border-slate-800 bg-slate-950 py-3 pl-10 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                          className="w-full rounded-md border border-slate-800 bg-slate-950 py-3 pl-10 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-400"
                           required
                         />
                         <button
@@ -395,7 +396,7 @@ export default function Signup({ setUser, addToast }) {
                           placeholder="••••••••"
                           value={account.confirmPassword}
                           onChange={(e) => setAccount((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                          className="w-full rounded-2xl border border-slate-800 bg-slate-950 py-3 pl-10 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                          className="w-full rounded-md border border-slate-800 bg-slate-950 py-3 pl-10 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-400"
                           required
                         />
                         <button
@@ -461,7 +462,7 @@ export default function Signup({ setUser, addToast }) {
                           const digitsOnly = e.target.value.replace(/[^0-9]/g, '');
                           setOtp(digitsOnly);
                         }}
-                        className="w-full rounded-2xl border border-slate-800 bg-slate-950 py-3.5 pl-12 pr-4 text-center font-mono text-xl tracking-[0.4em] text-cyan-300 outline-none focus:border-cyan-400"
+                        className="w-full rounded-md border border-slate-800 bg-slate-950 py-3.5 pl-12 pr-4 text-center font-mono text-xl tracking-[0.4em] text-cyan-300 outline-none focus:border-cyan-400"
                         autoFocus
                       />
                     </div>
@@ -500,7 +501,7 @@ export default function Signup({ setUser, addToast }) {
                       placeholder="e.g. Alex Smith"
                       value={profile.displayName}
                       onChange={(e) => setProfile((prev) => ({ ...prev, displayName: e.target.value }))}
-                      className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                      className="w-full rounded-md border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
                       required
                     />
                   </div>
@@ -512,7 +513,7 @@ export default function Signup({ setUser, addToast }) {
                       placeholder="e.g. NIE, Stanford, MIT, IIT (or leave blank if self-taught)"
                       value={profile.college}
                       onChange={(e) => setProfile((prev) => ({ ...prev, college: e.target.value }))}
-                      className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                      className="w-full rounded-md border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
                     />
                   </div>
 
@@ -523,7 +524,7 @@ export default function Signup({ setUser, addToast }) {
                       placeholder="Software engineer passionate about building & debugging complex systems..."
                       value={profile.bio}
                       onChange={(e) => setProfile((prev) => ({ ...prev, bio: e.target.value }))}
-                      className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400 resize-none"
+                      className="w-full rounded-md border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400 resize-none"
                     />
                   </div>
 
@@ -540,7 +541,7 @@ export default function Signup({ setUser, addToast }) {
                           const tz = inferTimezone(val);
                           setProfile((prev) => ({ ...prev, country: val, timezone: tz || prev.timezone }));
                         }}
-                        className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                        className="w-full rounded-md border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
                       />
                       <datalist id="country-options">
                         {countryList.map((c) => (
@@ -556,7 +557,7 @@ export default function Signup({ setUser, addToast }) {
                         placeholder="America/New_York"
                         value={profile.timezone}
                         onChange={(e) => setProfile((prev) => ({ ...prev, timezone: e.target.value }))}
-                        className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                        className="w-full rounded-md border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none focus:border-cyan-400"
                       />
                     </div>
                   </div>
@@ -572,7 +573,7 @@ export default function Signup({ setUser, addToast }) {
                             setPreviewAvatar('');
                             setProfile((prev) => ({ ...prev, avatar: url }));
                           }}
-                          className={`h-12 rounded-2xl overflow-hidden border transition-all ${profile.avatar === url && !previewAvatar ? 'border-cyan-400 ring-2 ring-cyan-400/40' : 'border-slate-800 opacity-70 hover:opacity-100'}`}
+                          className={`h-12 rounded-md overflow-hidden border transition-all ${profile.avatar === url && !previewAvatar ? 'border-cyan-400 ring-2 ring-cyan-400/40' : 'border-slate-800 opacity-70 hover:opacity-100'}`}
                         >
                           <img src={url} alt="avatar" className="h-full w-full object-cover" />
                         </button>
@@ -591,7 +592,7 @@ export default function Signup({ setUser, addToast }) {
                 </div>
 
                 {/* VISIBLE STRENGTHS SELECTION UI */}
-                <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5 space-y-3">
+                <div className="rounded-md border border-slate-800 bg-slate-950/60 p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400 flex items-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -607,7 +608,7 @@ export default function Signup({ setUser, addToast }) {
                           key={`str-${skill}`}
                           type="button"
                           onClick={() => toggleStrength(skill)}
-                          className={`px-4 py-2.5 rounded-2xl border text-xs font-semibold transition-all flex items-center gap-2 ${
+                          className={`px-4 py-2.5 rounded-md border text-xs font-semibold transition-all flex items-center gap-2 ${
                             isSelected
                               ? 'border-emerald-500 bg-emerald-500/20 text-emerald-200 shadow-glow-emerald/10'
                               : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 hover:text-slate-200'
@@ -622,7 +623,7 @@ export default function Signup({ setUser, addToast }) {
                 </div>
 
                 {/* VISIBLE WEAKNESSES / AREAS TO IMPROVE SELECTION UI */}
-                <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5 space-y-3">
+                <div className="rounded-md border border-slate-800 bg-slate-950/60 p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-rose-400 flex items-center gap-1.5">
                       <Target className="w-4 h-4 text-rose-400" />
@@ -638,7 +639,7 @@ export default function Signup({ setUser, addToast }) {
                           key={`wk-${skill}`}
                           type="button"
                           onClick={() => toggleWeakness(skill)}
-                          className={`px-4 py-2.5 rounded-2xl border text-xs font-semibold transition-all flex items-center gap-2 ${
+                          className={`px-4 py-2.5 rounded-md border text-xs font-semibold transition-all flex items-center gap-2 ${
                             isSelected
                               ? 'border-rose-500 bg-rose-500/20 text-rose-200 shadow-glow-rose/10'
                               : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 hover:text-slate-200'
@@ -653,12 +654,12 @@ export default function Signup({ setUser, addToast }) {
                 </div>
 
                 {/* Theme Preference */}
-                <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-4 flex items-center justify-between">
+                <div className="rounded-md border border-slate-800 bg-slate-950/60 p-4 flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">UI Theme</span>
                   <select
                     value={personalization.theme}
                     onChange={(e) => setPersonalization((prev) => ({ ...prev, theme: e.target.value }))}
-                    className="rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2 text-xs text-slate-100 outline-none focus:border-cyan-400"
+                    className="rounded-md border border-slate-800 bg-slate-950 px-4 py-2 text-xs text-slate-100 outline-none focus:border-cyan-400"
                   >
                     {themeOptions.map((option) => (
                       <option key={option} value={option}>{option}</option>
@@ -676,7 +677,7 @@ export default function Signup({ setUser, addToast }) {
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-4">
+                  <div className="rounded-md border border-slate-800 bg-slate-950/60 p-4">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">Account</p>
                     <p className="mt-2 text-slate-100 font-bold text-sm">{account.username}</p>
                     <div className="flex items-center gap-2 mt-1">
@@ -686,7 +687,7 @@ export default function Signup({ setUser, addToast }) {
                       </span>
                     </div>
                   </div>
-                  <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-4">
+                  <div className="rounded-md border border-slate-800 bg-slate-950/60 p-4">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">Profile</p>
                     <p className="mt-2 text-slate-100 font-bold text-sm">{profile.displayName}</p>
                     <p className="text-slate-400 text-xs mt-1">{profile.country || 'Country'} • {profile.timezone || 'UTC'}</p>
@@ -694,12 +695,12 @@ export default function Signup({ setUser, addToast }) {
                 </div>
 
                 {/* Selected Strengths & Weaknesses Confirmation Summary */}
-                <div className="rounded-3xl border border-slate-800 bg-slate-950/60 p-5 space-y-3">
+                <div className="rounded-md border border-slate-800 bg-slate-950/60 p-5 space-y-3">
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-400 font-bold mb-1.5">Selected Strengths</p>
                     <div className="flex flex-wrap gap-1.5">
                       {personalization.strengths.map((s) => (
-                        <span key={s} className="px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold">
+                        <span key={s} className="px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold">
                           {s}
                         </span>
                       ))}
@@ -710,7 +711,7 @@ export default function Signup({ setUser, addToast }) {
                     <p className="text-[10px] uppercase tracking-[0.2em] text-rose-400 font-bold mb-1.5">Areas to Improve</p>
                     <div className="flex flex-wrap gap-1.5">
                       {personalization.weaknesses.map((w) => (
-                        <span key={w} className="px-2.5 py-1 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px] font-semibold">
+                        <span key={w} className="px-2.5 py-1 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px] font-semibold">
                           {w}
                         </span>
                       ))}
@@ -772,6 +773,6 @@ export default function Signup({ setUser, addToast }) {
           </div>
         </div>
       </div>
-    </div>
+    </AuthBackground>
   );
 }

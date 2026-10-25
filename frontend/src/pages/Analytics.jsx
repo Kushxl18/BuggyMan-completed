@@ -73,7 +73,7 @@ export default function Analytics({ addToast }) {
 
       {/* Top Metric Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="glass-card p-5 rounded-xl space-y-1">
+        <div className="glass-card p-5 rounded-md space-y-1">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
             <span className="text-xs font-medium">Challenges Solved</span>
             <CheckCircle className="w-4 h-4 text-emerald-500" />
@@ -81,7 +81,7 @@ export default function Analytics({ addToast }) {
           <p className="text-2xl font-extrabold font-heading text-slate-800 dark:text-[#F0F2F4]">{solvedCount}</p>
         </div>
 
-        <div className="glass-card p-5 rounded-xl space-y-1">
+        <div className="glass-card p-5 rounded-md space-y-1">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
             <span className="text-xs font-medium">Accuracy Rate</span>
             <Percent className="w-4 h-4 text-cyan-500" />
@@ -89,7 +89,7 @@ export default function Analytics({ addToast }) {
           <p className="text-2xl font-extrabold font-heading text-slate-800 dark:text-[#F0F2F4]">{accuracyRate}%</p>
         </div>
 
-        <div className="glass-card p-5 rounded-xl space-y-1">
+        <div className="glass-card p-5 rounded-md space-y-1">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
             <span className="text-xs font-medium">Avg Solve Time</span>
             <ArrowUpRight className="w-4 h-4 text-cyan-500" />
@@ -97,7 +97,7 @@ export default function Analytics({ addToast }) {
           <p className="text-2xl font-extrabold font-heading text-slate-800 dark:text-[#F0F2F4]">{avgTime}</p>
         </div>
 
-        <div className="glass-card p-5 rounded-xl space-y-1">
+        <div className="glass-card p-5 rounded-md space-y-1">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
             <span className="text-xs font-medium">Active Streak</span>
             <Flame className="w-4 h-4 text-amber-500" />
@@ -110,7 +110,7 @@ export default function Analytics({ addToast }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Weekly Solve Velocity (Line Chart) */}
-        <div className="lg:col-span-2 glass-card p-6 rounded-xl space-y-4">
+        <div className="lg:col-span-2 glass-card p-6 rounded-md space-y-4">
           <h3 className="font-heading font-bold text-sm text-slate-800 dark:text-[#F0F2F4]">Solve Velocity (Last 7 Days)</h3>
           <div className="h-64 w-full text-xs">
             <ResponsiveContainer width="100%" height="100%">
@@ -126,7 +126,7 @@ export default function Analytics({ addToast }) {
         </div>
 
         {/* Bug Category Breakdown (Pie Chart) */}
-        <div className="lg:col-span-1 glass-card p-6 rounded-xl space-y-4 flex flex-col justify-between">
+        <div className="lg:col-span-1 glass-card p-6 rounded-md space-y-4 flex flex-col justify-between">
           <h3 className="font-heading font-bold text-sm text-slate-800 dark:text-[#F0F2F4]">Bug Types Encountered</h3>
           {bugStats && bugStats.length > 0 && bugStats.some(b => b.count > 0) ? (
             <>
@@ -161,7 +161,7 @@ export default function Analytics({ addToast }) {
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-2 min-h-[180px]">
-              <span className="text-2xl">📊</span>
+              <BarChart3 className="w-8 h-8 text-slate-400 opacity-40 mx-auto" />
               <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">No bug data recorded yet</p>
               <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed">
                 Start solving debugging challenges across the arenas to build your bug category breakdown.
@@ -172,7 +172,7 @@ export default function Analytics({ addToast }) {
 
         {/* AI Personalized Growth & Recommendation Card */}
         {aiInsights && (
-          <div className="lg:col-span-3 glass-panel p-6 rounded-xl border border-cyan-500/30 space-y-4 relative overflow-hidden bg-white dark:bg-[#15181B]">
+          <div className="lg:col-span-3 glass-panel p-6 rounded-md border border-cyan-500/30 space-y-4 relative overflow-hidden bg-white dark:bg-[#15181B]">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#292E33] pb-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-amber-500" />

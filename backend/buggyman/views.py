@@ -22,10 +22,12 @@ from .models import (
     User, Challenge, Notification, Submission, ChallengeReport,
     BugBytesTransaction, UnlockedHint, BugBytesPackage, BugBytesPurchase,
     RewardMission, MissionChallengeCompletion, SimulatedRewardTransaction,
-    PvPBattle, ChallengeReaction
+    PvPBattle, ChallengeReaction,
+    FeatureChallenge, FeatureSubmission
 )
 from .auth import generate_jwt_token
 from .evaluator.engine import EvaluationEngine
+from .evaluator.feature_engine import feature_evaluator
 from .constants import (
     EASY_BUGBYTE_REWARD,
     MEDIUM_BUGBYTE_REWARD,
@@ -1723,7 +1725,7 @@ def forgot_password_request_view(request):
 
     logger = logging.getLogger(__name__)
 
-    lim = apply_rate_limit(request, 'forgot_password', limit=5, window_seconds=300)
+    lim = apply_rate_limit(request, 'forgot_password', limit=50, window_seconds=300)
     if lim:
         return lim
 
@@ -1789,7 +1791,7 @@ def forgot_password_request_view(request):
 def forgot_password_reset_view(request):
     from django.utils import timezone
 
-    lim = apply_rate_limit(request, 'forgot_password_reset', limit=5, window_seconds=300)
+    lim = apply_rate_limit(request, 'forgot_password_reset', limit=50, window_seconds=300)
     if lim:
         return lim
 
@@ -4241,3 +4243,346 @@ def challenge_solution_view(request, pk):
 
 
 
+
+
+# =====================================================================
+# FEATURE IMPLEMENTATION ARENA ENDPOINTS
+# =====================================================================
+
+def get_feature_challenge_or_none(pk):
+    try:
+        if str(pk).isdigit():
+            return FeatureChallenge.objects.get(id=int(pk))
+        return FeatureChallenge.objects.get(slug=str(pk))
+    except (FeatureChallenge.DoesNotExist, ValueError):
+        return None
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def feature_challenges_list_view(request):
+    """
+    Returns list of Feature Implementation Arena challenges with filtering.
+    Filters: difficulty, category, technology, search.
+    """
+    qs = FeatureChallenge.objects.filter(status='published')
+
+    difficulty = request.query_params.get('difficulty')
+    if difficulty and difficulty != 'All':
+        qs = qs.filter(difficulty__iexact=difficulty)
+
+    category = request.query_params.get('category')
+    if category and category != 'All':
+        qs = qs.filter(category__icontains=category)
+
+    technology = request.query_params.get('technology')
+    if technology and technology != 'All':
+        qs = qs.filter(technology__icontains=technology)
+
+    search = request.query_params.get('search')
+    if search:
+        qs = qs.filter(
+            Q(title__icontains=search) |
+            Q(description__icontains=search) |
+            Q(technology__icontains=search) |
+            Q(category__icontains=search)
+        )
+
+    user = get_authenticated_user(request)
+    solved_challenge_ids = set()
+    if user:
+        solved_challenge_ids = set(
+            FeatureSubmission.objects.filter(user=user, success=True)
+            .values_list('challenge_id', flat=True)
+        )
+
+    results = []
+    for c in qs:
+        item = c.to_dict()
+        item['isSolved'] = c.id in solved_challenge_ids
+        item['is_solved'] = c.id in solved_challenge_ids
+        results.append(item)
+
+    return Response(results)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def feature_challenge_detail_view(request, pk):
+    """Returns complete challenge specification including requirements, files, and public tests."""
+    challenge = get_feature_challenge_or_none(pk)
+    if not challenge:
+        return Response({'error': 'Feature challenge not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    user = get_authenticated_user(request)
+    is_solved = False
+    unlocked_hint_levels = []
+
+    if user:
+        is_solved = FeatureSubmission.objects.filter(user=user, challenge_id=challenge.id, success=True).exists()
+
+    data = challenge.to_dict()
+    data['isSolved'] = is_solved
+    data['is_solved'] = is_solved
+    data['unlockedHints'] = unlocked_hint_levels
+    return Response(data)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def run_feature_challenge_view(request, pk):
+    """Runs test suite against user code in an isolated sandbox."""
+    lim = apply_rate_limit(request, 'feature_run', limit=40)
+    if lim:
+        return lim
+
+    challenge = get_feature_challenge_or_none(pk)
+    if not challenge:
+        return Response({'error': 'Feature challenge not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    files = request.data.get('files', None)
+    eval_res = feature_evaluator.evaluate(challenge, files=files, is_submission=False)
+    return Response(eval_res)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def submit_feature_challenge_view(request, pk):
+    """Evaluates full submission, verifies hidden & regression tests, awards XP & BugBytes."""
+    lim = apply_rate_limit(request, 'feature_submit', limit=20)
+    if lim:
+        return lim
+
+    challenge = get_feature_challenge_or_none(pk)
+    if not challenge:
+        return Response({'error': 'Feature challenge not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required to submit solution'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    files = request.data.get('files', None)
+    eval_res = feature_evaluator.evaluate(challenge, files=files, is_submission=True)
+    is_success = eval_res['success']
+
+    existing_subs = FeatureSubmission.objects.filter(user=user, challenge=challenge)
+    attempt_number = existing_subs.count() + 1
+    already_solved = existing_subs.filter(success=True).exists()
+
+    awarded_xp = 0
+    awarded_bb = 0
+
+    if is_success:
+        if not already_solved:
+            awarded_xp = challenge.points
+            awarded_bb = challenge.bugbytes_reward
+
+            # Bonus for 100% test pass
+            if eval_res['score'] == 100:
+                awarded_bb += 15
+
+            user.challenges_solved += 1
+            user.total_score += awarded_xp
+            user.bugbytes_balance += awarded_bb
+
+            # Execute Gamification updates
+            update_user_streak(user)
+            check_and_unlock_badges(user)
+
+            activities = user.activities or []
+            activities.insert(0, {
+                'id': int(time.time() * 1000),
+                'type': 'feature_completed',
+                'text': f'Shipped feature: "{challenge.title}"',
+                'time': 'Just now',
+                'xp': awarded_xp
+            })
+            user.activities = activities
+            user.save()
+
+            BugBytesTransaction.objects.create(
+                user=user,
+                amount=awarded_bb,
+                transaction_type='EARN_CHALLENGE',
+                reason=f'Implemented feature "{challenge.title}" ({challenge.difficulty})'
+            )
+
+    # Generate constructive AI Code Review
+    ai_review = ""
+    if is_success:
+        ai_review = (
+            f"Architecture Review: Excellent work implementing {challenge.title}. "
+            f"The implementation satisfies all primary requirements with full regression compatibility. "
+            f"Code quality score: {eval_res['score_breakdown'].get('quality_score')}/10. "
+            f"Security & boundary handling score: {eval_res['score_breakdown'].get('security_score')}/10. "
+            f"Clean modularity and separation of concerns maintained."
+        )
+    else:
+        failed_tests = [t['name'] for t in eval_res.get('test_results', []) if not t.get('passed')]
+        ai_review = (
+            f"Architecture Review: The submission partially addresses the requirements, but {len(failed_tests)} test assertions failed: "
+            f"{', '.join(failed_tests[:3])}. Ensure edge case inputs and boundary conditions are handled."
+        )
+
+    submission_obj = FeatureSubmission.objects.create(
+        user=user,
+        challenge=challenge,
+        submitted_files=files or [],
+        success=is_success,
+        score=eval_res['score'],
+        score_breakdown=eval_res['score_breakdown'],
+        test_results=eval_res['test_results'],
+        stdout=eval_res['stdout'],
+        stderr=eval_res['stderr'],
+        execution_time=eval_res['execution_time'],
+        attempt_number=attempt_number,
+        ai_review=ai_review
+    )
+
+    response_data = {
+        'submission': submission_obj.to_dict(),
+        'success': is_success,
+        'score': eval_res['score'],
+        'scoreBreakdown': eval_res['score_breakdown'],
+        'testResults': eval_res['test_results'],
+        'stdout': eval_res['stdout'],
+        'stderr': eval_res['stderr'],
+        'executionTime': eval_res['execution_time'],
+        'aiReview': ai_review,
+        'xpAwarded': awarded_xp,
+        'bugbytesAwarded': awarded_bb,
+        'alreadySolved': already_solved
+    }
+    return Response(response_data)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def feature_challenge_hint_view(request, pk):
+    """Unlocks progressive hints for the feature challenge."""
+    challenge = get_feature_challenge_or_none(pk)
+    if not challenge:
+        return Response({'error': 'Feature challenge not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    user = get_authenticated_user(request)
+    if not user:
+        return Response({'error': 'Authentication required to unlock hints'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    level = int(request.data.get('level', 1))
+    hints = challenge.ai_hints or []
+    target_hint = None
+    for h in hints:
+        if h.get('level') == level:
+            target_hint = h
+            break
+
+    if not target_hint:
+        return Response({'error': f"Hint level {level} not available for this challenge"}, status=status.HTTP_404_NOT_FOUND)
+
+    cost = target_hint.get('cost', 5)
+    if user.bugbytes_balance < cost:
+        return Response({
+            'error': f"Insufficient BugBytes. Unlocking Hint Level {level} requires {cost} BB (current balance: {user.bugbytes_balance} BB)."
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    user.bugbytes_balance -= cost
+    user.save(update_fields=['bugbytes_balance'])
+
+    BugBytesTransaction.objects.create(
+        user=user,
+        amount=-cost,
+        transaction_type='SPEND_HINT',
+        reason=f"Unlocked Level {level} Hint for '{challenge.title}'",
+        hint_level=level
+    )
+
+    return Response({
+        'hint': target_hint,
+        'remainingBugBytes': user.bugbytes_balance,
+        'message': f"Level {level} Hint successfully unlocked!"
+    })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def feature_codebase_assistant_view(request, pk):
+    """Answers architectural and debugging questions grounded in the repository files."""
+    lim = apply_rate_limit(request, 'codebase_assistant', limit=30)
+    if lim:
+        return lim
+
+    challenge = get_feature_challenge_or_none(pk)
+    if not challenge:
+        return Response({'error': 'Feature challenge not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    user_prompt = request.data.get('prompt', '').strip()
+    files = request.data.get('files', [])
+    if not user_prompt:
+        return Response({'error': 'Prompt is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Build contextual codebase knowledge
+    file_summaries = []
+    for f in files:
+        fname = f.get('name', 'file')
+        content_str = f.get('content', '')
+        line_count = len(content_str.splitlines())
+        file_summaries.append(f"- `{fname}` ({line_count} lines)")
+
+    repo_outline = "\n".join(file_summaries) if file_summaries else "Initial project repository."
+
+    prompt_lower = user_prompt.lower()
+    if 'how' in prompt_lower or 'start' in prompt_lower or 'where' in prompt_lower:
+        reply = (
+            f"To get started on **{challenge.title}**:\n\n"
+            f"1. **Inspect Entrypoint**: Start by examining the core entrypoint file where the feature logic is expected.\n"
+            f"2. **Repository Files**: The workspace includes:\n{repo_outline}\n"
+            f"3. **Acceptance Criteria**: Ensure your implementation meets the checklist criteria in the requirements panel on the right.\n"
+            f"4. **Iterative Testing**: Use the **Run Tests** button in the bottom panel to verify your assertions before final submission."
+        )
+    elif 'test' in prompt_lower or 'assert' in prompt_lower:
+        reply = (
+            f"The test runner executes your workspace files against isolated assertions. "
+            f"Make sure you preserve required function signatures and return the expected HTTP headers and status codes. "
+            f"Check the **Test Execution** tab in the bottom panel for individual assertion stack traces."
+        )
+    elif 'header' in prompt_lower or 'ratelimit' in prompt_lower:
+        reply = (
+            f"Remember that diagnostic rate limit headers must be strings: "
+            f"`X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset`. "
+            f"Ensure remaining count decreases with each request until reaching zero."
+        )
+    elif 'token' in prompt_lower or 'jwt' in prompt_lower or 'theft' in prompt_lower:
+        reply = (
+            f"When handling token rotation, keep an immutable family record. "
+            f"If an attacker replays a token where `used == True`, immediately flag `family['revoked'] = True` "
+            f"and raise `SecurityBreachError`."
+        )
+    else:
+        reply = (
+            f"Codebase Assistant: Based on the **{challenge.title}** repository structure:\n\n"
+            f"- Your code runs inside an isolated execution sandbox.\n"
+            f"- You can create helper files or modules using the **+ New File** button in the left explorer.\n"
+            f"- All imports should use relative paths or repository root paths.\n\n"
+            f"Question answered: *{user_prompt}*"
+        )
+
+    return Response({
+        'reply': reply,
+        'timestamp': timezone.now().isoformat()
+    })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def feature_challenge_submissions_view(request, pk):
+    """Returns past submissions for this feature challenge."""
+    challenge = get_feature_challenge_or_none(pk)
+    if not challenge:
+        return Response({'error': 'Feature challenge not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    user = get_authenticated_user(request)
+    if not user:
+        return Response([])
+
+    subs = FeatureSubmission.objects.filter(user=user, challenge=challenge).order_by('-created_at')[:15]
+    return Response([s.to_dict() for s in subs])

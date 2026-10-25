@@ -29,6 +29,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import Settings from './pages/Settings';
 import PvPBattle from './pages/PvPBattle';
 import PvPArena from './pages/PvPArena';
+import FeatureChallenges from './pages/FeatureChallenges';
+import FeatureArena from './pages/FeatureArena';
 
 import { authService } from './services/authService';
 import { challengeService } from './services/challengeService';
@@ -219,6 +221,24 @@ export default function App() {
           } 
         />
         <Route 
+          path="/feature-challenges/:id" 
+          element={
+            user ? (
+              <ErrorBoundary>
+                <FeatureArena 
+                  user={user}
+                  setUser={setUser}
+                  addToast={addToast} 
+                  theme={theme} 
+                  toggleTheme={toggleTheme}
+                />
+              </ErrorBoundary>
+            ) : (
+              <Navigate to="/login" />
+            )
+          } 
+        />
+        <Route 
           path="/pvp/arena/:battleId" 
           element={
             user ? (
@@ -302,11 +322,12 @@ function AuthenticatedLayout({
         <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto overflow-y-auto">
           <Routes>
             <Route path="/dashboard" element={<Dashboard user={user} addToast={addToast} />} />
-            <Route path="/home" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/home" element={<Dashboard user={user} addToast={addToast} />} />
             <Route path="/challenges" element={<ChallengeSelection addToast={addToast} />} />
             <Route path="/sql-challenges" element={<SQLChallenges addToast={addToast} />} />
             <Route path="/design-challenges" element={<FrontendDesignChallenges addToast={addToast} />} />
             <Route path="/pvp" element={<PvPBattle user={user} addToast={addToast} />} />
+            <Route path="/feature-challenges" element={<FeatureChallenges addToast={addToast} />} />
             <Route path="/result" element={<ResultPage />} />
 
             <Route path="/analytics" element={<Navigate to="/profile" replace />} />

@@ -67,8 +67,8 @@ export default function ForgotPassword({ addToast }) {
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4 py-12">
-      <div className="max-w-lg w-full bg-slate-900/95 border border-slate-800 rounded-3xl shadow-2xl backdrop-blur-xl overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-700 to-slate-900 p-6 text-white">
+      <div className="max-w-lg w-full bg-slate-900/95 border border-slate-800 rounded-md shadow-sm overflow-hidden">
+        <div className="bg-[#161B22] border-b border-[#30363D] p-6 text-white">
           <div className="flex items-center gap-3">
             <Shield className="w-6 h-6" />
             <div>
@@ -78,7 +78,7 @@ export default function ForgotPassword({ addToast }) {
           </div>
           <div className="mt-6 grid grid-cols-2 gap-2 text-[11px] uppercase tracking-[0.24em] text-slate-300">
             {stepLabels.map((label, index) => (
-              <div key={label} className={`rounded-2xl px-3 py-2 text-center ${step === index + 1 ? 'bg-white/15 font-bold text-white' : 'bg-white/5 text-slate-400'}`}>
+              <div key={label} className={`rounded-md px-3 py-2 text-center ${step === index + 1 ? 'bg-white/15 font-bold text-white' : 'bg-white/5 text-slate-400'}`}>
                 {label}
               </div>
             ))}
@@ -87,7 +87,7 @@ export default function ForgotPassword({ addToast }) {
 
         <div className="p-8 space-y-6">
           {error && (
-            <div className="rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-200 px-4 py-3 text-sm">
+            <div className="rounded-md bg-rose-500/10 border border-rose-500/20 text-rose-200 px-4 py-3 text-sm">
               {error}
             </div>
           )}
@@ -105,7 +105,7 @@ export default function ForgotPassword({ addToast }) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@college.edu"
-                    className="w-full pl-11 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl outline-none text-slate-100 placeholder:text-slate-600 focus:border-blue-500"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-md outline-none text-slate-100 placeholder:text-slate-600 focus:border-blue-500"
                   />
                 </div>
               </div>
@@ -127,7 +127,7 @@ export default function ForgotPassword({ addToast }) {
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
                   placeholder="123456"
-                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl outline-none text-slate-100 placeholder:text-slate-600"
+                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-md outline-none text-slate-100 placeholder:text-slate-600"
                 />
               </div>
               <div className="space-y-2">
@@ -137,7 +137,7 @@ export default function ForgotPassword({ addToast }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl outline-none text-slate-100 placeholder:text-slate-600"
+                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-md outline-none text-slate-100 placeholder:text-slate-600"
                 />
               </div>
               <div className="space-y-2">
@@ -147,7 +147,7 @@ export default function ForgotPassword({ addToast }) {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl outline-none text-slate-100 placeholder:text-slate-600"
+                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-md outline-none text-slate-100 placeholder:text-slate-600"
                 />
               </div>
               <button

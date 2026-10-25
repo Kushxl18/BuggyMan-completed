@@ -85,6 +85,15 @@ urlpatterns = [
     path('auth/otp/verify-login', views.verify_otp_login_view, name='otp_verify_login'),
     path('auth/otp/register', views.register_with_otp_view, name='otp_register'),
 
+    # Feature Implementation Arena
+    path('feature-challenges', views.feature_challenges_list_view, name='feature_challenges_list'),
+    path('feature-challenges/<str:pk>', views.feature_challenge_detail_view, name='feature_challenge_detail'),
+    path('feature-challenges/<str:pk>/run', views.run_feature_challenge_view, name='run_feature_challenge'),
+    path('feature-challenges/<str:pk>/submit', views.submit_feature_challenge_view, name='submit_feature_challenge'),
+    path('feature-challenges/<str:pk>/hint', views.feature_challenge_hint_view, name='feature_challenge_hint'),
+    path('feature-challenges/<str:pk>/ai-assistant', views.feature_codebase_assistant_view, name='feature_codebase_assistant'),
+    path('feature-challenges/<str:pk>/submissions', views.feature_challenge_submissions_view, name='feature_challenge_submissions'),
+
     path('health', views.health_check_view, name='health_check'),
 ]
 

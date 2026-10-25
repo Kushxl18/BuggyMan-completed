@@ -305,6 +305,59 @@ export const challengeService = {
     return await request(`/challenges/${challengeId}/submissions`, {
       method: 'GET'
     });
+  },
+
+  // Feature Implementation Arena APIs
+  getFeatureChallenges: async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.difficulty && params.difficulty !== 'All') query.append('difficulty', params.difficulty);
+    if (params.category && params.category !== 'All') query.append('category', params.category);
+    if (params.technology && params.technology !== 'All') query.append('technology', params.technology);
+    if (params.search) query.append('search', params.search);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return await request(`/feature-challenges${qs}`, {
+      method: 'GET'
+    });
+  },
+
+  getFeatureChallengeById: async (id) => {
+    return await request(`/feature-challenges/${id}`, {
+      method: 'GET'
+    });
+  },
+
+  runFeatureChallenge: async (id, files = []) => {
+    return await request(`/feature-challenges/${id}/run`, {
+      method: 'POST',
+      body: JSON.stringify({ files })
+    });
+  },
+
+  submitFeatureChallenge: async (id, files = []) => {
+    return await request(`/feature-challenges/${id}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ files })
+    });
+  },
+
+  unlockFeatureHint: async (id, level = 1) => {
+    return await request(`/feature-challenges/${id}/hint`, {
+      method: 'POST',
+      body: JSON.stringify({ level })
+    });
+  },
+
+  askCodebaseAssistant: async (id, prompt, files = [], conversationHistory = []) => {
+    return await request(`/feature-challenges/${id}/ai-assistant`, {
+      method: 'POST',
+      body: JSON.stringify({ prompt, files, conversationHistory })
+    });
+  },
+
+  getFeatureSubmissions: async (id) => {
+    return await request(`/feature-challenges/${id}/submissions`, {
+      method: 'GET'
+    });
   }
 };
 

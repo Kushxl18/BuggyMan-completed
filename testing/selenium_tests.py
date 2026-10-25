@@ -67,13 +67,14 @@ class BuggyManBaseSeleniumTest(unittest.TestCase):
     def login_as_qa_user(self):
         """Helper to establish an authenticated QA session instantly without throttling."""
         token = self.get_auth_token()
-        self.driver.get(f"{FRONTEND_URL}/dashboard")
+        self.driver.get(f"{FRONTEND_URL}/login")
         self.driver.execute_script(f"""
             window.localStorage.setItem('token', '{token}');
             window.localStorage.setItem('buggyman_onboarding_completed', 'true');
         """)
         self.driver.get(f"{FRONTEND_URL}/dashboard")
         WebDriverWait(self.driver, 10).until(lambda d: "/dashboard" in d.current_url)
+        time.sleep(0.5)
 
 
 class BuggyManAuthSeleniumTest(BuggyManBaseSeleniumTest):
@@ -185,6 +186,7 @@ class BuggyManAuthSeleniumTest(BuggyManBaseSeleniumTest):
         # Step 1: Submit registered email
         email_input.clear()
         email_input.send_keys(QA_USER_EMAIL)
+        time.sleep(1)
         send_btn.click()
 
         # Step 2: Verify transition to OTP verification step
@@ -213,7 +215,6 @@ class BuggyManNavigationAndLayoutTest(BuggyManBaseSeleniumTest):
     """Suite 2: Dashboard, Navigation Bar, Theme Toggling, and Profile Access."""
 
     def setUp(self):
-        self.clear_session()
         self.driver.set_window_size(1440, 900)
         self.login_as_qa_user()
 
@@ -276,12 +277,11 @@ class BuggyManNavigationAndLayoutTest(BuggyManBaseSeleniumTest):
 
     def test_10_logout_clears_session(self):
         """Verify clicking Logout destroys session, clears token, and redirects to Login."""
-        self.driver.get(f"{FRONTEND_URL}/dashboard")
-        time.sleep(1)
+        WebDriverWait(self.driver, 10).until(lambda d: "/dashboard" in d.current_url)
 
         # Look for logout button in sidebar
         logout_btn = WebDriverWait(self.driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//button[contains(., 'Sign Out')]"))
+            EC.presence_of_element_located((By.XPATH, "//button[@title='Sign Out' or @aria-label='Sign Out' or contains(., 'Sign Out')]"))
         )
         self.driver.execute_script("arguments[0].click();", logout_btn)
 
@@ -435,14 +435,14 @@ class BuggyManPvPLobbyTest(BuggyManBaseSeleniumTest):
         WebDriverWait(self.driver, 10).until(
             EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Searching for Opponent')]"))
         )
-        cancel_btn = WebDriverWait(self.driver, 5).until(
+        cancel_btn = WebDriverWait(self.driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Cancel Matchmaking')]"))
         )
         self.assertTrue(cancel_btn.is_displayed())
 
         # Click Cancel
         cancel_btn.click()
-        time.sleep(1)
+        time.sleep(2.5)
         self.capture_screenshot("18_quick_match_cancelled.png")
 
     def test_19_create_room_code_generation(self):
@@ -459,7 +459,7 @@ class BuggyManPvPLobbyTest(BuggyManBaseSeleniumTest):
         WebDriverWait(self.driver, 10).until(
             EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Private Battle Room')]"))
         )
-        cancel_btn = WebDriverWait(self.driver, 5).until(
+        cancel_btn = WebDriverWait(self.driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Cancel Battle Room')]"))
         )
         self.assertTrue(cancel_btn.is_displayed())

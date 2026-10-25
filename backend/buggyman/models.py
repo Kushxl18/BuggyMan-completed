@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 import re
+import time
 
 class User(AbstractUser):
     college = models.CharField(max_length=255, blank=True, default='')
@@ -785,3 +786,132 @@ class ChallengeReaction(models.Model):
             'createdAt': self.created_at.isoformat() if self.created_at else None
         }
 
+
+
+class FeatureChallenge(models.Model):
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    description = models.TextField()
+    feature_request = models.TextField()
+    category = models.CharField(max_length=100, default='Backend')  # 'Backend', 'Frontend', 'Full-Stack'
+    difficulty = models.CharField(max_length=50, default='Medium')  # 'Easy', 'Medium', 'Hard'
+    technology = models.CharField(max_length=100, default='Python / FastAPI')
+    time_estimate = models.CharField(max_length=50, default='25 mins')
+    points = models.IntegerField(default=150)
+    bugbytes_reward = models.IntegerField(default=35)
+    
+    requirements = models.JSONField(default=list)  # list of { id, title, description, category }
+    acceptance_criteria = models.JSONField(default=list)  # list of testable criteria strings
+    initial_files = models.JSONField(default=list)  # list of { name, content, readonly, is_entrypoint }
+    test_cases = models.JSONField(default=list)  # list of { id, name, type, test_code, expected, weight }
+    scoring_config = models.JSONField(default=dict, blank=True)  # weights
+    ai_hints = models.JSONField(default=list, blank=True)  # progressive hints
+    ai_context = models.TextField(blank=True, default='')  # architecture context for assistant
+    status = models.CharField(max_length=20, default='published')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['id']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            from django.utils.text import slugify
+            base_slug = slugify(self.title) or f"feature-{int(time.time())}"
+            self.slug = base_slug
+        if not self.scoring_config:
+            self.scoring_config = {
+                'feature_weight': 40,
+                'hidden_weight': 25,
+                'regression_weight': 15,
+                'quality_weight': 10,
+                'security_weight': 10
+            }
+        super().save(*args, **kwargs)
+
+    def to_dict(self, include_solutions=False):
+        raw_cases = self.test_cases or []
+        public_tests = []
+        for tc in raw_cases:
+            if not tc.get('is_hidden') and tc.get('type') != 'hidden':
+                public_tests.append({
+                    'id': tc.get('id', len(public_tests) + 1),
+                    'name': tc.get('name', f"Test {len(public_tests) + 1}"),
+                    'type': tc.get('type', 'feature'),
+                    'description': tc.get('description', 'Validates feature behavior according to specifications.'),
+                    'is_hidden': False
+                })
+
+        return {
+            'id': self.id,
+            'title': self.title,
+            'slug': self.slug,
+            'description': self.description,
+            'featureRequest': self.feature_request,
+            'feature_request': self.feature_request,
+            'category': self.category,
+            'difficulty': self.difficulty,
+            'technology': self.technology,
+            'timeEstimate': self.time_estimate,
+            'time_estimate': self.time_estimate,
+            'points': self.points,
+            'bugbytesReward': self.bugbytes_reward,
+            'bugbytes_reward': self.bugbytes_reward,
+            'requirements': self.requirements or [],
+            'acceptanceCriteria': self.acceptance_criteria or [],
+            'acceptance_criteria': self.acceptance_criteria or [],
+            'files': self.initial_files or [],
+            'publicTests': public_tests,
+            'public_tests': public_tests,
+            'totalTests': len(raw_cases),
+            'total_tests': len(raw_cases),
+            'scoringConfig': self.scoring_config,
+            'scoring_config': self.scoring_config,
+            'hintsAvailable': len(self.ai_hints or []),
+            'hints_available': len(self.ai_hints or []),
+            'status': self.status,
+            'createdAt': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class FeatureSubmission(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='feature_submissions')
+    challenge = models.ForeignKey(FeatureChallenge, on_delete=models.CASCADE, related_name='submissions')
+    submitted_files = models.JSONField(default=list)
+    success = models.BooleanField(default=False)
+    score = models.IntegerField(default=0)
+    score_breakdown = models.JSONField(default=dict, blank=True)
+    test_results = models.JSONField(default=list, blank=True)
+    stdout = models.TextField(blank=True, default='')
+    stderr = models.TextField(blank=True, default='')
+    execution_time = models.FloatField(default=0.0)
+    attempt_number = models.IntegerField(default=1)
+    ai_review = models.TextField(blank=True, default='')
+    hints_used = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'userId': self.user_id,
+            'challengeId': self.challenge_id,
+            'challengeTitle': self.challenge.title if self.challenge else '',
+            'submittedFiles': self.submitted_files or [],
+            'success': self.success,
+            'score': self.score,
+            'scoreBreakdown': self.score_breakdown or {},
+            'score_breakdown': self.score_breakdown or {},
+            'testResults': self.test_results or [],
+            'test_results': self.test_results or [],
+            'stdout': self.stdout,
+            'stderr': self.stderr,
+            'executionTime': self.execution_time,
+            'attemptNumber': self.attempt_number,
+            'aiReview': self.ai_review,
+            'ai_review': self.ai_review,
+            'hintsUsed': self.hints_used,
+            'createdAt': self.created_at.isoformat() if self.created_at else None
+        }
