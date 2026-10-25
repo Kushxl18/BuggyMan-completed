@@ -54,7 +54,7 @@ export default function AuthBackground({ children }) {
 
   return (
     <div
-      className="min-h-screen relative flex items-center justify-center px-4 py-8 overflow-y-auto bg-slate-950 bg-cover bg-center bg-no-repeat bg-fixed selection:bg-purple-500/30"
+      className="dark auth-page min-h-screen relative flex items-center justify-center px-4 py-8 overflow-y-auto bg-slate-950 bg-cover bg-center bg-no-repeat bg-fixed selection:bg-purple-500/30 text-slate-100"
       style={{
         backgroundImage: `url(${authBg})`,
         backgroundSize: 'cover',
@@ -62,8 +62,39 @@ export default function AuthBackground({ children }) {
         backgroundRepeat: 'no-repeat'
       }}
     >
-      {/* Embedded CSS animations for 100% reliability */}
+      {/* Embedded CSS animations & strict dark input enforcement */}
       <style>{`
+        /* Enforce dark inputs regardless of system light theme */
+        .auth-page input:not([type="checkbox"]):not([type="radio"]) {
+          background-color: #0b0f19 !important;
+          color: #f8fafc !important;
+          border-color: rgba(255, 255, 255, 0.15) !important;
+          -webkit-text-fill-color: #f8fafc !important;
+        }
+
+        .auth-page input:not([type="checkbox"]):not([type="radio"])::placeholder {
+          color: #64748b !important;
+        }
+
+        .auth-page input:not([type="checkbox"]):not([type="radio"]):focus {
+          border-color: #38bdf8 !important;
+          box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4) !important;
+        }
+
+        /* Chrome, Edge, Safari autofill override */
+        .auth-page input:-webkit-autofill,
+        .auth-page input:-webkit-autofill:hover, 
+        .auth-page input:-webkit-autofill:focus, 
+        .auth-page input:-webkit-autofill:active {
+          background-color: #0b0f19 !important;
+          -webkit-box-shadow: 0 0 0 1000px #0b0f19 inset !important;
+          -webkit-text-fill-color: #f8fafc !important;
+          color: #f8fafc !important;
+          caret-color: #f8fafc !important;
+          border-color: rgba(255, 255, 255, 0.2) !important;
+          transition: background-color 5000s ease-in-out 0s !important;
+        }
+
         @keyframes authParticleFloat {
           0%, 100% {
             transform: translateY(0px) translateX(0px) scale(1);

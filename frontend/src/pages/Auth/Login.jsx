@@ -145,18 +145,18 @@ export default function Login({ setUser, addToast }) {
         {/* Login Card - Glassmorphism Translucent Surface */}
         <div className="bg-slate-900/85 dark:bg-[#0D1117]/85 backdrop-blur-md rounded-xl p-8 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.08)] space-y-6">
           {/* Mode Switcher preserved for future activation
-          <div className="grid grid-cols-2 p-1 rounded-md bg-[var(--bg-main)] border border-[var(--border-color)] text-xs font-semibold">
+          <div className="grid grid-cols-2 p-1 rounded-md bg-[#0B0F19] border border-slate-700 text-xs font-semibold">
             <button
               type="button"
               onClick={() => { setAuthMode('password'); setError(''); }}
-              className={`py-2.5 rounded-md transition-all ${authMode === 'password' ? 'bg-[var(--brand-cyan)] text-white shadow-md' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+              className={`py-2.5 rounded-md transition-all ${authMode === 'password' ? 'bg-[var(--brand-cyan)] text-white shadow-md' : 'text-slate-300 hover:text-slate-100'}`}
             >
               Password Login
             </button>
             <button
               type="button"
               onClick={() => { setAuthMode('otp'); setError(''); }}
-              className={`py-2.5 rounded-md transition-all flex items-center justify-center gap-1.5 ${authMode === 'otp' ? 'bg-[var(--brand-cyan)] text-white font-bold shadow-md' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+              className={`py-2.5 rounded-md transition-all flex items-center justify-center gap-1.5 ${authMode === 'otp' ? 'bg-[var(--brand-cyan)] text-white font-bold shadow-md' : 'text-slate-300 hover:text-slate-100'}`}
             >
               <KeyRound className="w-3.5 h-3.5" />
               <span>Email OTP Login</span>
@@ -174,11 +174,11 @@ export default function Login({ setUser, addToast }) {
             <form onSubmit={handlePasswordSubmit} className="space-y-5">
               {/* Username / Email Field */}
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
                   Username or Email
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[var(--text-muted)]">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
                     <User className="w-4.5 h-4.5" />
                   </div>
                   <input
@@ -186,7 +186,7 @@ export default function Login({ setUser, addToast }) {
                     placeholder="Enter your username or email"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-[var(--bg-main)] border border-[var(--border-color)] focus:border-[var(--brand-cyan)] focus:ring-1 focus:ring-[var(--brand-cyan-bg)] text-[var(--text-primary)] rounded-md outline-none transition-all placeholder:text-[var(--text-muted)] text-sm"
+                    className="w-full pl-10 pr-4 py-3 bg-[#0B0F19] border border-slate-700 focus:border-[var(--brand-cyan)] focus:ring-1 focus:ring-[var(--brand-cyan-bg)] text-slate-100 rounded-md outline-none transition-all placeholder:text-slate-500 text-sm"
                     autoComplete="username"
                     required
                   />
@@ -196,7 +196,7 @@ export default function Login({ setUser, addToast }) {
               {/* Password Field */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
                     Password
                   </label>
                   <Link
@@ -207,7 +207,7 @@ export default function Login({ setUser, addToast }) {
                   </Link>
                 </div>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[var(--text-muted)]">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
                     <Lock className="w-4.5 h-4.5" />
                   </div>
                   <input
@@ -215,14 +215,14 @@ export default function Login({ setUser, addToast }) {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-3 bg-[var(--bg-main)] border border-[var(--border-color)] focus:border-[var(--brand-cyan)] focus:ring-1 focus:ring-[var(--brand-cyan-bg)] text-[var(--text-primary)] rounded-md outline-none transition-all placeholder:text-[var(--text-muted)] text-sm"
+                    className="w-full pl-10 pr-10 py-3 bg-[#0B0F19] border border-slate-700 focus:border-[var(--brand-cyan)] focus:ring-1 focus:ring-[var(--brand-cyan-bg)] text-slate-100 rounded-md outline-none transition-all placeholder:text-slate-500 text-sm"
                     autoComplete="current-password"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -236,9 +236,9 @@ export default function Login({ setUser, addToast }) {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-[var(--border-color)] text-[var(--brand-cyan)] focus:ring-[var(--brand-cyan)] bg-[var(--bg-main)] accent-[var(--brand-cyan)]"
+                  className="w-4 h-4 rounded border-slate-700 text-[var(--brand-cyan)] focus:ring-[var(--brand-cyan)] bg-[#0B0F19] accent-[var(--brand-cyan)]"
                 />
-                <label htmlFor="remember-me" className="ml-2.5 text-xs font-semibold text-[var(--text-secondary)] cursor-pointer select-none">
+                <label htmlFor="remember-me" className="ml-2.5 text-xs font-semibold text-slate-300 cursor-pointer select-none">
                   Remember my login session
                 </label>
               </div>
@@ -267,7 +267,7 @@ export default function Login({ setUser, addToast }) {
             <form onSubmit={otpSent ? handleOtpSubmit : handleSendOtp} className="space-y-5">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
                     Email Address
                   </label>
                   {otpSent && (
@@ -281,7 +281,7 @@ export default function Login({ setUser, addToast }) {
                   )}
                 </div>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[var(--text-muted)]">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
                     <Mail className="w-4.5 h-4.5" />
                   </div>
                   <input
@@ -290,7 +290,7 @@ export default function Login({ setUser, addToast }) {
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     disabled={otpSent}
-                    className="w-full pl-10 pr-4 py-3 bg-[var(--bg-main)] border border-[var(--border-color)] focus:border-[var(--brand-cyan)] focus:ring-1 focus:ring-[var(--brand-cyan-bg)] text-[var(--text-primary)] rounded-md outline-none transition-all placeholder:text-[var(--text-muted)] text-sm disabled:opacity-60"
+                    className="w-full pl-10 pr-4 py-3 bg-[#0B0F19] border border-slate-700 focus:border-[var(--brand-cyan)] focus:ring-1 focus:ring-[var(--brand-cyan-bg)] text-slate-100 rounded-md outline-none transition-all placeholder:text-slate-500 text-sm disabled:opacity-60"
                     required
                   />
                 </div>
@@ -298,11 +298,11 @@ export default function Login({ setUser, addToast }) {
 
               {otpSent && (
                 <div className="space-y-3">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
                     6-Digit Verification Code
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[var(--text-muted)]">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
                       <KeyRound className="w-4.5 h-4.5 text-cyan-400" />
                     </div>
                     <input
@@ -312,7 +312,7 @@ export default function Login({ setUser, addToast }) {
                       placeholder="••••••"
                       value={otp}
                       onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="w-full pl-10 pr-4 py-3 text-center font-mono text-lg tracking-[0.4em] bg-[var(--bg-main)] border border-[var(--brand-cyan)] focus:border-[var(--brand-cyan)] text-[var(--brand-cyan)] rounded-md outline-none"
+                      className="w-full pl-10 pr-4 py-3 text-center font-mono text-lg tracking-[0.4em] bg-[#0B0F19] border border-[var(--brand-cyan)] focus:border-[var(--brand-cyan)] text-[var(--brand-cyan)] rounded-md outline-none"
                       autoFocus
                       required
                     />
@@ -321,9 +321,9 @@ export default function Login({ setUser, addToast }) {
 
 
                   <div className="flex items-center justify-between text-xs pt-1">
-                    <span className="text-[var(--text-secondary)]">Didn't receive the email code?</span>
+                    <span className="text-slate-300">Didn't receive the email code?</span>
                     {resendCooldown > 0 ? (
-                      <span className="text-[var(--text-muted)] font-mono">Resend in {resendCooldown}s</span>
+                      <span className="text-slate-500 font-mono">Resend in {resendCooldown}s</span>
                     ) : (
                       <button
                         type="button"
@@ -380,8 +380,8 @@ export default function Login({ setUser, addToast }) {
           )}
 
           {/* Direct to Registration */}
-          <div className="text-center mt-6 pt-6 border-t border-[var(--border-color)]">
-            <p className="text-xs text-[var(--text-secondary)] font-medium">
+          <div className="text-center mt-6 pt-6 border-t border-slate-700">
+            <p className="text-xs text-slate-300 font-medium">
               Don't have an account?{' '}
               <Link to="/register" className="font-semibold text-[var(--brand-cyan)] hover:text-[var(--brand-cyan-hover)] transition-colors">
                 Create new account
