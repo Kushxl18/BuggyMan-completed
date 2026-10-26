@@ -827,29 +827,40 @@ if (loading) {
         </div>
       )}
 
-      {/* MOCK CHECKOUT MODAL */}
+      {/* MOCK CHECKOUT MODAL (Compact & Responsive with Sticky Close Header) */}
       {selectedPackage && checkoutSession && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 max-w-md w-full rounded-md p-6 shadow-2xl space-y-5 relative">
-            <button 
-              onClick={() => { setSelectedPackage(null); setCheckoutSession(null); }}
-              className="absolute top-5 right-5 p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-            >
-              <X className="w-5 h-5" />
-            </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-sm sm:max-w-[420px] w-full max-h-[88vh] rounded-xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
+            {/* Sticky Header with Always-Visible Close Button */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/80 shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="p-1 rounded-md bg-cyan-500/10 text-cyan-500">
+                  <ShoppingBag className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-heading font-bold text-sm text-slate-900 dark:text-slate-100 truncate">
+                    Mock Checkout
+                  </h3>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Demonstration purchase prototype</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => { setSelectedPackage(null); setCheckoutSession(null); }}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors shrink-0"
+                title="Close Checkout"
+                aria-label="Close Checkout"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
+            {/* Scrollable Modal Content */}
+            <div className="p-4 overflow-y-auto space-y-3 text-xs select-text">
             {!checkoutOutcome ? (
               <>
-                <div className="space-y-1">
-                  <h3 className="font-heading font-bold text-lg text-slate-100 flex items-center gap-2">
-                    <ShoppingBag className="w-5 h-5 text-cyan-400" />
-                    <span>Mock Checkout</span>
-                  </h3>
-                  <p className="text-xs text-slate-400">Demonstration purchase prototype</p>
-                </div>
 
                 {/* Important Demo Notice */}
-                <div className="p-3.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-xs text-amber-300 space-y-1">
+                <div className="p-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-[11px] text-amber-700 dark:text-amber-300 space-y-0.5">
                   <strong className="block font-bold flex items-center gap-1.5">
                     <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
                     <span>DEMO PAYMENT — NO REAL MONEY CHARGED</span>
@@ -860,7 +871,7 @@ if (loading) {
                 </div>
 
                 {/* Order Summary */}
-                <div className="p-4 rounded-md bg-slate-950 border border-slate-800 space-y-2 text-xs">
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5 text-xs">
                   <div className="flex justify-between">
                     <span className="text-slate-400">Package:</span>
                     <span className="font-bold text-slate-200">{selectedPackage.name}</span>
@@ -880,7 +891,7 @@ if (loading) {
                 </div>
 
                 {/* 100% Money-Back Guarantee Feature Card */}
-                <div className="p-3.5 rounded-md bg-gradient-to-r from-emerald-950/40 to-cyan-950/40 border border-emerald-500/40 space-y-1.5 shadow-sm">
+                <div className="p-2.5 rounded-lg bg-gradient-to-r from-emerald-50 dark:from-emerald-950/40 to-cyan-50 dark:to-cyan-950/40 border border-emerald-300 dark:border-emerald-500/40 space-y-1 shadow-sm">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-xs text-emerald-300 flex items-center gap-1.5">
                       <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -909,7 +920,7 @@ if (loading) {
                       className={`p-2 rounded-md border flex flex-col items-center justify-center gap-1 transition-all ${
                         checkoutPaymentMethod === 'upi'
                           ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300 shadow-sm shadow-cyan-500/20'
-                          : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'
+                          : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-700'
                       }`}
                     >
                       <QrCode className="w-4 h-4" />
@@ -922,7 +933,7 @@ if (loading) {
                       className={`p-2 rounded-md border flex flex-col items-center justify-center gap-1 transition-all ${
                         checkoutPaymentMethod === 'card'
                           ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300 shadow-sm shadow-cyan-500/20'
-                          : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'
+                          : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-700'
                       }`}
                     >
                       <CreditCard className="w-4 h-4" />
@@ -935,7 +946,7 @@ if (loading) {
                       className={`p-2 rounded-md border flex flex-col items-center justify-center gap-1 transition-all ${
                         checkoutPaymentMethod === 'netbanking'
                           ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300 shadow-sm shadow-cyan-500/20'
-                          : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'
+                          : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-700'
                       }`}
                     >
                       <Building className="w-4 h-4" />
@@ -945,7 +956,7 @@ if (loading) {
 
                   {/* UPI Sub-Panel */}
                   {checkoutPaymentMethod === 'upi' && (
-                    <div className="p-3 rounded-md bg-slate-950 border border-slate-800 space-y-2.5">
+                    <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="text-slate-400 font-semibold">Select UPI App</span>
                         <span className="text-cyan-400 font-bold">Instant Autopay</span>
@@ -992,7 +1003,7 @@ if (loading) {
 
                   {/* Card Sub-Panel */}
                   {checkoutPaymentMethod === 'card' && (
-                    <div className="p-3 rounded-md bg-slate-950 border border-slate-800 space-y-2">
+                    <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
                       <div className="space-y-1">
                         <div className="flex justify-between items-center text-[10px] text-slate-400">
                           <span>Simulated Card Number</span>
@@ -1031,7 +1042,7 @@ if (loading) {
 
                   {/* NetBanking Sub-Panel */}
                   {checkoutPaymentMethod === 'netbanking' && (
-                    <div className="p-3 rounded-md bg-slate-950 border border-slate-800 space-y-2">
+                    <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
                       <span className="text-[10px] text-slate-400 block font-semibold">Select Bank</span>
                       <div className="grid grid-cols-3 gap-1.5">
                         {['HDFC Bank', 'SBI', 'ICICI Bank', 'Axis Bank', 'Kotak', 'PNB'].map(bank => (
@@ -1058,7 +1069,7 @@ if (loading) {
                   <button
                     onClick={() => handleSimulatePayment('SUCCESS')}
                     disabled={isProcessingCheckout}
-                    className="w-full py-3 px-4 rounded-md button-primary bg-emerald-600 hover:bg-emerald-500 text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40"
+                    className="w-full py-2.5 px-4 rounded-lg button-primary bg-emerald-600 hover:bg-emerald-500 text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-emerald-950/30"
                   >
                     {isProcessingCheckout ? (
                       <>
@@ -1076,7 +1087,7 @@ if (loading) {
                   <button
                     onClick={() => handleSimulatePayment('FAILURE')}
                     disabled={isProcessingCheckout}
-                    className="w-full py-2.5 px-4 rounded-md border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-bold flex items-center justify-center gap-2 transition-all"
+                    className="w-full py-2 px-4 rounded-lg border border-rose-300 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
                   >
                     <AlertTriangle className="w-3.5 h-3.5" />
                     <span>Test Bank Decline (Simulate Failure)</span>
@@ -1162,6 +1173,7 @@ if (loading) {
                 </div>
               </div>
             )}
+            </div>
           </div>
         </div>
       )}
