@@ -464,8 +464,8 @@ if (loading) {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-heading font-bold text-slate-100">Earn Your Money Back Missions</h2>
-              <p className="text-xs text-slate-400">Complete assigned challenges before the deadline to earn virtual refunds for your mock purchases.</p>
+              <h2 className="text-lg font-heading font-bold text-slate-900 dark:text-slate-100">Earn Your Money Back Missions</h2>
+              <p className="text-xs text-slate-600 dark:text-slate-400">Complete assigned challenges before the deadline to earn virtual refunds for your mock purchases.</p>
             </div>
             <Link to="/challenges" className="button-secondary text-xs px-3.5 py-1.5 flex items-center gap-1.5">
               <span>Go to Challenges</span>
@@ -532,7 +532,7 @@ if (loading) {
             {missionsData.activeMissions?.length === 0 ? (
               <div className="glass-panel p-8 rounded-md border border-slate-800 text-center space-y-3">
                 <Award className="w-8 h-8 text-slate-600 mx-auto" />
-                <h4 className="text-sm font-heading font-bold text-slate-300">No Active Missions</h4>
+                <h4 className="text-sm font-heading font-bold text-slate-800 dark:text-slate-300">No Active Missions</h4>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
                   Purchase a BugBytes package to start a Money-Back Challenge and earn 100% of your simulated purchase back!
                 </p>
@@ -548,7 +548,7 @@ if (loading) {
                     <div key={m.id} className="glass-card p-5 rounded-md border border-slate-800 bg-slate-900/70 space-y-4">
                       <div className="flex items-start justify-between">
                         <div>
-                          <h4 className="font-heading font-bold text-sm text-slate-100">{m.title}</h4>
+                          <h4 className="font-heading font-bold text-sm text-slate-900 dark:text-slate-100">{m.title}</h4>
                           <p className="text-[11px] text-slate-400">
                             Required: Solve {m.required_count} {m.required_difficulty} challenges
                           </p>
@@ -605,7 +605,7 @@ if (loading) {
                 {missionsData.claimedMissions.map((m) => (
                   <div key={m.id} className="p-3.5 rounded-md border border-slate-800 bg-slate-950 text-xs space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-300 truncate">{m.title}</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-300 truncate">{m.title}</span>
                       <span className="badge badge-emerald text-[8px]">REWARD CLAIMED</span>
                     </div>
                     <p className="text-[10px] text-slate-400">Simulated Refund: ₹{m.reward_amount_inr}</p>
@@ -630,7 +630,7 @@ if (loading) {
       {activeTab === 'purchases' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-heading font-bold text-slate-100">Mock Purchase History</h2>
+            <h2 className="text-lg font-heading font-bold text-slate-900 dark:text-slate-100">Mock Purchase History</h2>
             <span className="text-xs text-slate-400">{purchases.length} Transactions</span>
           </div>
 
@@ -639,9 +639,9 @@ if (loading) {
               No purchase history yet. Complete a mock purchase to view transactions here.
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-md border border-slate-800 bg-slate-900/60">
+            <div className="overflow-x-auto rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] font-bold border-b border-slate-800">
+                <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 uppercase text-[10px] font-bold border-b border-slate-200 dark:border-slate-800">
                   <tr>
                     <th className="p-4">Reference</th>
                     <th className="p-4">Package</th>
@@ -652,7 +652,7 @@ if (loading) {
                     <th className="p-4 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   {purchases.map((p) => {
                     const mission = p.rewardMission;
                     const isRefunded = p.status === 'REFUNDED' || (mission && mission.status === 'CLAIMED');
@@ -661,11 +661,11 @@ if (loading) {
                     const isMissionExpired = mission && mission.status === 'EXPIRED';
 
                     return (
-                      <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
+                      <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                         <td className="p-4 font-mono text-[11px] text-cyan-400 font-semibold">{p.transactionReference}</td>
-                        <td className="p-4 font-semibold text-slate-200">{p.packageName}</td>
+                        <td className="p-4 font-semibold text-slate-800 dark:text-slate-200">{p.packageName}</td>
                         <td className="p-4 text-amber-400 font-bold">+{p.bugbytesAmount} BugBytes</td>
-                        <td className="p-4 font-bold text-slate-100">₹{p.priceInr}</td>
+                        <td className="p-4 font-bold text-slate-900 dark:text-slate-100">₹{p.priceInr}</td>
                         <td className="p-4">
                           <div className="flex flex-col gap-0.5">
                             {isRefunded ? (

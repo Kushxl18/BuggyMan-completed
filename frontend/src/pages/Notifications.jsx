@@ -108,7 +108,7 @@ export default function Notifications({ notifications, setNotifications, addToas
             className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
               filter === type
                 ? 'bg-brand-indigo text-white shadow-glow-indigo'
-                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                : 'bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
             {type}
@@ -139,7 +139,7 @@ export default function Notifications({ notifications, setNotifications, addToas
               </div>
 
               <div className="flex-1 min-w-0 pr-4">
-                <h4 className={`text-xs font-bold text-slate-200 ${!n.read ? 'font-semibold text-slate-100' : ''}`}>
+                <h4 className={`text-xs font-bold text-slate-800 dark:text-slate-200 ${!n.read ? 'font-semibold text-slate-100' : ''}`}>
                   {n.title}
                 </h4>
                 <p className="text-xs text-slate-400 mt-1 leading-relaxed">{n.message}</p>

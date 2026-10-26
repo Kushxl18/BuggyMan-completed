@@ -134,8 +134,8 @@ export default function ResultPage() {
       {/* Top Header & Banner */}
       <div className={`p-8 rounded-3xl border text-center space-y-4 relative overflow-hidden ${
         success 
-          ? 'bg-emerald-950/20 border-brand-emerald/30 shadow-glow-emerald' 
-          : 'bg-rose-950/20 border-brand-rose/30 shadow-glow-rose'
+          ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-brand-emerald/30 shadow-glow-emerald' 
+          : 'bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-brand-rose/30 shadow-glow-rose'
       }`}>
         <div className={`absolute top-0 right-0 p-8 opacity-10 font-heading text-8xl font-black ${
           success ? 'text-brand-emerald' : 'text-brand-rose'
@@ -147,17 +147,17 @@ export default function ResultPage() {
           {/* Metadata Row */}
           <div className="flex flex-wrap items-center justify-center gap-2">
             {attemptNumber && (
-              <span className="px-3 py-1 bg-slate-900/80 border border-slate-800 rounded-full text-[10px] font-bold text-slate-300 uppercase tracking-wider">
+              <span className="px-3 py-1 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-full text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider shadow-sm">
                 Attempt #{attemptNumber}
               </span>
             )}
             {challengeInfo?.technology && (
-              <span className="px-3 py-1 bg-indigo-950/80 border border-indigo-500/30 rounded-full text-[10px] font-bold text-cyan-400 uppercase tracking-wider">
+              <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-500/30 rounded-full text-[10px] font-bold text-indigo-700 dark:text-cyan-400 uppercase tracking-wider shadow-sm">
                 {challengeInfo.technology}
               </span>
             )}
             {challengeInfo?.difficulty && (
-              <span className="px-3 py-1 bg-slate-900/80 border border-slate-800 rounded-full text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+              <span className="px-3 py-1 bg-amber-50 dark:bg-slate-900/80 border border-amber-200 dark:border-slate-800 rounded-full text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider shadow-sm">
                 {challengeInfo.difficulty}
               </span>
             )}
@@ -171,11 +171,11 @@ export default function ResultPage() {
             )}
           </div>
 
-          <h1 className="font-heading font-extrabold text-3xl text-slate-100">
+          <h1 className="font-heading font-extrabold text-3xl text-slate-900 dark:text-slate-100">
             {challengeInfo?.title ? challengeInfo.title : (success ? 'Challenge Completed!' : 'Test Failures Detected')}
           </h1>
 
-          <p className="text-sm text-slate-400 max-w-md mx-auto">
+          <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto">
             {success 
               ? (alreadySolved ? 'Solution verified successfully. No duplicate XP awarded.' : 'Awesome work! All tests executed correctly without issues.') 
               : 'The project compiled with remaining bugs. Review test details and logs below.'}
@@ -197,7 +197,7 @@ export default function ResultPage() {
         {/* Time Spent */}
         <div className="glass-card p-4 rounded-2xl text-center space-y-1">
           <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Time Spent</span>
-          <div className="inline-flex items-center justify-center gap-1.5 text-slate-300 font-heading font-extrabold text-xl">
+          <div className="inline-flex items-center justify-center gap-1.5 text-slate-800 dark:text-slate-300 font-heading font-extrabold text-xl">
             <Clock className="w-4.5 h-4.5 text-slate-400" />
             <span>{timeTaken}</span>
           </div>
@@ -221,14 +221,14 @@ export default function ResultPage() {
       </div>
 
       {/* Main Content Tabs Menu */}
-      <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden">
-        <div className="bg-slate-950 border-b border-slate-800 flex items-center px-4">
+      <div className="glass-card rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center px-4 overflow-x-auto">
           <button
             onClick={() => setActiveTab('tests')}
             className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all ${
               activeTab === 'tests'
-                ? 'border-brand-indigo text-slate-100 bg-slate-900/60'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-brand-indigo text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900/60'
+                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
             <CheckCircle2 className="w-4 h-4 text-brand-emerald" />
@@ -239,8 +239,8 @@ export default function ResultPage() {
             onClick={() => setActiveTab('terminal')}
             className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all ${
               activeTab === 'terminal'
-                ? 'border-brand-indigo text-slate-100 bg-slate-900/60'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-brand-indigo text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900/60'
+                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
             <Terminal className="w-4 h-4 text-cyan-400" />
@@ -251,8 +251,8 @@ export default function ResultPage() {
             onClick={() => setActiveTab('history')}
             className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all ${
               activeTab === 'history'
-                ? 'border-brand-indigo text-slate-100 bg-slate-900/60'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-brand-indigo text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900/60'
+                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
             <History className="w-4 h-4 text-amber-400" />
@@ -263,8 +263,8 @@ export default function ResultPage() {
             onClick={() => { setActiveTab('explanation'); if (!explanation) handleFetchExplanation(); }}
             className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all ${
               activeTab === 'explanation'
-                ? 'border-amber-400 text-amber-300 bg-slate-900/60'
-                : 'border-transparent text-slate-400 hover:text-amber-300'
+                ? 'border-amber-500 text-amber-700 dark:text-amber-300 bg-white dark:bg-slate-900/60'
+                : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-300'
             }`}
           >
             <Sparkles className="w-4 h-4 text-amber-300 animate-pulse-glow" />
@@ -289,11 +289,11 @@ export default function ResultPage() {
           {activeTab === 'terminal' && (
             <div className="space-y-4">
               <div>
-                <h4 className="text-xs font-bold text-slate-300 mb-2 flex items-center gap-2">
+                <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-cyan-400" />
                   <span>Standard Execution Output (stdout)</span>
                 </h4>
-                <div className="p-4 bg-slate-950 rounded-xl border border-slate-900 font-mono text-xs text-slate-300 leading-relaxed max-h-60 overflow-y-auto">
+                <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-900 font-mono text-xs text-slate-800 dark:text-slate-300 leading-relaxed max-h-60 overflow-y-auto">
                   {stdout ? (
                     <pre className="whitespace-pre-wrap">{stdout}</pre>
                   ) : (
@@ -308,7 +308,7 @@ export default function ResultPage() {
                     <AlertOctagon className="w-4 h-4 text-rose-400" />
                     <span>Error Output / Traceback (stderr)</span>
                   </h4>
-                  <div className="p-4 bg-rose-950/30 rounded-xl border border-rose-500/30 font-mono text-xs text-rose-300 leading-relaxed max-h-60 overflow-y-auto">
+                  <div className="p-4 bg-rose-50 dark:bg-rose-950/30 rounded-xl border border-rose-200 dark:border-rose-500/30 font-mono text-xs text-rose-800 dark:text-rose-300 leading-relaxed max-h-60 overflow-y-auto">
                     <pre className="whitespace-pre-wrap">{stderr}</pre>
                   </div>
                 </div>
@@ -325,10 +325,10 @@ export default function ResultPage() {
                 attemptHistory.map((att) => (
                   <div 
                     key={att.id}
-                    className="flex items-center justify-between p-3.5 rounded-xl bg-slate-950 border border-slate-900 text-xs"
+                    className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-900 text-xs"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="font-bold text-slate-400">Attempt #{att.attemptNumber}</span>
+                      <span className="font-bold text-slate-600 dark:text-slate-400">Attempt #{att.attemptNumber}</span>
                       {att.success ? (
                         <span className="flex items-center gap-1 text-brand-emerald font-semibold">
                           <CheckCircle2 className="w-4 h-4" /> Passed
@@ -341,8 +341,8 @@ export default function ResultPage() {
                     </div>
 
                     <div className="flex items-center gap-4 text-slate-400">
-                      <span>Score: <strong className="text-slate-200">+{att.score} XP</strong></span>
-                      <span>Time: <strong className="text-slate-200">{att.executionTime ? `${att.executionTime}s` : 'N/A'}</strong></span>
+                      <span>Score: <strong className="text-slate-900 dark:text-slate-200">+{att.score} XP</strong></span>
+                      <span>Time: <strong className="text-slate-900 dark:text-slate-200">{att.executionTime ? `${att.executionTime}s` : 'N/A'}</strong></span>
                       <span className="text-[10px] text-slate-500">
                         {att.createdAt ? new Date(att.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                       </span>
@@ -358,10 +358,10 @@ export default function ResultPage() {
           {/* TAB 4: AI Solution Explanation */}
           {activeTab === 'explanation' && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center bg-slate-900 p-4 rounded-xl border border-slate-800">
+              <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-amber-300 animate-pulse-glow" />
-                  <span className="font-bold text-slate-200 text-xs uppercase tracking-wider font-sans">AI Solution Post-Mortem & Educational Analysis</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider font-sans">AI Solution Post-Mortem & Educational Analysis</span>
                 </div>
                 <button
                   onClick={handleFetchExplanation}
@@ -374,29 +374,29 @@ export default function ResultPage() {
 
               {explanation ? (
                 <div className="space-y-4 font-sans text-xs">
-                  <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-1">
+                  <div className="bg-slate-50 dark:bg-slate-900/80 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400">1. What The Bug Was</span>
-                    <p className="text-slate-200 leading-relaxed">{explanation.whatTheBugWas}</p>
+                    <p className="text-slate-800 dark:text-slate-200 leading-relaxed">{explanation.whatTheBugWas}</p>
                   </div>
 
-                  <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-1">
+                  <div className="bg-slate-50 dark:bg-slate-900/80 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">2. Why It Happened</span>
-                    <p className="text-slate-200 leading-relaxed">{explanation.whyItHappened}</p>
+                    <p className="text-slate-800 dark:text-slate-200 leading-relaxed">{explanation.whyItHappened}</p>
                   </div>
 
-                  <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-1">
+                  <div className="bg-slate-50 dark:bg-slate-900/80 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">3. Why The Fix Works</span>
-                    <p className="text-slate-200 leading-relaxed">{explanation.whyFixWorks}</p>
+                    <p className="text-slate-800 dark:text-slate-200 leading-relaxed">{explanation.whyFixWorks}</p>
                   </div>
 
-                  <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-1">
+                  <div className="bg-slate-50 dark:bg-slate-900/80 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400">4. Key Engineering Concept</span>
-                    <p className="text-slate-200 leading-relaxed">{explanation.keyConcept}</p>
+                    <p className="text-slate-800 dark:text-slate-200 leading-relaxed">{explanation.keyConcept}</p>
                   </div>
 
-                  <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-1">
+                  <div className="bg-slate-50 dark:bg-slate-900/80 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-violet-400">5. Alternative Approaches & Design Patterns</span>
-                    <p className="text-slate-200 leading-relaxed">{explanation.alternativeApproaches}</p>
+                    <p className="text-slate-800 dark:text-slate-200 leading-relaxed">{explanation.alternativeApproaches}</p>
                   </div>
                 </div>
               ) : (
@@ -412,7 +412,7 @@ export default function ResultPage() {
       </div>
 
       {/* AI Evaluation Review Card */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-3 relative overflow-hidden">
+      <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
           <Sparkles className="w-16 h-16 text-brand-violet" />
         </div>
@@ -420,7 +420,7 @@ export default function ResultPage() {
           <Sparkles className="w-4.5 h-4.5 text-brand-violet animate-pulse-glow" />
           <span>AI Feedback Evaluation</span>
         </div>
-        <p className="text-xs text-slate-300 leading-relaxed font-mono bg-slate-950/40 border border-slate-800/80 p-4 rounded-xl">
+        <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-mono bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800/80 p-4 rounded-xl">
           {aiSummary}
         </p>
       </div>

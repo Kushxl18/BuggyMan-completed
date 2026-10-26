@@ -24,7 +24,7 @@ export function formatInlineText(text = '') {
       return (
         <code 
           key={index} 
-          className="px-1.5 py-0.5 mx-0.5 rounded text-[12px] font-mono bg-slate-800 text-cyan-300 border border-slate-700/60"
+          className="px-1.5 py-0.5 mx-0.5 rounded text-[12px] font-mono bg-slate-100 dark:bg-slate-800 text-cyan-700 dark:text-cyan-300 border border-slate-300 dark:border-slate-700/60"
         >
           {code}
         </code>
@@ -36,7 +36,7 @@ export function formatInlineText(text = '') {
     return boldParts.map((bPart, bIndex) => {
       if (bPart.startsWith('**') && bPart.endsWith('**')) {
         return (
-          <strong key={`${index}-${bIndex}`} className="font-semibold text-slate-100">
+          <strong key={`${index}-${bIndex}`} className="font-semibold text-slate-900 dark:text-slate-100">
             {bPart.slice(2, -2)}
           </strong>
         );
@@ -239,9 +239,9 @@ export default function ProblemStatementFormatter({
   } = parseProblemStatement(description, title, technology, category, testCases, files);
 
   return (
-    <div className="space-y-5 text-slate-300 text-[13px] leading-relaxed font-sans select-text">
+    <div className="space-y-5 text-slate-700 dark:text-slate-300 text-[13px] leading-relaxed font-sans select-text">
       {/* A. Problem Statement (LeetCode Style Prose) */}
-      <div className="space-y-2 text-slate-200">
+      <div className="space-y-2 text-slate-800 dark:text-slate-200">
         <p className="leading-relaxed text-[13px]">
           {formatInlineText(problemStatement)}
         </p>
@@ -264,7 +264,7 @@ export default function ProblemStatementFormatter({
                   <span className="font-sans font-semibold text-[var(--text-secondary)] shrink-0 select-none">
                     {isSql ? 'Input Query:' : isFrontend ? 'Action:' : 'Input:'}
                   </span>
-                  <span className="text-cyan-300 break-all whitespace-pre-wrap">
+                  <span className="text-cyan-700 dark:text-cyan-300 break-all whitespace-pre-wrap font-mono">
                     {ex.input}
                   </span>
                 </div>
@@ -273,7 +273,7 @@ export default function ProblemStatementFormatter({
                   <span className="font-sans font-semibold text-[var(--text-secondary)] shrink-0 select-none">
                     {isSql ? 'Expected Rows:' : isFrontend ? 'UI State:' : 'Output:'}
                   </span>
-                  <span className="text-emerald-400 break-all whitespace-pre-wrap">
+                  <span className="text-emerald-700 dark:text-emerald-400 break-all whitespace-pre-wrap font-mono">
                     {ex.output}
                   </span>
                 </div>
@@ -297,13 +297,13 @@ export default function ProblemStatementFormatter({
       {/* C. Constraints */}
       {constraints.length > 0 && (
         <div className="space-y-2 pt-2">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
             <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
             <span>Constraints</span>
           </h4>
           <ul className="space-y-1.5 pl-1">
             {constraints.map((c, idx) => (
-              <li key={idx} className="flex items-start gap-2 text-xs text-slate-300">
+              <li key={idx} className="flex items-start gap-2 text-xs text-slate-700 dark:text-slate-300">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
                 <span className="leading-normal font-sans">
                   {formatInlineText(c)}

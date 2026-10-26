@@ -247,7 +247,7 @@ export default function ProblemStatementPanel({
           <div className="space-y-4">
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
-                <h1 className="font-heading font-bold text-xl text-slate-100 leading-snug">
+                <h1 className="font-heading font-bold text-xl text-slate-900 dark:text-slate-100 leading-snug">
                   {displayTitle}
                 </h1>
                 {challenge.solved && (
@@ -268,8 +268,8 @@ export default function ProblemStatementPanel({
                   onClick={() => setShowTopics(!showTopics)}
                   className={`flex items-center gap-1.5 px-2.5 py-0.5 text-xs rounded-full border transition-all ${
                     showTopics 
-                      ? 'bg-slate-800 border-slate-700 text-cyan-300' 
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                      ? 'bg-cyan-50 dark:bg-slate-800 border-cyan-300 dark:border-slate-700 text-cyan-700 dark:text-cyan-300 font-medium' 
+                      : 'bg-slate-100 dark:bg-slate-950/60 border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
                   <Tag className="w-3 h-3 text-cyan-400" />
@@ -281,8 +281,8 @@ export default function ProblemStatementPanel({
                   onClick={() => setShowCompanies(!showCompanies)}
                   className={`flex items-center gap-1.5 px-2.5 py-0.5 text-xs rounded-full border transition-all ${
                     showCompanies 
-                      ? 'bg-slate-800 border-slate-700 text-amber-300' 
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                      ? 'bg-amber-50 dark:bg-slate-800 border-amber-300 dark:border-slate-700 text-amber-700 dark:text-amber-300 font-medium' 
+                      : 'bg-slate-100 dark:bg-slate-950/60 border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
                   <Briefcase className="w-3.5 h-3.5 text-amber-400" />
@@ -293,9 +293,9 @@ export default function ProblemStatementPanel({
 
               {/* Expandable Topics drawer */}
               {showTopics && (
-                <div className="flex flex-wrap gap-1.5 p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl animate-fade-in">
+                <div className="flex flex-wrap gap-1.5 p-2.5 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl animate-fade-in">
                   {topics.map((t, idx) => (
-                    <span key={idx} className="px-2 py-0.5 text-[11px] font-mono rounded bg-slate-800/80 text-cyan-300 border border-slate-700/60">
+                    <span key={idx} className="px-2 py-0.5 text-[11px] font-mono rounded bg-white dark:bg-slate-800/80 text-cyan-700 dark:text-cyan-300 border border-slate-300 dark:border-slate-700/60">
                       {t}
                     </span>
                   ))}
@@ -304,12 +304,12 @@ export default function ProblemStatementPanel({
 
               {/* Expandable Company / Scenario drawer */}
               {showCompanies && (
-                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl text-xs space-y-1 animate-fade-in">
+                <div className="p-3 bg-amber-50/50 dark:bg-slate-950/80 border border-amber-200 dark:border-slate-800 rounded-xl text-xs space-y-1 animate-fade-in">
                   <span className="font-semibold text-amber-400 flex items-center gap-1.5">
                     <Briefcase className="w-3.5 h-3.5" />
                     <span>Real-World Engineering Context</span>
                   </span>
-                  <p className="text-slate-300 text-[11px] leading-relaxed">
+                  <p className="text-slate-700 dark:text-slate-300 text-[11px] leading-relaxed">
                     Defect scenario inspired by real-world production incidents in {challenge.technology || 'software'} distributed systems.
                   </p>
                 </div>
@@ -333,9 +333,9 @@ export default function ProblemStatementPanel({
         {/* TAB 2: SUBMISSIONS */}
         {currentTab === 'submissions' && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
               <History className="w-4 h-4 text-emerald-400" />
-              <h3 className="font-bold text-sm text-slate-100">Submission History</h3>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">Submission History</h3>
             </div>
 
             {loadingSubmissions ? (
@@ -348,7 +348,7 @@ export default function ProblemStatementPanel({
                 {displayedSubmissions.map((sub, idx) => {
                   const isAccepted = sub.success === true;
                   return (
-                    <div key={idx} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-xs">
+                    <div key={idx} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2.5">
                         {isAccepted ? (
                           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -365,7 +365,7 @@ export default function ProblemStatementPanel({
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className="font-mono text-slate-300 flex items-center justify-end gap-1">
+                        <span className="font-mono text-slate-700 dark:text-slate-300 flex items-center justify-end gap-1">
                           <Clock className="w-3 h-3 text-slate-500" />
                           <span>{sub.executionTime ? `${Math.round(sub.executionTime * 1000)} ms` : (sub.timeTaken || '10s')}</span>
                         </span>
@@ -378,7 +378,7 @@ export default function ProblemStatementPanel({
                 })}
               </div>
             ) : (
-              <div className="py-12 text-center text-slate-500 space-y-2">
+              <div className="py-12 text-center text-slate-500 dark:text-slate-400 space-y-2">
                 <History className="w-8 h-8 mx-auto opacity-40 text-slate-400" />
                 <p className="text-xs">No submissions recorded for this challenge yet.</p>
                 <p className="text-[11px] text-slate-600">Click "Run" or "Submit" to test your fix against the evaluator.</p>
@@ -418,13 +418,13 @@ export default function ProblemStatementPanel({
       </div>
 
       {/* 3. LeetCode Style Bottom Action & Reaction Bar (Real Persistent Data) */}
-      <div className="h-10 bg-slate-950 border-t border-slate-800 px-4 flex items-center justify-between text-xs text-slate-400 shrink-0">
+      <div className="h-10 bg-slate-100 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 px-4 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 shrink-0">
         <div className="flex items-center gap-3">
           {/* Real Thumbs up */}
           <button 
             onClick={() => handleToggleReaction('like')}
             disabled={isReacting}
-            className={`flex items-center gap-1.5 hover:text-slate-200 transition-colors ${isLiked ? 'text-cyan-400 font-semibold' : ''}`}
+            className={`flex items-center gap-1.5 hover:text-slate-900 dark:hover:text-slate-200 transition-colors ${isLiked ? 'text-cyan-400 font-semibold' : ''}`}
             title="Like this challenge"
           >
             <ThumbsUp className={`w-3.5 h-3.5 ${isLiked ? 'fill-cyan-400' : ''}`} />
@@ -435,7 +435,7 @@ export default function ProblemStatementPanel({
           <button 
             onClick={() => handleToggleReaction('dislike')}
             disabled={isReacting}
-            className={`flex items-center gap-1.5 hover:text-slate-200 transition-colors ${isDisliked ? 'text-rose-400 font-semibold' : ''}`}
+            className={`flex items-center gap-1.5 hover:text-slate-900 dark:hover:text-slate-200 transition-colors ${isDisliked ? 'text-rose-400 font-semibold' : ''}`}
             title="Dislike"
           >
             <ThumbsDown className={`w-3.5 h-3.5 ${isDisliked ? 'fill-rose-400' : ''}`} />
@@ -454,7 +454,7 @@ export default function ProblemStatementPanel({
           {/* Functional Share */}
           <button 
             onClick={handleShare}
-            className="hover:text-slate-200 transition-colors"
+            className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
             title="Share challenge URL"
           >
             <Share2 className="w-3.5 h-3.5" />
@@ -471,7 +471,7 @@ export default function ProblemStatementPanel({
         </div>
 
         {/* Challenge Evaluation Engine Status (Truthful - no fake online count) */}
-        <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium">
+        <div className="flex items-center gap-1.5 text-[10px] text-slate-600 dark:text-slate-400 font-medium">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
           <span>Evaluation Engine Ready</span>
         </div>
@@ -480,9 +480,9 @@ export default function ProblemStatementPanel({
       {/* Functional Report Issue Modal */}
       {showReportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scale-up">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <Flag className="w-4 h-4 text-amber-400" />
                 <span>Report Challenge Issue</span>
               </h3>
@@ -493,11 +493,11 @@ export default function ProblemStatementPanel({
 
             <form onSubmit={handleSendReport} className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Issue Type</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Issue Type</label>
                 <select
                   value={reportType}
                   onChange={(e) => setReportType(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-cyan-500"
                 >
                   <option value="broken_challenge">Broken or Untestable Challenge</option>
                   <option value="bad_instructions">Unclear Instructions</option>
@@ -508,13 +508,13 @@ export default function ProblemStatementPanel({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Description</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Description</label>
                 <textarea
                   value={reportDescription}
                   onChange={(e) => setReportDescription(e.target.value)}
                   placeholder="Describe the issue you encountered..."
                   rows={4}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-3 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                   required
                 />
               </div>

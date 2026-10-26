@@ -25,7 +25,7 @@ export default function TestCasesSection({ testCases = [], challengeTitle = '', 
   return (
     <div className="space-y-2.5">
       {showHeader && (
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
           <span>Test Cases ({cases.length})</span>
         </h3>
@@ -41,13 +41,13 @@ export default function TestCasesSection({ testCases = [], challengeTitle = '', 
               key={tc.id || idx}
               className={`p-3 rounded-xl border text-xs space-y-1.5 transition-all ${
                 isPassed
-                  ? 'bg-emerald-950/20 border-emerald-500/30'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-500/30'
                   : isFailed
-                  ? 'bg-rose-950/20 border-rose-500/30'
-                  : 'bg-slate-950/50 border-slate-800'
+                  ? 'bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-500/30'
+                  : 'bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800'
               }`}
             >
-              <div className="flex items-center justify-between font-semibold text-slate-200">
+              <div className="flex items-center justify-between font-semibold text-slate-800 dark:text-slate-200">
                 <div className="flex items-center gap-2 flex-wrap">
                   {isPassed ? (
                     <Check className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -77,8 +77,8 @@ export default function TestCasesSection({ testCases = [], challengeTitle = '', 
               </div>
 
               {isFailed && (tc.hint || tc.error) && (
-                <div className="text-[11px] text-rose-300 leading-normal pl-6 bg-rose-950/30 p-2 rounded-lg border border-rose-500/20">
-                  <span className="font-semibold text-rose-400">Feedback: </span>
+                <div className="text-[11px] text-rose-800 dark:text-rose-300 leading-normal pl-6 bg-rose-100/60 dark:bg-rose-950/30 p-2 rounded-lg border border-rose-200 dark:border-rose-500/20">
+                  <span className="font-semibold text-rose-700 dark:text-rose-400">Feedback: </span>
                   {tc.hint || tc.error}
                 </div>
               )}

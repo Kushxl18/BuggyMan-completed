@@ -352,30 +352,30 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
   const breakdown = evalResult?.scoreBreakdown || evalResult?.score_breakdown || {};
 
   return (
-    <div className="h-screen flex flex-col bg-[#0D1117] text-slate-100 overflow-hidden font-sans select-none">
+    <div className="h-screen flex flex-col bg-slate-50 dark:bg-[#0D1117] text-slate-900 dark:text-slate-100 overflow-hidden font-sans select-none">
       {/* 1. TOP WORKSPACE NAVIGATION BAR */}
-      <header className="h-12 border-b border-[#30363D] bg-[#161B22] flex items-center justify-between px-3 shrink-0 z-30">
+      <header className="h-12 border-b border-slate-200 dark:border-[#30363D] bg-white dark:bg-[#161B22] flex items-center justify-between px-3 shrink-0 z-30">
         <div className="flex items-center gap-3 min-w-0">
           <Link
             to="/feature-challenges"
-            className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             title="Back to Feature Challenges"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Back</span>
           </Link>
 
-          <div className="w-px h-5 bg-[#30363D]" />
+          <div className="w-px h-5 bg-slate-200 dark:bg-[#30363D]" />
 
           {/* Title & Badges */}
           <div className="flex items-center gap-2 min-w-0 truncate">
-            <h1 className="text-xs sm:text-sm font-semibold text-slate-100 truncate">
+            <h1 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
               {challenge.title}
             </h1>
             <span className="px-1.5 py-0.2 rounded text-[10px] font-mono uppercase font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 shrink-0">
               {challenge.difficulty}
             </span>
-            <span className="hidden md:inline-block px-1.5 py-0.2 rounded text-[10px] font-mono text-slate-400 bg-slate-800/80 border border-slate-700 shrink-0">
+            <span className="hidden md:inline-block px-1.5 py-0.2 rounded text-[10px] font-mono text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shrink-0">
               {challenge.technology}
             </span>
           </div>
@@ -385,7 +385,7 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handleResetWorkspace}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors"
+            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
             title="Reset Workspace to Initial State"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -416,15 +416,15 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
       {/* 2. THREE-PANEL CORE WORKSPACE (Explorer | Editor | Spec/Assistant) */}
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* LEFT PANEL: Project File Explorer */}
-        <aside className="w-56 border-r border-[#30363D] bg-[#161B22] flex flex-col shrink-0">
-          <div className="p-2.5 border-b border-[#30363D] flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
+        <aside className="w-56 border-r border-slate-200 dark:border-[#30363D] bg-white dark:bg-[#161B22] flex flex-col shrink-0">
+          <div className="p-2.5 border-b border-slate-200 dark:border-[#30363D] flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-300">
               <FolderTree className="w-3.5 h-3.5 text-blue-400" />
               <span>Project Repository</span>
             </div>
             <button
               onClick={() => setIsNewFileModalOpen(true)}
-              className="p-1 rounded text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
+              className="p-1 rounded text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               title="Create New File"
             >
               <FilePlus className="w-3.5 h-3.5" />
@@ -443,8 +443,8 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
                   onClick={() => handleSelectFile(file.name)}
                   className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer group transition-colors ${
                     isActive
-                      ? 'bg-slate-800 text-blue-400 font-medium'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                      ? 'bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 font-medium'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50'
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0 truncate">
@@ -474,16 +474,16 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
           </div>
 
           {/* Explorer Footer */}
-          <div className="p-2 border-t border-[#30363D] text-[10px] text-slate-500 flex items-center justify-between font-mono">
+          <div className="p-2 border-t border-slate-200 dark:border-[#30363D] text-[10px] text-slate-500 flex items-center justify-between font-mono">
             <span>{files.length} files</span>
             <span>{modifiedFiles.size} modified</span>
           </div>
         </aside>
 
         {/* CENTER PANEL: Monaco Code Editor with Multi-Tabs */}
-        <main className="flex-1 flex flex-col min-w-0 bg-[#0D1117] border-r border-[#30363D]">
+        <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0D1117] border-r border-slate-200 dark:border-[#30363D]">
           {/* Open Tabs Bar */}
-          <div className="h-9 border-b border-[#30363D] bg-[#161B22] flex items-center overflow-x-auto px-1 shrink-0">
+          <div className="h-9 border-b border-slate-200 dark:border-[#30363D] bg-slate-50 dark:bg-[#161B22] flex items-center overflow-x-auto px-1 shrink-0">
             {openTabs.map((tabName) => {
               const isActive = tabName === activeFileName;
               const isModified = modifiedFiles.has(tabName);
@@ -492,10 +492,10 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
                 <div
                   key={tabName}
                   onClick={() => setActiveFileName(tabName)}
-                  className={`h-full flex items-center gap-2 px-3 text-xs cursor-pointer border-r border-[#30363D] transition-colors shrink-0 ${
+                  className={`h-full flex items-center gap-2 px-3 text-xs cursor-pointer border-r border-slate-200 dark:border-[#30363D] transition-colors shrink-0 ${
                     isActive
-                      ? 'bg-[#0D1117] text-slate-100 border-t-2 border-t-blue-500 font-medium'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                      ? 'bg-white dark:bg-[#0D1117] text-blue-600 dark:text-blue-400 border-t-2 border-t-blue-500 font-medium'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/40'
                   }`}
                 >
                   <span>{tabName.split('/').pop()}</span>
@@ -542,18 +542,18 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
           </div>
 
           {/* BOTTOM PANEL: Collapsible Output & Test Execution Drawer */}
-          <div className={`border-t border-[#30363D] bg-[#161B22] transition-all flex flex-col ${
+          <div className={`border-t border-slate-200 dark:border-[#30363D] bg-white dark:bg-[#161B22] transition-all flex flex-col ${
             isBottomPanelOpen ? 'h-64' : 'h-8'
           }`}>
             {/* Drawer Tabs Bar */}
-            <div className="h-8 border-b border-[#30363D] flex items-center justify-between px-3 shrink-0">
+            <div className="h-8 border-b border-slate-200 dark:border-[#30363D] bg-slate-50 dark:bg-[#161B22] flex items-center justify-between px-3 shrink-0">
               <div className="flex items-center gap-2 text-xs">
                 <button
                   onClick={() => { setActiveBottomTab('tests'); setIsBottomPanelOpen(true); }}
                   className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1.5 transition-colors ${
                     activeBottomTab === 'tests' && isBottomPanelOpen
-                      ? 'bg-slate-800 text-blue-400'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -569,8 +569,8 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
                   onClick={() => { setActiveBottomTab('terminal'); setIsBottomPanelOpen(true); }}
                   className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1.5 transition-colors ${
                     activeBottomTab === 'terminal' && isBottomPanelOpen
-                      ? 'bg-slate-800 text-blue-400'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
                   <TerminalIcon className="w-3.5 h-3.5" />
@@ -581,8 +581,8 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
                   onClick={() => { setActiveBottomTab('review'); setIsBottomPanelOpen(true); }}
                   className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1.5 transition-colors ${
                     activeBottomTab === 'review' && isBottomPanelOpen
-                      ? 'bg-slate-800 text-blue-400'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
                   <Bot className="w-3.5 h-3.5" />
@@ -592,7 +592,7 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
 
               <button
                 onClick={() => setIsBottomPanelOpen(prev => !prev)}
-                className="text-slate-400 hover:text-slate-200 p-1"
+                className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 p-1"
                 title={isBottomPanelOpen ? "Minimize Panel" : "Expand Panel"}
               >
                 {isBottomPanelOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
@@ -601,7 +601,7 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
 
             {/* Drawer Content */}
             {isBottomPanelOpen && (
-              <div className="flex-1 p-3 overflow-y-auto font-mono text-xs text-slate-300">
+              <div className="flex-1 p-3 overflow-y-auto font-mono text-xs text-slate-800 dark:text-slate-300">
                 {activeBottomTab === 'tests' && (
                   <div className="space-y-3 font-sans">
                     {!evalResult ? (
@@ -612,25 +612,25 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
                       <>
                         {/* Score Breakdown Pills */}
                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 font-mono text-xs">
-                          <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
+                          <div className="p-2 rounded bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
                             <span className="text-[10px] text-slate-500 block">FEATURE (40%)</span>
-                            <span className="font-bold text-slate-100">{breakdown.feature_score ?? 0}/{breakdown.feature_max ?? 40}</span>
+                            <span className="font-bold text-slate-900 dark:text-slate-100">{breakdown.feature_score ?? 0}/{breakdown.feature_max ?? 40}</span>
                           </div>
-                          <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
+                          <div className="p-2 rounded bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
                             <span className="text-[10px] text-slate-500 block">HIDDEN (25%)</span>
-                            <span className="font-bold text-slate-100">{breakdown.hidden_score ?? 0}/{breakdown.hidden_max ?? 25}</span>
+                            <span className="font-bold text-slate-900 dark:text-slate-100">{breakdown.hidden_score ?? 0}/{breakdown.hidden_max ?? 25}</span>
                           </div>
-                          <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
+                          <div className="p-2 rounded bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
                             <span className="text-[10px] text-slate-500 block">REGRESSION (15%)</span>
-                            <span className="font-bold text-slate-100">{breakdown.regression_score ?? 0}/{breakdown.regression_max ?? 15}</span>
+                            <span className="font-bold text-slate-900 dark:text-slate-100">{breakdown.regression_score ?? 0}/{breakdown.regression_max ?? 15}</span>
                           </div>
-                          <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
+                          <div className="p-2 rounded bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
                             <span className="text-[10px] text-slate-500 block">QUALITY (10%)</span>
-                            <span className="font-bold text-slate-100">{breakdown.quality_score ?? 0}/{breakdown.quality_max ?? 10}</span>
+                            <span className="font-bold text-slate-900 dark:text-slate-100">{breakdown.quality_score ?? 0}/{breakdown.quality_max ?? 10}</span>
                           </div>
-                          <div className="p-2 rounded bg-slate-900/60 border border-slate-800">
+                          <div className="p-2 rounded bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
                             <span className="text-[10px] text-slate-500 block">SECURITY (10%)</span>
-                            <span className="font-bold text-slate-100">{breakdown.security_score ?? 0}/{breakdown.security_max ?? 10}</span>
+                            <span className="font-bold text-slate-900 dark:text-slate-100">{breakdown.security_score ?? 0}/{breakdown.security_max ?? 10}</span>
                           </div>
                         </div>
 
@@ -686,15 +686,15 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
         </main>
 
         {/* RIGHT PANEL: Feature Spec | AI Assistant | Progressive Hints */}
-        <aside className="w-80 lg:w-96 border-l border-[#30363D] bg-[#161B22] flex flex-col shrink-0">
+        <aside className="w-80 lg:w-96 border-l border-slate-200 dark:border-[#30363D] bg-white dark:bg-[#161B22] flex flex-col shrink-0">
           {/* Tab Navigation */}
-          <div className="h-9 border-b border-[#30363D] flex items-center px-2 gap-1 shrink-0 text-xs font-medium">
+          <div className="h-9 border-b border-slate-200 dark:border-[#30363D] bg-slate-50 dark:bg-[#161B22] flex items-center px-2 gap-1 shrink-0 text-xs font-medium">
             <button
               onClick={() => setActiveRightTab('spec')}
               className={`flex-1 py-1.5 text-center rounded transition-colors ${
                 activeRightTab === 'spec'
-                  ? 'bg-slate-800 text-blue-400 font-semibold'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 font-semibold shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               Specification
@@ -703,8 +703,8 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
               onClick={() => setActiveRightTab('assistant')}
               className={`flex-1 py-1.5 text-center rounded transition-colors flex items-center justify-center gap-1 ${
                 activeRightTab === 'assistant'
-                  ? 'bg-slate-800 text-blue-400 font-semibold'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 font-semibold shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               <Bot className="w-3.5 h-3.5" />
@@ -714,8 +714,8 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
               onClick={() => setActiveRightTab('hints')}
               className={`flex-1 py-1.5 text-center rounded transition-colors flex items-center justify-center gap-1 ${
                 activeRightTab === 'hints'
-                  ? 'bg-slate-800 text-blue-400 font-semibold'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 font-semibold shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
@@ -725,12 +725,12 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
 
           {/* TAB 1: Specification & Acceptance Checklist */}
           {activeRightTab === 'spec' && (
-            <div className="flex-1 overflow-y-auto p-4 space-y-5 text-xs text-slate-300 leading-relaxed font-sans">
+            <div className="flex-1 overflow-y-auto p-4 space-y-5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
               <div>
-                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                <h2 className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                   Feature Description
                 </h2>
-                <p className="text-slate-300 leading-normal">{challenge.description}</p>
+                <p className="text-slate-700 dark:text-slate-300 leading-normal">{challenge.description}</p>
               </div>
 
               {/* Functional Requirements */}
@@ -740,9 +740,9 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
                 </h3>
                 <div className="space-y-2">
                   {(challenge.requirements || []).map((req) => (
-                    <div key={req.id} className="p-2.5 rounded bg-slate-900/60 border border-slate-800/80">
-                      <span className="font-semibold text-slate-200 block mb-0.5">{req.title}</span>
-                      <span className="text-slate-400 text-[11px] leading-normal">{req.description}</span>
+                    <div key={req.id} className="p-2.5 rounded bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 block mb-0.5">{req.title}</span>
+                      <span className="text-slate-600 dark:text-slate-400 text-[11px] leading-normal">{req.description}</span>
                     </div>
                   ))}
                 </div>
@@ -764,7 +764,7 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
                         className={`flex items-start gap-2 p-2 rounded cursor-pointer border transition-colors ${
                           isChecked
                             ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-300'
-                            : 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-slate-200'
+                            : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                         }`}
                       >
                         {isChecked ? (
@@ -785,7 +785,7 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
 
           {/* TAB 2: AI Codebase Assistant */}
           {activeRightTab === 'assistant' && (
-            <div className="flex-1 flex flex-col min-h-0 bg-[#161B22]">
+            <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#161B22]">
               {/* Chat Messages */}
               <div className="flex-1 overflow-y-auto p-3 space-y-3 text-xs leading-relaxed">
                 {assistantMessages.map((msg, i) => (
@@ -794,7 +794,7 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
                     className={`p-2.5 rounded-md ${
                       msg.sender === 'user'
                         ? 'bg-blue-600/20 text-blue-200 ml-4 border border-blue-500/30'
-                        : 'bg-slate-900 text-slate-300 mr-2 border border-slate-800'
+                        : 'bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-300 mr-2 border border-slate-200 dark:border-slate-800'
                     }`}
                   >
                     <span className="text-[10px] font-bold block mb-1 text-slate-400 font-mono">
@@ -812,36 +812,36 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
               </div>
 
               {/* Quick Prompts */}
-              <div className="px-3 py-1.5 border-t border-[#30363D] flex items-center gap-1.5 overflow-x-auto text-[10px]">
+              <div className="px-3 py-1.5 border-t border-slate-200 dark:border-[#30363D] flex items-center gap-1.5 overflow-x-auto text-[10px]">
                 <button
                   onClick={() => { setAssistantPrompt("Where should I start in this codebase?"); }}
-                  className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 shrink-0"
+                  className="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-transparent shrink-0"
                 >
                   Where to start?
                 </button>
                 <button
                   onClick={() => { setAssistantPrompt("How do I structure the test assertions?"); }}
-                  className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 shrink-0"
+                  className="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-transparent shrink-0"
                 >
                   Test advice
                 </button>
                 <button
                   onClick={() => { setAssistantPrompt("Explain the acceptance criteria in simple terms."); }}
-                  className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 shrink-0"
+                  className="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-transparent shrink-0"
                 >
                   Explain criteria
                 </button>
               </div>
 
               {/* Input Form */}
-              <form onSubmit={handleSendAssistant} className="p-2 border-t border-[#30363D] flex items-center gap-2">
+              <form onSubmit={handleSendAssistant} className="p-2 border-t border-slate-200 dark:border-[#30363D] flex items-center gap-2">
                 <input
                   type="text"
                   value={assistantPrompt}
                   onChange={(e) => setAssistantPrompt(e.target.value)}
                   placeholder="Ask about repo structure..."
                   disabled={assistantLoading}
-                  className="flex-1 bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+                  className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
                 />
                 <button
                   type="submit"
@@ -872,14 +872,14 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
                   const isUnlocking = unlockingHintLevel === tier.level;
 
                   return (
-                    <div key={tier.level} className="p-3 rounded border border-slate-800 bg-slate-900/60 space-y-2">
+                    <div key={tier.level} className="p-3 rounded border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-200">{tier.title}</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{tier.title}</span>
                         <span className="text-[10px] font-mono text-amber-400">-{tier.cost} BB</span>
                       </div>
 
                       {unlocked ? (
-                        <p className="text-slate-300 leading-normal text-[11px] p-2 rounded bg-slate-800/60 border border-slate-700/60">
+                        <p className="text-slate-700 dark:text-slate-800 dark:text-slate-300 leading-normal text-[11px] p-2 rounded bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
                           {unlocked.content}
                         </p>
                       ) : (
@@ -904,12 +904,12 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
       {/* 3. MODAL: CREATE NEW FILE */}
       {isNewFileModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-[#161B22] border border-[#30363D] rounded-md p-5 max-w-sm w-full space-y-4">
-            <h3 className="font-semibold text-sm text-slate-100 flex items-center gap-2">
+          <div className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-md p-5 max-w-sm w-full space-y-4">
+            <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <FilePlus className="w-4 h-4 text-blue-400" />
               <span>Create New File</span>
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               Enter relative file path (e.g. <code className="text-slate-300">src/utils/helpers.py</code>):
             </p>
             <form onSubmit={handleCreateFile} className="space-y-4">
@@ -919,7 +919,7 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
                 value={newFileName}
                 onChange={(e) => setNewFileName(e.target.value)}
                 placeholder="app/services/cache.py"
-                className="w-full px-3 py-1.5 text-xs rounded border border-slate-700 bg-slate-900 text-slate-100 focus:outline-none focus:border-blue-500 font-mono"
+                className="w-full px-3 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 font-mono"
               />
               <div className="flex items-center justify-end gap-2">
                 <button
@@ -945,7 +945,7 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
       {/* 4. MODAL: SUBMISSION RESULTS OVERVIEW */}
       {showResultModal && evalResult && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-fade-in">
-          <div className="bg-[#161B22] border border-[#30363D] rounded-md p-6 max-w-lg w-full space-y-5">
+          <div className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-md p-6 max-w-lg w-full space-y-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {evalResult.success ? (
@@ -954,10 +954,10 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
                   <AlertCircle className="w-6 h-6 text-amber-400" />
                 )}
                 <div>
-                  <h3 className="text-base font-semibold text-slate-100">
+                  <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
                     {evalResult.success ? 'Feature Shipped Successfully!' : 'Feature Evaluation Incomplete'}
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
                     {evalResult.success ? 'All requirements & regression checks passed.' : 'Some criteria or test cases require adjustments.'}
                   </p>
                 </div>
@@ -974,7 +974,7 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
             <div className="grid grid-cols-3 gap-3 p-3 rounded bg-slate-900/60 border border-slate-800 text-center font-mono">
               <div>
                 <span className="text-[10px] text-slate-500 block">TOTAL SCORE</span>
-                <span className="text-xl font-bold text-slate-100">{evalResult.score}/100</span>
+                <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{evalResult.score}/100</span>
               </div>
               <div>
                 <span className="text-[10px] text-slate-500 block">XP REWARD</span>
@@ -990,26 +990,26 @@ export default function FeatureArena({ user, setUser, addToast, theme = 'dark', 
             <div className="space-y-2 text-xs font-mono">
               <span className="text-slate-400 text-[11px] font-sans font-semibold">Evaluation Breakdown:</span>
               <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                <div className="p-2 rounded bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200">
                   Feature: {breakdown.feature_score ?? 0}/{breakdown.feature_max ?? 40}
                 </div>
-                <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                <div className="p-2 rounded bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200">
                   Hidden Tests: {breakdown.hidden_score ?? 0}/{breakdown.hidden_max ?? 25}
                 </div>
-                <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                <div className="p-2 rounded bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200">
                   Regression: {breakdown.regression_score ?? 0}/{breakdown.regression_max ?? 15}
                 </div>
-                <div className="p-2 rounded bg-slate-900 border border-slate-800">
+                <div className="p-2 rounded bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200">
                   Quality & Lint: {breakdown.quality_score ?? 0}/{breakdown.quality_max ?? 10}
                 </div>
-                <div className="p-2 rounded bg-slate-900 border border-slate-800 col-span-2">
+                <div className="p-2 rounded bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 col-span-2">
                   Security & Edge Cases: {breakdown.security_score ?? 0}/{breakdown.security_max ?? 10}
                 </div>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
               <button
                 onClick={() => setShowResultModal(false)}
                 className="button-secondary text-xs py-1.5 px-4"

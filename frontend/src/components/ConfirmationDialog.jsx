@@ -28,23 +28,23 @@ export default function ConfirmationDialog({
       />
       
       {/* Dialog container */}
-      <div className="relative w-full max-w-md glass-panel rounded-2xl p-6 overflow-hidden animate-slide-up shadow-2xl border border-slate-800 z-10">
+      <div className="relative w-full max-w-md glass-panel rounded-2xl p-6 overflow-hidden animate-slide-up shadow-2xl border border-slate-200 dark:border-slate-800 z-10">
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl bg-slate-950/80 border ${type === 'danger' ? 'border-brand-rose/30 text-brand-rose' : 'border-brand-indigo/30 text-brand-indigo'}`}>
+            <div className={`p-2 rounded-xl bg-slate-100 dark:bg-slate-950/80 border ${type === 'danger' ? 'border-brand-rose/30 text-brand-rose' : 'border-brand-indigo/30 text-brand-indigo'}`}>
               <AlertTriangle className="w-5 h-5" />
             </div>
-            <h3 className="text-lg font-heading font-semibold text-slate-100">{title}</h3>
+            <h3 className="text-lg font-heading font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
           </div>
           <button 
             onClick={onCancel}
-            className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-200 transition-colors"
+            className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <p className="text-slate-300 text-sm mb-6 leading-relaxed">
+        <p className="text-slate-700 dark:text-slate-300 text-sm mb-6 leading-relaxed">
           {message}
         </p>
 
