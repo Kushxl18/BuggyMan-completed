@@ -67,6 +67,7 @@ urlpatterns = [
     path('pvp/quick-match', views.pvp_quick_match_view, name='pvp_quick_match'),
     path('pvp/history', views.pvp_history_view, name='pvp_history'),
     path('pvp/online-stats', views.pvp_online_stats_view, name='pvp_online_stats'),
+    path('pvp/stats/online', views.pvp_online_stats_view, name='pvp_stats_online'),
     path('pvp/heartbeat', views.pvp_online_stats_view, name='pvp_heartbeat'),
     path('pvp/<int:pk>/status', views.pvp_battle_status_view, name='pvp_battle_status'),
     path('pvp/<int:pk>/start', views.pvp_start_battle_view, name='pvp_start'),
