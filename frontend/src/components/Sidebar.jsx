@@ -49,7 +49,7 @@ export default function Sidebar({ user, setUser, isOpen, onClose }) {
     { name: 'Code Challenges', path: '/challenges', icon: <Code2 className="w-4 h-4 shrink-0" /> },
     { name: 'SQL Lab', path: '/sql-challenges', icon: <Database className="w-4 h-4 shrink-0" /> },
     { name: 'Frontend Studio', path: '/design-challenges', icon: <Palette className="w-4 h-4 shrink-0" /> },
-    { name: 'Feature Arena', path: '/feature-challenges', icon: <Layers className="w-4 h-4 shrink-0" /> },
+    // { name: 'Feature Arena', path: '/feature-challenges', icon: <Layers className="w-4 h-4 shrink-0" /> }, // Unlinked for now - preserved to re-link later
     { name: 'PvP Battle', path: '/pvp', icon: <Swords className="w-4 h-4 shrink-0" /> },
     { name: 'Leaderboard', path: '/leaderboard', icon: <Trophy className="w-4 h-4 shrink-0" /> },
     { name: 'Profile', path: '/profile', icon: <User className="w-4 h-4 shrink-0" /> },

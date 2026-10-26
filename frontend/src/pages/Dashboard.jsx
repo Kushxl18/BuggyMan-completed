@@ -116,7 +116,7 @@ export default function Dashboard({ user, addToast }) {
         </div>
       </div>
 
-      {/* Feature Implementation Arena Highlight Banner */}
+      {/* Feature Implementation Arena Highlight Banner (Unlinked for now - preserved to re-link later)
       <div className="border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#10141F] rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] hover:border-slate-300 dark:hover:border-white/[0.14] transition-all">
         <div className="space-y-1.5 max-w-2xl">
           <div className="flex items-center gap-2">
@@ -140,6 +140,7 @@ export default function Dashboard({ user, addToast }) {
           <ArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>
+      */}
 
       {/* 2. Specialized Arenas - 3 Columns with Aligned Heights & Linear-Style Cards */}
       <div id="explore-section" className="space-y-3">
