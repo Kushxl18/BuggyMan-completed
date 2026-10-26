@@ -621,6 +621,35 @@
           },
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Ensure an active battle exists before cancelling",
+                  "var currentBattleId = pm.collectionVariables.get('activeBattleId');",
+                  "if (!currentBattleId || currentBattleId === '1') {",
+                  "    pm.sendRequest({",
+                  "        url: pm.collectionVariables.get('baseUrl') + '/pvp/create',",
+                  "        method: 'POST',",
+                  "        header: {",
+                  "            'Authorization': 'Bearer ' + pm.collectionVariables.get('authToken'),",
+                  "            'Content-Type': 'application/json'",
+                  "        },",
+                  "        body: {",
+                  "            mode: 'raw',",
+                  "            raw: JSON.stringify({ difficultyFilter: 'Easy' })",
+                  "        }",
+                  "    }, function (err, res) {",
+                  "        if (!err && res.code === 200) {",
+                  "            var data = res.json();",
+                  "            pm.collectionVariables.set('activeBattleId', String(data.id));",
+                  "        }",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "exec": [
