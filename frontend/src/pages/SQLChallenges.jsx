@@ -124,12 +124,17 @@ export default function SQLChallenges({ addToast }) {
               >
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className={`badge ${
                         chal.difficulty === 'Easy' ? 'badge-emerald' : chal.difficulty === 'Medium' ? 'badge-amber' : 'badge-rose'
                       }`}>
                         {chal.difficulty}
                       </span>
+                      {chal.personalizedBadge && !chal.isSolved && (
+                        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-500 dark:text-cyan-400 border border-cyan-500/20">
+                          {chal.personalizedBadge}
+                        </span>
+                      )}
                       {chal.isSolved && (
                         <span className="badge badge-emerald flex items-center gap-1 font-mono">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
@@ -146,6 +151,12 @@ export default function SQLChallenges({ addToast }) {
                     <h3 className="font-heading font-semibold text-sm text-slate-900 dark:text-[#E6EDF3] group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
                       {cardTitle}
                     </h3>
+
+                    {chal.reason && !chal.isSolved && (
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 italic mt-1 line-clamp-1">
+                        {chal.reason}
+                      </p>
+                    )}
 
                     {/* Tables Involved */}
                     <div className="flex items-center gap-1.5 mt-2 text-[11px] text-slate-500 dark:text-slate-400 font-mono">

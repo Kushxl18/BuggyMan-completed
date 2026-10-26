@@ -108,12 +108,17 @@ export default function ChallengeSelection({ addToast }) {
               >
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className={`badge ${
                         chal.difficulty === 'Easy' ? 'badge-emerald' : chal.difficulty === 'Medium' ? 'badge-amber' : 'badge-rose'
                       }`}>
                         {chal.difficulty}
                       </span>
+                      {chal.personalizedBadge && !chal.isSolved && (
+                        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 dark:text-blue-400 border border-blue-500/20">
+                          {chal.personalizedBadge}
+                        </span>
+                      )}
                       {chal.isSolved && (
                         <span className="badge badge-emerald flex items-center gap-1 font-mono">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
@@ -128,6 +133,12 @@ export default function ChallengeSelection({ addToast }) {
                     <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
                       {cardTitle}
                     </h3>
+
+                    {chal.reason && !chal.isSolved && (
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 italic line-clamp-1">
+                        {chal.reason}
+                      </p>
+                    )}
                     
                     {/* Topic Tags */}
                     <div className="flex flex-wrap items-center gap-1 pt-1">
