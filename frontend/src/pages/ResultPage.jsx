@@ -137,15 +137,30 @@ export default function ResultPage() {
           ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-brand-emerald/30 shadow-glow-emerald' 
           : 'bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-brand-rose/30 shadow-glow-rose'
       }`}>
-        <div className={`absolute top-0 right-0 p-8 opacity-10 font-heading text-8xl font-black ${
-          success ? 'text-brand-emerald' : 'text-brand-rose'
-        }`}>
-          {success ? 'SUCCESS' : 'FAILED'}
+        {/* Centered Background Watermark */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
+          <span className={`font-heading font-black text-6xl sm:text-7xl md:text-8xl lg:text-9xl tracking-widest uppercase select-none ${
+            success 
+              ? 'text-emerald-500/25 dark:text-emerald-400/15' 
+              : 'text-rose-500/25 dark:text-rose-400/15'
+          }`}>
+            {success ? 'SUCCESS' : 'FAILED'}
+          </span>
         </div>
 
         <div className="relative z-10 flex flex-col items-center gap-3">
           {/* Metadata Row */}
           <div className="flex flex-wrap items-center justify-center gap-2">
+            {/* Prominent Centered Status Pill */}
+            <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider shadow-sm flex items-center gap-1.5 ${
+              success
+                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/90 dark:text-emerald-400 dark:border-emerald-500/40'
+                : 'bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/90 dark:text-rose-400 dark:border-rose-500/40'
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${success ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+              <span>{success ? 'PASSED' : 'FAILED'}</span>
+            </span>
+
             {attemptNumber && (
               <span className="px-3 py-1 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-full text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider shadow-sm">
                 Attempt #{attemptNumber}
