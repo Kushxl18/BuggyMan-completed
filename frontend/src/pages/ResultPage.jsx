@@ -137,17 +137,6 @@ export default function ResultPage() {
           ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-brand-emerald/30 shadow-glow-emerald' 
           : 'bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-brand-rose/30 shadow-glow-rose'
       }`}>
-        {/* Centered Background Watermark */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
-          <span className={`font-heading font-black text-6xl sm:text-7xl md:text-8xl lg:text-9xl tracking-widest uppercase select-none ${
-            success 
-              ? 'text-emerald-500/25 dark:text-emerald-400/15' 
-              : 'text-rose-500/25 dark:text-rose-400/15'
-          }`}>
-            {success ? 'SUCCESS' : 'FAILED'}
-          </span>
-        </div>
-
         <div className="relative z-10 flex flex-col items-center gap-3">
           {/* Metadata Row */}
           <div className="flex flex-wrap items-center justify-center gap-2">
