@@ -22,7 +22,8 @@ import {
   Clock,
   Briefcase,
   Layers,
-  Info
+  Info,
+  Upload
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -40,6 +41,15 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ProgressBar from '../components/ProgressBar';
 import { authService } from '../services/authService';
 import { challengeService } from '../services/challengeService';
+
+const AVATAR_PRESETS = [
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
+  'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150'
+];
 
 export default function UserProfile({ addToast, setUser }) {
   const [profile, setProfile] = useState(null);
@@ -96,6 +106,50 @@ export default function UserProfile({ addToast, setUser }) {
     }
     loadProfileAndAnalytics();
   }, [addToast]);
+
+  const handleAvatarUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      if (addToast) addToast('Please choose a valid image file (PNG, JPG, JPEG, WEBP).', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_DIM = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        setEditAvatar(dataUrl);
+        if (addToast) addToast('Avatar loaded from device! Click Save to apply.', 'success');
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
@@ -573,14 +627,72 @@ export default function UserProfile({ addToast, setUser }) {
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Avatar Image URL</label>
-                <input
-                  type="url"
-                  value={editAvatar}
-                  onChange={(e) => setEditAvatar(e.target.value)}
-                  className="w-full bg-white dark:bg-[#1B1F23] border border-slate-200 dark:border-[#292E33] focus:border-cyan-500 text-slate-800 dark:text-[#F0F2F4] text-xs rounded-lg px-3 py-2 outline-none"
-                />
+              {/* Avatar Selection & Device Upload */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Profile Avatar</label>
+                  <label className="cursor-pointer text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors">
+                    <Upload className="w-3 h-3" />
+                    <span>Upload from Device</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                    />
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-[#15191C] border border-slate-200 dark:border-[#292E33] rounded-xl">
+                  <img
+                    src={editAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                    alt="Avatar preview"
+                    className="w-12 h-12 rounded-xl object-cover ring-2 ring-cyan-500/40 shrink-0 bg-slate-800"
+                  />
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold cursor-pointer transition-colors shadow-sm">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Choose Image from Device</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatarUpload}
+                      />
+                    </label>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">Supports PNG, JPG, JPEG, WEBP. Compressed automatically.</p>
+                  </div>
+                </div>
+
+                {/* Quick Presets */}
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-400 font-medium">Or pick a preset avatar:</span>
+                  <div className="flex items-center gap-2 overflow-x-auto py-1">
+                    {AVATAR_PRESETS.map((presetUrl, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setEditAvatar(presetUrl)}
+                        className={`w-9 h-9 rounded-lg overflow-hidden border-2 transition-all shrink-0 ${
+                          editAvatar === presetUrl ? 'border-cyan-400 scale-105 ring-2 ring-cyan-400/40' : 'border-slate-300 dark:border-slate-700 opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        <img src={presetUrl} alt="Preset" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Direct URL input fallback */}
+                <div className="pt-1">
+                  <input
+                    type="text"
+                    placeholder="Or paste an image URL directly..."
+                    value={editAvatar}
+                    onChange={(e) => setEditAvatar(e.target.value)}
+                    className="w-full bg-white dark:bg-[#1B1F23] border border-slate-200 dark:border-[#292E33] focus:border-cyan-500 text-slate-800 dark:text-[#F0F2F4] text-xs rounded-lg px-3 py-1.5 outline-none font-mono"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5">

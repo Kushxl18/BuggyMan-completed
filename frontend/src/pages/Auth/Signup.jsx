@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, Phone, KeyRound, User, Bug, Loader2, ArrowRight, ArrowLeft, CheckCircle2, Target, BookOpen, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Phone, KeyRound, User, Bug, Loader2, ArrowRight, ArrowLeft, CheckCircle2, Target, BookOpen, ShieldCheck, Upload } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { isValidEmail, getEmailValidationError } from '../../utils/validators';
 import AuthBackground from '../../components/AuthBackground';
@@ -242,10 +242,44 @@ export default function Signup({ setUser, addToast }) {
   const handleAvatarUpload = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please choose a valid image file (PNG, JPG, JPEG, WEBP).');
+      return;
+    }
+
     const reader = new FileReader();
-    reader.onload = () => {
-      setPreviewAvatar(reader.result);
-      setProfile((prev) => ({ ...prev, avatar: reader.result }));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        // Resize to maximum 400x400 to keep it crisp, high-res, and lightweight
+        const canvas = document.createElement('canvas');
+        const MAX_DIM = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        setPreviewAvatar(dataUrl);
+        setProfile((prev) => ({ ...prev, avatar: dataUrl }));
+      };
+      img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   };
@@ -563,8 +597,71 @@ export default function Signup({ setUser, addToast }) {
                   </div>
 
                   <div>
-                    <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 mb-2 font-bold">Choose Avatar</label>
-                    <div className="grid grid-cols-6 gap-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-xs uppercase tracking-[0.2em] text-slate-400 font-bold">Choose Avatar</label>
+                      <label className="cursor-pointer text-xs font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1.5 transition-colors">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload from Device</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleAvatarUpload}
+                        />
+                      </label>
+                    </div>
+
+                    {/* Custom Upload Preview Banner if selected */}
+                    {previewAvatar && (
+                      <div className="mb-3 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-between animate-fade-in">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <img
+                            src={previewAvatar}
+                            alt="Custom Avatar Preview"
+                            className="w-11 h-11 rounded-lg object-cover ring-2 ring-cyan-400 shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <span className="text-xs font-bold text-cyan-300 flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                              Custom Image Selected
+                            </span>
+                            <p className="text-[11px] text-slate-400 truncate">Your uploaded device image is currently selected as your avatar.</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreviewAvatar('');
+                            setProfile((prev) => ({ ...prev, avatar: avatarOptions[0] }));
+                          }}
+                          className="text-xs text-rose-400 hover:text-rose-300 hover:underline px-2 py-1 shrink-0 font-medium"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Avatar Selection Grid with Upload Card */}
+                    <div className="grid grid-cols-7 gap-2">
+                      {/* Upload from Device Tile */}
+                      <label
+                        className={`h-12 rounded-md border border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
+                          previewAvatar
+                            ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-400/40'
+                            : 'border-slate-700 bg-slate-900/60 text-slate-400 hover:border-cyan-500 hover:text-cyan-300'
+                        }`}
+                        title="Upload picture from your device"
+                      >
+                        <Upload className="w-4 h-4 mb-0.5" />
+                        <span className="text-[9px] font-bold uppercase tracking-wider">Device</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleAvatarUpload}
+                        />
+                      </label>
+
                       {avatarOptions.map((url) => (
                         <button
                           type="button"
@@ -573,7 +670,11 @@ export default function Signup({ setUser, addToast }) {
                             setPreviewAvatar('');
                             setProfile((prev) => ({ ...prev, avatar: url }));
                           }}
-                          className={`h-12 rounded-md overflow-hidden border transition-all ${profile.avatar === url && !previewAvatar ? 'border-cyan-400 ring-2 ring-cyan-400/40' : 'border-slate-800 opacity-70 hover:opacity-100'}`}
+                          className={`h-12 rounded-md overflow-hidden border transition-all ${
+                            profile.avatar === url && !previewAvatar
+                              ? 'border-cyan-400 ring-2 ring-cyan-400/40 scale-105'
+                              : 'border-slate-800 opacity-70 hover:opacity-100'
+                          }`}
                         >
                           <img src={url} alt="avatar" className="h-full w-full object-cover" />
                         </button>
@@ -687,10 +788,17 @@ export default function Signup({ setUser, addToast }) {
                       </span>
                     </div>
                   </div>
-                  <div className="rounded-md border border-slate-800 bg-slate-950/60 p-4">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">Profile</p>
-                    <p className="mt-2 text-slate-100 font-bold text-sm">{profile.displayName}</p>
-                    <p className="text-slate-400 text-xs mt-1">{profile.country || 'Country'} • {profile.timezone || 'UTC'}</p>
+                  <div className="rounded-md border border-slate-800 bg-slate-950/60 p-4 flex items-center gap-3">
+                    <img
+                      src={previewAvatar || profile.avatar || avatarOptions[0]}
+                      alt="Avatar Preview"
+                      className="w-12 h-12 rounded-xl object-cover ring-2 ring-cyan-500/40 shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">Profile</p>
+                      <p className="mt-1 text-slate-100 font-bold text-sm truncate">{profile.displayName}</p>
+                      <p className="text-slate-400 text-xs truncate">{profile.country || 'Country'} • {profile.timezone || 'UTC'}</p>
+                    </div>
                   </div>
                 </div>
 

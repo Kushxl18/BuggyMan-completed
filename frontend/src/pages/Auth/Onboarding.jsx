@@ -12,7 +12,8 @@ import {
   GraduationCap,
   Palette,
   Check,
-  Compass
+  Compass,
+  Upload
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 
@@ -91,6 +92,50 @@ export default function Onboarding({ user, setUser, addToast }) {
       const cleanStrengths = prev.strengths.filter((s) => s !== skill);
       return { ...prev, weaknesses: updated, strengths: cleanStrengths };
     });
+  };
+
+  const handleAvatarUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      if (addToast) addToast('Please choose a valid image file (PNG, JPG, JPEG, WEBP).', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_DIM = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        setFormData((prev) => ({ ...prev, avatar: dataUrl }));
+        if (addToast) addToast('Avatar loaded successfully from device!', 'success');
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
   };
 
   const toggleInterest = (interest) => {
@@ -226,10 +271,68 @@ export default function Onboarding({ user, setUser, addToast }) {
               </div>
             </div>
 
-            {/* Avatar Selection */}
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Choose an Avatar</label>
+            {/* Avatar Selection & Device Upload */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Choose or Upload Avatar</label>
+                <label className="cursor-pointer text-xs font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1.5 transition-colors">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload from Device</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                  />
+                </label>
+              </div>
+
+              {formData.avatar && !AVATAR_OPTIONS.includes(formData.avatar) && (
+                <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-between animate-fade-in">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <img
+                      src={formData.avatar}
+                      alt="Custom Avatar Preview"
+                      className="w-10 h-10 rounded-xl object-cover ring-2 ring-cyan-400 shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-cyan-300 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                        Custom Image Selected
+                      </span>
+                      <p className="text-[11px] text-slate-400 truncate">Uploaded from your device</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, avatar: AVATAR_OPTIONS[0] }))}
+                    className="text-xs text-rose-400 hover:text-rose-300 hover:underline px-2 py-1 shrink-0 font-medium"
+                  >
+                    Reset to Preset
+                  </button>
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center gap-3">
+                {/* Upload from Device Tile */}
+                <label
+                  className={`w-14 h-14 rounded-2xl border border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
+                    formData.avatar && !AVATAR_OPTIONS.includes(formData.avatar)
+                      ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-400/40'
+                      : 'border-slate-800 bg-slate-950/70 text-slate-400 hover:border-cyan-500 hover:text-cyan-300'
+                  }`}
+                  title="Upload picture from your device"
+                >
+                  <Upload className="w-4 h-4 mb-0.5" />
+                  <span className="text-[9px] font-bold uppercase tracking-wider">Device</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                  />
+                </label>
+
                 {AVATAR_OPTIONS.map((imgUrl, idx) => (
                   <button
                     key={idx}
