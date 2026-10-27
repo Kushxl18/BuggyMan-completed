@@ -23,7 +23,10 @@ class BuggyManBaseSeleniumTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         opts = ChromeOptions()
-        opts.add_argument("--headless=new")
+        # By default, open a visible browser window so you can watch the automated testing live!
+        # Set HEADLESS=true in your terminal if you want silent background execution.
+        if os.environ.get("HEADLESS", "false").lower() in ("true", "1"):
+            opts.add_argument("--headless=new")
         opts.add_argument("--no-sandbox")
         opts.add_argument("--disable-dev-shm-usage")
         opts.add_argument("--disable-gpu")
