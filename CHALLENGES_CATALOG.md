@@ -1,219 +1,223 @@
-# BuggyMan — Complete 120 Challenges Catalog & Specification Guide
+# BuggyMan – Complete 120 Challenge Catalog & Quality Audit Reference
 
-> **Comprehensive Reference**: Exhaustive documentation of all 120 authentic production debugging challenges stored in the BuggyMan database, categorized across **Code Challenges**, **SQL Lab**, and **Frontend Studio**.
-
-## Table of Contents
-
-1. [Executive Summary & Difficulty Matrix](#1-executive-summary--difficulty-matrix)
-2. [Arena 1: Code Challenges (Backend, Concurrency & APIs — IDs 1–50)](#2-arena-1-code-challenges-backend-concurrency--apis)
-3. [Arena 2: SQL Lab (Databases, Query Optimization & Isolation — IDs 51–85)](#3-arena-2-sql-lab-databases-query-optimization--isolation)
-4. [Arena 3: Frontend Studio (React, DOM & State Management — IDs 86–120)](#4-arena-3-frontend-studio-react-dom--state-management)
-5. [Master Index Table (All 120 Challenges)](#5-master-index-table-all-120-challenges)
+> Comprehensive, production-grade technical documentation for all **120 debugging challenges** in BuggyMan.
+> Every challenge represents an authentic production defect modeled after real software incidents, complete with realistic incident reports, reproduction steps, expected behavior, starter code, challenge-specific constraints, and 3-level progressive non-spoiler hints.
 
 ---
 
-## 1. Executive Summary & Difficulty Matrix
+## 1. Catalog Architecture & Distribution Summary
 
-BuggyMan challenges are designed around **real-world production incidents** rather than theoretical leetcode puzzles. Each challenge places the developer inside an existing codebase containing a subtle bug (race condition, memory leak, incorrect SQL aggregation, React state desynchronization, off-by-one boundary, etc.) with failing integration tests.
-
-| Arena | ID Range | Total | Easy | Medium | Hard | Primary Technologies | Core Focus Areas |
-|---|---|---|---|---|---|---|---|
-| **Code Challenges** | 1 – 50 | 50 | 15 | 20 | 15 | Python, NodeJS, Django, FastAPI | Concurrency, distributed locks, rate limiters, pagination, transactions, parsing |
-| **SQL Lab** | 51 – 85 | 35 | 10 | 15 | 10 | PostgreSQL, SQLite, SQL | Joins, GROUP BY aggregations, recursive CTEs, deadlocks, window functions, NULL semantics |
-| **Frontend Studio** | 86 – 120 | 35 | 10 | 15 | 10 | React, JavaScript, HTML5, CSS | State immutability, async race conditions, useEffect closures, controlled forms, layout reflows |
-| **Platform Total** | **1 – 120** | **120** | **35** | **50** | **35** | **Polyglot Full-Stack** | **Production Defect Triage, Remediation & Verification** |
-
----
-
-## 2. Arena 1: Code Challenges (Backend, Concurrency & APIs)
-
-Covering Challenges **1 through 50**. These challenges test backend software engineering, API resilience, concurrency control, distributed systems concepts, serialization, and algorithmic boundary handling.
-
-### Challenge 1: [CODE-E01] API Pagination Skips the Final Record
-
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Easy` | **Technology**: `Python` | **Category**: `API & Web`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `Pagination`, `Slicing`, `APIs`, `Python`
-- **Skills Tested**: `Python`, `Backend`, `APIs`
-- **Bug Signature**: `end = min(len(items), page * page_size) - 1`
-- **Suspected Component**: `pagination.py`
-
-**Scenario & Defect Overview:**
-A document portal API slices audit log records into paginated windows.
-Due to an incorrect upper boundary calculation, the slicing expression terminates one element early, omitting the final record on each page and dropping the last item of the dataset.
-
-For example, when requesting page 3 with 25 total records and a page size of 10, the endpoint returns only 4 records (`[20, 21, 22, 23]`) instead of 5 (`[20, 21, 22, 23, 24]`), dropping record index 24.
-
-Correct `paginate(items, page, page_size)` in `pagination.py` so that full page ranges and partial final pages return all expected records, while handling empty datasets and out-of-bounds page requests safely.
-
-**Files in Sandbox:**
-- `pagination.py`
-
-**Verification Criteria (4 Test Cases):**
-- [Visible Sample Test] **Visible: Full Page Slice Includes Final Record**
-- [Visible Sample Test] **Visible: First Page Exact Boundary**
-- [Hidden Test] **Hidden: Out of bounds page returns empty list**
-- [Hidden Test] **Hidden: Empty dataset handling**
+| Metric | Configuration | Description |
+|---|---|---|
+| **Total Challenges** | **120** | IDs 1 to 120 contiguous, zero missing or duplicated |
+| **Code Arena** | **50** (IDs 1–50) | Backend logic, state management, concurrency, error boundaries, algorithms |
+| **SQL Lab** | **35** (IDs 51–85) | Relational queries, NULL semantics, joins, aggregations, window functions, CTEs |
+| **Frontend Studio** | **35** (IDs 86–120) | React component state, lifecycle effects, immutability, DOM events, UI responsiveness |
+| **Difficulty Breakdown** | **35 Easy / 50 Medium / 35 Hard** | Distributed difficulty calibrated to real-world debugging complexity |
+| **Progressive AI Hints** | **360 Hints (3 per challenge)** | Level 1: Conceptual Guide; Level 2: Directional Clue; Level 3: Root Cause Logic |
+| **Quality Audit Pass Rate** | **100% (120/120 Solutions Pass / 120/120 Starters Fail)** | Zero flaky tests, fully deterministic evaluation sandbox |
 
 ---
 
-### Challenge 2: [CODE-E02] Base64 Cursor Encoding Breaks for Unicode Input
+## 2. Difficulty Breakdown Across Arenas
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Easy` | **Technology**: `Python` | **Category**: `API & Web`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `Unicode`, `Base64`, `Encoding`, `Python`
-- **Skills Tested**: `Python`, `Backend`, `APIs`
-- **Bug Signature**: `raw_bytes = cursor_str.encode("ascii")`
-- **Suspected Component**: `cursor_encoder.py`
+| Arena | Easy (100 XP) | Medium (150–200 XP) | Hard (250–300 XP) | Total Challenges |
+|---|---|---|---|---|
+| **Code Arena** (IDs 1–50) | 15 (IDs 1–15) | 20 (IDs 16–35) | 15 (IDs 36–50) | **50** |
+| **SQL Lab** (IDs 51–85) | 10 (IDs 51–60) | 15 (IDs 61–75) | 10 (IDs 76–85) | **35** |
+| **Frontend Studio** (IDs 86–120) | 10 (IDs 86–95) | 15 (IDs 96–110) | 10 (IDs 111–120) | **35** |
+| **Total** | **35** | **50** | **35** | **120** |
 
-**Scenario & Defect Overview:**
-### Company Scenario
-An international logistics platform encodes search pagination cursors into opaque strings for clients. Cursors often contain localized warehouse names in Japanese, German, or Arabic.
+---
+
+## 3. Full Challenge Catalog (All 120 Challenges)
+
+### Arena 1: Code Challenges (IDs 1 - 50)
+
+#### Tier: Easy (15 Challenges)
+
+##### Challenge 1: API Pagination Truncates Final Dataset Record
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `Python`
+
+### Incident Report
+A compliance auditor reported that when reviewing data access logs across multiple pages, the final record from the total count is missing. The export summary says 25 items were logged, but clicking through pages 1, 2, and 3 only displays 24 items in total.
 
 ### Bug Report
-Pagination requests fail with HTTP 500 error `UnicodeEncodeError: 'ascii' codec can't encode characters` when paginating search results for non-English warehouse locations.
+Requesting the final page of records returns one fewer item than expected. For a 25-record dataset with page size 10, page 3 only returns 4 items (`[20, 21, 22, 23]`) instead of 5 (`[20, 21, 22, 23, 24]`), dropping record index 24.
 
 ### Steps to Reproduce
-1. Search for items in warehouse "東京_Warehouse_01".
-2. Generate cursor token using `encode_cursor`.
-3. Server raises `UnicodeEncodeError`.
+1. Query a dataset of 25 records with `page_size=10`.
+2. Request page 3.
+3. Observe that only 4 items are returned, omitting the 25th element.
 
-### Expected Behavior
+### Expected Behaviour
+`paginate(items, page, page_size)` must return all elements within the slice window, including the final boundary record, and return an empty list for invalid or out-of-bounds requests.
+
+### Actual Behaviour
+The slice boundary truncates the final element of the requested page window.
+
+### Starter Files
+`pagination.py` - Contains the dataset window slicing routine used by the audit API.
+
+### Task
+Investigate `pagination.py` and correct the upper slice boundary calculation so all matching records are returned without out-of-bounds errors.
+
+### Acceptance Criteria
+1. Full and partial pages return the exact slice of records requested.
+2. Empty item lists and out-of-bounds page numbers return `[]`.
+3. Page sizes less than 1 or pages less than 1 return `[]`.
+
+### Constraints
+- Slicing and pagination operations must include all items up to the final boundary record.
+- Record transformations and exports must preserve embedded delimiters, quotation marks, and line breaks.
+- Nested configuration merges must preserve non-conflicting sibling properties.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In Python, list slicing syntax `items[start:end]` is exclusive of the `end` index.
+- **Level 2 (Directional)**: Examine how the `end` boundary variable is calculated relative to `page * page_size`.
+- **Level 3 (Root Cause)**: Because Python slicing is already exclusive of `end`, subtracting 1 from the upper boundary truncates the final element of the slice window.
+
+---
+
+##### Challenge 2: International Search Cursors Fail With Encoding Error
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `Python`
+
+### Incident Report
+A warehouse manager in our Tokyo distribution center reported that attempting to view inventory catalogs crashes with an unexpected server error whenever searching for localized warehouse locations.
+
+### Bug Report
+When pagination cursor tokens contain localized names (such as Japanese characters or German umlauts), the cursor serialization routine crashes with a Unicode encoding failure.
+
+### Steps to Reproduce
+1. Search for inventory in warehouse "東京_Warehouse_01".
+2. Generate cursor token using `encode_cursor`.
+3. Server raises unhandled `UnicodeEncodeError`.
+
+### Expected Behaviour
 `encode_cursor` and `decode_cursor` must handle arbitrary UTF-8 Unicode strings without crashing.
 
-### Actual Behavior
-The encoder forces ASCII encoding (`cursor.encode("ascii")`), which throws on any character with ord > 127.
+### Actual Behaviour
+The encoder converts input strings using an ASCII-only encoding scheme that cannot handle characters outside the 7-bit ASCII range.
 
-### Impact
-International users and regional distribution centers cannot page through warehouse inventories.
+### Starter Files
+`cursor_encoder.py` - Contains cursor token serialization functions.
 
-### Requirements
-- Update `encode_cursor` to encode strings using UTF-8 before base64 encoding.
-- Update `decode_cursor` to decode bytes using UTF-8 back to a string.
-- Return empty string if cursor is empty or None.
+### Task
+Update `cursor_encoder.py` to support full international Unicode characters for opaque cursor generation.
 
-### Learning Objectives
-- UTF-8 vs ASCII byte serialization in web APIs.
-- Base64 encoding for URL-safe opaque cursor tokens.
+### Acceptance Criteria
+1. Multi-byte Unicode cursor strings serialize and deserialize without data loss.
+2. Empty or None inputs return an empty string.
+3. Backward compatibility with standard ASCII strings is preserved.
 
-**Files in Sandbox:**
-- `cursor_encoder.py`
+### Constraints
+- Slicing and pagination operations must include all items up to the final boundary record.
+- Record transformations and exports must preserve embedded delimiters, quotation marks, and line breaks.
+- Nested configuration merges must preserve non-conflicting sibling properties.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
 
-**Verification Criteria (4 Test Cases):**
-- [Visible Sample Test] **Visible: Japanese Kanji Location Cursor**
-- [Visible Sample Test] **Visible: German Umlaut Cursor**
-- [Hidden Test] **Hidden: Empty cursor handling**
-- [Hidden Test] **Hidden: Plain ASCII backward compatibility**
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Character strings must be converted to raw bytes before base64 encoding; consider which encoding format supports global character sets.
+- **Level 2 (Directional)**: Inspect the character encoding format specified in `.encode()` and `.decode()` in `cursor_encoder.py`.
+- **Level 3 (Root Cause)**: Standard ASCII only supports character codes up to 127; switching to UTF-8 enables full multibyte Unicode support.
 
 ---
 
-### Challenge 3: [CODE-E03] Empty API Responses Cause a Runtime Error
+##### Challenge 3: Market Data Service Crashes on Inactive Ticker Symbols
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Easy` | **Technology**: `Python` | **Category**: `Error Handling`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `Error Handling`, `Defensive Programming`, `APIs`
-- **Skills Tested**: `Python`, `Error Handling`, `Backend`
-- **Bug Signature**: `first_item = items[0]`
-- **Suspected Component**: `api_client.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A financial dashboard pulls real-time stock ticker quote summaries from a third-party market data service.
+### Incident Report
+An automated financial dashboard worker crashed overnight when polling real-time quotes for newly registered or halted equities.
 
 ### Bug Report
-When market quotes are requested for a newly listed stock or after market close, the vendor API returns an empty payload `{"items": []}`. The parser throws `IndexError: list index out of range`, crashing the ticker worker.
+Third-party quote providers return an empty payload `{"items": []}` for inactive equities. The ingestion pipeline crashes immediately with `IndexError: list index out of range`.
 
 ### Steps to Reproduce
-1. Fetch quote for unlisted symbol `XYZ`.
+1. Fetch quote for unlisted symbol "XYZ".
 2. Vendor response is `{"items": []}`.
-3. Parser directly indexes `payload["items"][0]["price"]`.
+3. Ingestion worker encounters unhandled `IndexError`.
 
-### Expected Behavior
-Return `None` or default `{"price": 0.0, "status": "unavailable"}` when items list is empty or missing.
+### Expected Behaviour
+Return default `{"price": 0.0, "status": "unavailable"}` when items list is empty or missing.
 
-### Actual Behavior
-Unchecked zero-index access `payload["items"][0]` triggers an unhandled `IndexError`.
+### Actual Behaviour
+The parser attempts to access elements in the items collection without verifying whether any items exist.
 
-### Impact
-Background pricing daemon crashes, preventing subsequent stock symbols from updating.
+### Starter Files
+`api_client.py` - Parses pricing responses from external financial providers.
 
-### Requirements
-- Safely check if `items` is present and non-empty before accessing index 0.
-- Return `{"price": 0.0, "status": "unavailable"}` on empty or invalid payload.
+### Task
+Refactor `extract_latest_price` in `api_client.py` to defensively handle empty or malformed market payloads.
 
-**Files in Sandbox:**
-- `api_client.py`
+### Acceptance Criteria
+1. Valid non-empty payloads return the current price with status `"active"`.
+2. Empty items lists, missing keys, or non-dictionary payloads return `{"price": 0.0, "status": "unavailable"}` without crashing.
 
-**Verification Criteria (4 Test Cases):**
-- [Visible Sample Test] **Visible: Normal active payload**
-- [Visible Sample Test] **Visible: Empty items list**
-- [Hidden Test] **Hidden: Missing items key**
-- [Hidden Test] **Hidden: Non-dict payload**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Defensive programming requires verifying that collections have elements before attempting to read positional indices.
+- **Level 2 (Directional)**: Examine what happens in `extract_latest_price` when `payload.get("items", [])` returns an empty list.
+- **Level 3 (Root Cause)**: Check whether `items` has elements before accessing `items[0]`, returning the default fallback dictionary if it is empty.
 
 ---
 
-### Challenge 4: [CODE-E04] Incorrect Date Parsing Shifts Records to the Wrong Day
+##### Challenge 4: European Bank Dates Assigned to Wrong Calendar Month
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Easy` | **Technology**: `Python` | **Category**: `Data & Processing`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `Datetime`, `Parsing`, `Data Processing`
-- **Skills Tested**: `Python`, `Backend`
-- **Bug Signature**: `dt = datetime.strptime(date_str.strip(), "%m/%d/%Y")`
-- **Suspected Component**: `date_parser.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An accounting SaaS application parses bank transaction timestamps formatted as `DD/MM/YYYY` from European and Australian banks.
+### Incident Report
+A tax audit discovered that banking transactions imported from European branches were categorized in the wrong fiscal quarter. An invoice dated 05/11/2026 (November 5) was processed as May 11.
 
 ### Bug Report
 A payment made on `05/11/2026` (5th of November) is categorized by the system as `2026-05-11` (11th of May), shifting end-of-year tax deductions into the wrong fiscal quarter.
 
 ### Steps to Reproduce
-1. Submit date string `"05/11/2026"`.
-2. Call `parse_transaction_date`.
+1. Submit date string "05/11/2026".
+2. Call `parse_transaction_date("05/11/2026")`.
 3. Output returns date for May 11 instead of November 5.
 
-### Expected Behavior
-`parse_transaction_date("05/11/2026")` should parse as `day=5, month=11, year=2026` returning ISO `"2026-11-05"`.
+### Expected Behaviour
+`parse_transaction_date("05/11/2026")` should parse as day=5, month=11, year=2026 returning ISO `"2026-11-05"`.
 
-### Actual Behavior
-The format string uses `%m/%d/%Y` (US format) instead of `%d/%m/%Y`.
+### Actual Behaviour
+The date parsing pattern assumes month-first date ordering, swapping the day and month components.
 
-### Impact
-Financial quarterly reconciliation fails audit compliance due to misdated revenue entries.
+### Starter Files
+`date_parser.py` - Converts incoming transaction date strings to standard ISO format.
 
-### Requirements
-- Correct the strptime format string to `%d/%m/%Y`.
-- Return formatted ISO date string `YYYY-MM-DD`.
+### Task
+Correct the format specifier in `date_parser.py` so European date strings are parsed into the expected ISO date format.
 
-**Files in Sandbox:**
-- `date_parser.py`
+### Acceptance Criteria
+1. Date strings like `"05/11/2026"` convert to `"2026-11-05"`.
+2. Month and day positions are correctly recognized for international dates.
+3. Invalid or non-string inputs safely return `None`.
 
-**Verification Criteria (4 Test Cases):**
-- [Visible Sample Test] **Visible: 5th of November**
-- [Visible Sample Test] **Visible: 24th of July**
-- [Hidden Test] **Hidden: 1st of January**
-- [Hidden Test] **Hidden: Invalid format returns None**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In standard date formatting tokens, `%d` represents day of the month and `%m` represents month number.
+- **Level 2 (Directional)**: Inspect the format argument provided to `datetime.strptime` in `date_parser.py`.
+- **Level 3 (Root Cause)**: The parser is currently using US ordering (`%m/%d/%Y`); adjust the tokens to match international European ordering (`%d/%m/%Y`).
 
 ---
 
-### Challenge 5: [CODE-E05] A Retry Counter Stops One Attempt Too Early
+##### Challenge 5: Transient Network Retries Abort Before Final Attempt
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Easy` | **Technology**: `Python` | **Category**: `Backend`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `Retries`, `Resilience`, `Loops`
-- **Skills Tested**: `Python`, `Backend`, `Error Handling`
-- **Bug Signature**: `while attempt < max_retries - 1:`
-- **Suspected Component**: `retry_handler.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An order fulfillment system transmits shipments to an external carrier API that experiences intermittent gateway timeouts.
+### Incident Report
+An operations team noticed that outbound logistics shipments were marked failed after only two attempts, despite a configured policy of three retries.
 
 ### Bug Report
 When `max_retries=3` is configured, logs show the client only performs 2 attempts total (1 initial + 1 retry) before giving up and flagging orders as failed.
@@ -223,176 +227,176 @@ When `max_retries=3` is configured, logs show the client only performs 2 attempt
 2. Mock an endpoint that fails twice and succeeds on attempt 3.
 3. Function returns `None` prematurely without executing the 3rd attempt.
 
-### Expected Behavior
+### Expected Behaviour
 A `max_retries=3` policy must allow up to 3 total attempts if failures occur.
 
-### Actual Behavior
-Loop condition `attempt < max_retries - 1` stops execution after 2 attempts.
+### Actual Behaviour
+The loop control condition stops execution one iteration earlier than the configured limit.
 
-### Impact
-Transient network blips cause premature shipment creation failures and manual support overhead.
+### Starter Files
+`retry_handler.py` - Contains the generic retry execution wrapper.
 
-### Requirements
-- Ensure loop executes up to `max_retries` attempts.
-- Return function result on success, or `None` if all retries are exhausted.
+### Task
+Adjust the loop boundary in `retry_handler.py` so that all configured retry attempts are executed.
 
-**Files in Sandbox:**
-- `retry_handler.py`
+### Acceptance Criteria
+1. An operation that succeeds on the final allowed attempt returns the successful result.
+2. An operation that succeeds on attempt 1 executes only once.
+3. If all retry attempts fail, the function returns `None`.
 
-**Verification Criteria (3 Test Cases):**
-- [Visible Sample Test] **Visible: Succeeds on attempt 3**
-- [Visible Sample Test] **Visible: Succeeds on attempt 1**
-- [Hidden Test] **Hidden: Fails all 3 attempts returns None**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Trace the iteration count carefully from initial attempt to termination condition.
+- **Level 2 (Directional)**: Examine the comparison in the `while` loop condition relative to `max_retries`.
+- **Level 3 (Root Cause)**: Subtracting 1 from `max_retries` in `attempt < max_retries - 1` stops the loop after `N - 1` iterations instead of `N`.
 
 ---
 
-### Challenge 6: [CODE-E06] Duplicate IDs Cause Incorrect Deduplication
+##### Challenge 6: Multi-Clinic Patient Records Overwritten During Deduplication
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Easy` | **Technology**: `Python` | **Category**: `Data & Processing`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `Deduplication`, `Data Integrity`, `Multi-Tenancy`
-- **Skills Tested**: `Python`, `Backend`
-- **Bug Signature**: `key = r.get("id")`
-- **Suspected Component**: `deduplicator.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A multi-tenant healthcare system imports patient check-in records across regional clinics. Each clinic assigns record IDs independently.
+### Incident Report
+Doctors at regional medical clinics reported missing patient records after daily batch syncs from independent clinic branches merged records into the central electronic health record system.
 
 ### Bug Report
-When ingesting check-ins, patient records from Clinic B overwrite patient records from Clinic A whenever both clinics happen to issue ID `101`.
+When Clinic A and Clinic B both happen to assign local record ID `101`, the deduplication pipeline treats them as identical, permanently dropping one patient's record.
 
 ### Steps to Reproduce
 1. Ingest `[{"clinic_id": 1, "id": 101, "name": "Alice"}, {"clinic_id": 2, "id": 101, "name": "Bob"}]`.
-2. Deduplication function keys only on `"id"`.
+2. Run deduplication function.
 3. Alice's record is completely erased from the output.
 
-### Expected Behavior
+### Expected Behaviour
 Deduplication must use composite identity `(record["clinic_id"], record["id"])` to preserve records across distinct clinics.
 
-### Actual Behavior
-The deduplicator keys solely on `record["id"]`.
+### Actual Behaviour
+The deduplicator identifies records using solely the local record ID, conflating distinct patient records across clinic branches.
 
-### Impact
-Critical patient diagnostic records are silently overwritten and lost.
+### Starter Files
+`deduplicator.py` - Ingestion filter for removing duplicate medical intake entries.
 
-### Requirements
-- Key unique records by tuple `(record["clinic_id"], record["id"])`.
-- Return list of preserved records in original order.
+### Task
+Update `deduplicate_records` in `deduplicator.py` to construct a unique composite identity.
 
-**Files in Sandbox:**
-- `deduplicator.py`
+### Acceptance Criteria
+1. Records with matching local IDs from different clinics are both retained.
+2. Genuine duplicates from the same clinic are pruned to a single instance.
+3. Original list order is preserved.
 
-**Verification Criteria (3 Test Cases):**
-- [Visible Sample Test] **Visible: Different clinics with same local ID**
-- [Visible Sample Test] **Visible: Same clinic true duplicate removed**
-- [Hidden Test] **Hidden: Empty records list**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In distributed or multi-tenant systems, primary keys generated by separate databases are not globally unique on their own.
+- **Level 2 (Directional)**: Look at what is stored in the `seen` set in `deduplicate_records`.
+- **Level 3 (Root Cause)**: Create a composite tuple combining `clinic_id` and `id` to ensure unique tracking across multiple branches.
 
 ---
 
-### Challenge 7: [CODE-E07] An Environment Variable Fallback Ignores Valid Configuration
+##### Challenge 7: Zero Value Configuration Settings Reset to Default Timeout
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Easy` | **Technology**: `Python` | **Category**: `Backend`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `Configuration`, `Environment Variables`, `Boolean Logic`
-- **Skills Tested**: `Python`, `Backend`
-- **Bug Signature**: `return parsed or 30`
-- **Suspected Component**: `config_loader.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A microservices gateway configures worker connection pool timeouts and port listeners via environment variables.
+### Incident Report
+Infrastructure engineers attempting to disable query timeouts for large data warehouse migrations noticed queries were killed after 30 seconds.
 
 ### Bug Report
 When an operator sets `TIMEOUT_SECONDS=0` to disable timeouts for long-running batch ingestion, the application ignores `0` and falls back to default `30` seconds, causing premature batch termination.
 
 ### Steps to Reproduce
-1. Configure env dict with `{"TIMEOUT_SECONDS": "0"}`.
+1. Configure environment dictionary with `{"TIMEOUT_SECONDS": "0"}`.
 2. Call `get_timeout_seconds()`.
 3. Returns `30` instead of `0`.
 
-### Expected Behavior
-Setting `TIMEOUT_SECONDS="0"` must return `0`. Only if the variable is unset or `None` should it use the fallback `30`.
+### Expected Behaviour
+Setting `TIMEOUT_SECONDS="0"` must return `0`. Only if the variable is unset or empty should it use the fallback `30`.
 
-### Actual Behavior
-Falsy check `val = os_env.get("TIMEOUT_SECONDS") or 30` evaluates `"0"` in falsy context or `int(val) or 30`.
+### Actual Behaviour
+The configuration parser evaluates numeric zero as a falsy value and returns the default timeout.
 
-### Impact
-Engineers cannot disable timeouts for batch data migrations, causing repeated pipeline aborts.
+### Starter Files
+`config_loader.py` - Parses system runtime environment parameters.
 
-### Requirements
-- Check explicitly if the variable exists and is not empty.
-- Correctly parse `"0"` as integer `0`.
+### Task
+Modify `config_loader.py` to differentiate between a deliberately configured zero value and an absent configuration.
 
-**Files in Sandbox:**
-- `config_loader.py`
+### Acceptance Criteria
+1. An explicit configuration of `"0"` returns numeric `0`.
+2. Unset or empty configurations return the fallback `30`.
+3. Positive integer values return their exact parsed value.
 
-**Verification Criteria (3 Test Cases):**
-- [Visible Sample Test] **Visible: Valid zero timeout**
-- [Visible Sample Test] **Visible: Unset timeout uses fallback**
-- [Hidden Test] **Hidden: Positive timeout preserved**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In Python, the integer `0` evaluates to `False` in boolean conditions like `a or b`.
+- **Level 2 (Directional)**: Check where `return parsed or 30` handles the converted integer in `config_loader.py`.
+- **Level 3 (Root Cause)**: Distinguish between absence (`val is None` or empty string) and numeric zero: return `int(val)` directly once valid presence is confirmed.
 
 ---
 
-### Challenge 8: [CODE-E08] An Incorrect Cache Key Returns Another Request's Result
+##### Challenge 8: Multi-Tenant Cache Returns Data Across Customer Accounts
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Easy` | **Technology**: `Python` | **Category**: `Caching`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `Caching`, `Multi-Tenancy`, `Security`
-- **Skills Tested**: `Python`, `Caching`, `Backend`
-- **Bug Signature**: `return f"user_profile:{user_id}"`
-- **Suspected Component**: `cache_manager.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A multi-tenant e-commerce platform caches customer profile discount rates using Redis key-value storage.
+### Incident Report
+A security vulnerability alert was raised when Store A customers observed Store B's private VIP pricing tiers.
 
 ### Bug Report
-User 42 belonging to Store A sees the exclusive VIP discount rates belonging to User 42 in Store B!
+User 42 belonging to Store A sees the exclusive VIP discount rates belonging to User 42 in Store B.
 
 ### Steps to Reproduce
 1. Cache profile for `store_id="store_a", user_id="42"` with discount `10%`.
 2. Request profile for `store_id="store_b", user_id="42"`.
 3. Receives cached `10%` discount from Store A.
 
-### Expected Behavior
-Cache keys must be tenant-isolated: `f"store:{store_id}:user:{user_id}"`.
+### Expected Behaviour
+Cache keys must be tenant-isolated so distinct stores produce distinct cache keys for identical user IDs.
 
-### Actual Behavior
-The cache key only includes `user_id`, causing cross-tenant cache collisions.
+### Actual Behaviour
+The cache key only identifies the user ID, causing cross-tenant cache collisions in multi-tenant environments.
 
-### Impact
-Severe data leak and financial loss from unauthorized discounts applied across separate merchants.
+### Starter Files
+`cache_manager.py` - Helper generating cache lookup keys for profile data.
 
-### Requirements
-- Update `generate_cache_key(store_id, user_id)` to include both `store_id` and `user_id`.
+### Task
+Refactor `generate_cache_key` in `cache_manager.py` to isolate cache records by merchant store.
 
-**Files in Sandbox:**
-- `cache_manager.py`
+### Acceptance Criteria
+1. Different stores produce distinct cache keys for identical user IDs.
+2. The returned key matches format `store:{store_id}:user:{user_id}`.
 
-**Verification Criteria (3 Test Cases):**
-- [Visible Sample Test] **Visible: Different stores produce different keys**
-- [Visible Sample Test] **Visible: Key includes both store and user**
-- [Hidden Test] **Hidden: Sanitized string format check**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Multi-tenant caching strategies require strict tenant namespacing to prevent cross-account information leakage.
+- **Level 2 (Directional)**: Examine the format string returned by `generate_cache_key` in `cache_manager.py`.
+- **Level 3 (Root Cause)**: Incorporate both `store_id` and `user_id` into the cache key pattern to guarantee uniqueness per merchant.
 
 ---
 
-### Challenge 9: [CODE-E09] Input Validation Rejects Valid Zero Values
+##### Challenge 9: Inventory System Rejects Out of Stock Zero Quantity Updates
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Easy` | **Technology**: `Python` | **Category**: `Validation`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `Validation`, `Boolean Logic`, `APIs`
-- **Skills Tested**: `Python`, `Validation`, `Backend`
-- **Bug Signature**: `if not quantity:`
-- **Suspected Component**: `validator.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An inventory adjustment endpoint allows warehouse managers to update stock counts when physical counts are conducted.
+### Incident Report
+A warehouse stock clerk reported that the inventory management portal throws a validation error saying 'Quantity is required' whenever they try to mark a depleted item as having 0 units in stock.
 
 ### Bug Report
 When a warehouse manager enters `0` to indicate an item is completely out of stock, the API rejects the request with HTTP 400 `"Quantity is required"`.
@@ -402,43 +406,43 @@ When a warehouse manager enters `0` to indicate an item is completely out of sto
 2. Call `validate_inventory_update`.
 3. Returns `(False, "Quantity is required")`.
 
-### Expected Behavior
+### Expected Behaviour
 `quantity=0` is a valid stock count and must be accepted. Negative values and `None` should be rejected.
 
-### Actual Behavior
-`if not quantity:` rejects `0` because 0 is falsy in Python.
+### Actual Behaviour
+The validator treats numerical zero as missing data rather than a valid quantity count.
 
-### Impact
-Warehouse staff cannot zero out out-of-stock items, resulting in false inventory listed online and order cancellations.
+### Starter Files
+`validator.py` - Validates inventory adjustment payloads before database updates.
 
-### Requirements
-- Check `if quantity is None or quantity < 0:` instead of `if not quantity:`.
-- Return `(True, "Valid")` for `quantity >= 0`.
+### Task
+Update `validate_inventory_update` in `validator.py` to allow zero while still rejecting negative or missing quantities.
 
-**Files in Sandbox:**
-- `validator.py`
+### Acceptance Criteria
+1. `quantity=0` returns `(True, "Valid")`.
+2. Positive quantities return `(True, "Valid")`.
+3. Negative quantities return `(False, "Quantity cannot be negative")`.
+4. Missing (`None`) quantities return `(False, "Quantity is required")`.
 
-**Verification Criteria (4 Test Cases):**
-- [Visible Sample Test] **Visible: Zero quantity accepted**
-- [Visible Sample Test] **Visible: Positive quantity accepted**
-- [Hidden Test] **Hidden: Negative quantity rejected**
-- [Hidden Test] **Hidden: None quantity rejected**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In Python, `not 0` evaluates to `True`, which causes falsy value checks to conflate numerical zero with `None`.
+- **Level 2 (Directional)**: Review the condition checking `quantity` in `validator.py`.
+- **Level 3 (Root Cause)**: Explicitly check `quantity is None` for missing inputs, allowing zero and positive integers to proceed.
 
 ---
 
-### Challenge 10: [CODE-E10] A CSV Parser Mishandles Quoted Fields
+##### Challenge 10: Customer Address Export Breaks on Embedded Commas
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Easy` | **Technology**: `Python` | **Category**: `Data & Processing`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `CSV`, `Parsing`, `Standard Library`
-- **Skills Tested**: `Python`, `Data Processing`
-- **Bug Signature**: `return [field.strip().strip('"') for field in row_str.split(",")]`
-- **Suspected Component**: `csv_parser.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A customer relationship manager (CRM) allows users to import contacts via CSV files. Addresses often contain commas enclosed in quotation marks.
+### Incident Report
+A shipping fulfillment team noted that customer export spreadsheets had scrambled columns, with apartment numbers placed into the city column and zip codes pushed into the country field.
 
 ### Bug Report
 An imported row `"John Doe","123 Maple St, Suite 4","Springfield"` is split into 4 columns instead of 3, corrupting the address and city fields.
@@ -447,41 +451,41 @@ An imported row `"John Doe","123 Maple St, Suite 4","Springfield"` is split into
 1. Pass line `"John Doe","123 Maple St, Suite 4","Springfield"` into `parse_csv_row`.
 2. Output array has length 4: `["John Doe", "123 Maple St", " Suite 4", "Springfield"]`.
 
-### Expected Behavior
+### Expected Behaviour
 Commas enclosed in double quotes must not split the field. The result should be `["John Doe", "123 Maple St, Suite 4", "Springfield"]`.
 
-### Actual Behavior
-Naive `line.split(",")` splits inside quoted substrings.
+### Actual Behaviour
+The tokenizer splits lines strictly on comma boundaries without evaluating surrounding quotation marks.
 
-### Impact
-Customer database is populated with malformed addresses and broken postal data.
+### Starter Files
+`csv_parser.py` - Lightweight CSV line tokenizer.
 
-### Requirements
-- Use standard library `csv.reader` (or `io.StringIO`) to parse the CSV row conforming to RFC 4180.
+### Task
+Refactor `parse_csv_row` in `csv_parser.py` to correctly parse quoted CSV fields using Python's standard `csv` reader.
 
-**Files in Sandbox:**
-- `csv_parser.py`
+### Acceptance Criteria
+1. Fields with embedded commas within quotes remain intact as a single column.
+2. Standard unquoted CSV lines continue to parse properly.
+3. Empty lines return an empty list.
 
-**Verification Criteria (3 Test Cases):**
-- [Visible Sample Test] **Visible: Quoted field with embedded comma**
-- [Visible Sample Test] **Visible: Simple CSV line without quotes**
-- [Hidden Test] **Hidden: Empty line handling**
+### Constraints
+- Slicing and pagination operations must include all items up to the final boundary record.
+- Record transformations and exports must preserve embedded delimiters, quotation marks, and line breaks.
+- Nested configuration merges must preserve non-conflicting sibling properties.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Splitting strings by commas fails whenever data fields contain punctuation enclosed in quotes.
+- **Level 2 (Directional)**: Python includes a standard library `csv` module designed specifically for compliant delimited data parsing.
+- **Level 3 (Root Cause)**: Use `csv.reader` together with `io.StringIO` to tokenize the line according to standard CSV quoting rules.
 
 ---
 
-### Challenge 11: [CODE-E11] Sorting Produces Incorrect Results for Numeric Strings
+##### Challenge 11: Build Priority Queue Orders High Severity Below Low Severity
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Easy` | **Technology**: `Python` | **Category**: `Data & Processing`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `Sorting`, `Data Types`, `Algorithms`
-- **Skills Tested**: `Python`, `Data Processing`
-- **Bug Signature**: `return sorted(levels)`
-- **Suspected Component**: `sorter.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An app store ranking service sorts firmware build versions or priority queues stored in JSON database columns.
+### Incident Report
+Site reliability engineers discovered that Priority 10 security alerts were processed after Priority 2 routine notifications in the automated build dispatcher.
 
 ### Bug Report
 Build numbers sort as `["1", "10", "100", "2", "20"]` instead of numeric order `["1", "2", "10", "20", "100"]`.
@@ -490,4851 +494,4932 @@ Build numbers sort as `["1", "10", "100", "2", "20"]` instead of numeric order `
 1. Call `sort_priority_levels(["10", "2", "1", "20", "100"])`.
 2. Output is sorted lexicographically rather than numerically.
 
-### Expected Behavior
+### Expected Behaviour
 Numeric strings must be sorted by their actual integer values.
 
-### Actual Behavior
-Standard string sort compares character codes ASCII `'1'` < `'2'`, placing `'100'` before `'2'`.
+### Actual Behaviour
+The sorting function performs character-by-character lexicographical sorting instead of evaluating numeric magnitude.
 
-### Impact
-High-priority alerts (level 10) are processed after lower-priority alerts (level 2).
+### Starter Files
+`sorter.py` - Ordering utility for task priority tags.
 
-### Requirements
-- Sort list using `key=int` so numeric strings order by numerical magnitude.
+### Task
+Update `sort_priority_levels` in `sorter.py` so numeric strings are ordered by their numerical value while preserving string types in the output.
 
-**Files in Sandbox:**
-- `sorter.py`
+### Acceptance Criteria
+1. Numeric string elements are ordered by integer magnitude.
+2. Output elements retain their original string representation.
+3. Single-element and empty lists are handled safely.
 
-**Verification Criteria (3 Test Cases):**
-- [Visible Sample Test] **Visible: Numeric magnitude order**
-- [Visible Sample Test] **Visible: Single element list**
-- [Hidden Test] **Hidden: Empty list handling**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Alphabetical string comparisons compare characters one by one from left to right, meaning `"10"` is evaluated as smaller than `"2"`.
+- **Level 2 (Directional)**: Python's `sorted()` function takes a `key` parameter that dictates the comparison criterion.
+- **Level 3 (Root Cause)**: Pass `key=int` to `sorted()` so each string is compared based on its integer conversion.
 
 ---
 
-### Challenge 12: [CODE-E12] A Response Serializer Omits a Required Field
+##### Challenge 12: Profile API Serializer Omits Account Creation Timestamp
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Easy` | **Technology**: `Python` | **Category**: `API & Web`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `Serialization`, `APIs`, `JSON`
-- **Skills Tested**: `Python`, `Backend`, `APIs`
-- **Bug Signature**: `"email": user_model.get("email")
-    }`
-- **Suspected Component**: `serializer.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A public REST API publishes user profile endpoints consumed by client SDKs that enforce strict schema validation.
+### Incident Report
+Mobile application developers reported that iOS and Android client apps crashed immediately after login with a schema validation exception on the profile view.
 
 ### Bug Report
-Mobile apps crash with `SchemaValidationError: Missing required property 'created_at'` when reading the `/api/v1/user` response.
+Mobile apps crash with `SchemaValidationError: Missing required property 'created_at'` when reading the `/api/v1/user` response payload.
 
 ### Steps to Reproduce
 1. Fetch serialized user object from `serialize_user_profile(user)`.
-2. Observe keys present: `id`, `username`, `email`.
-3. `created_at` field is missing.
+2. Inspect keys present: `id`, `username`, `email`.
+3. Notice that `created_at` field is missing.
 
-### Expected Behavior
-Serialized payload must contain: `id`, `username`, `email`, `created_at`.
+### Expected Behaviour
+Serialized payload must contain all required domain fields: `id`, `username`, `email`, and `created_at`.
 
-### Actual Behavior
-The serializer dictionary omits `created_at`.
+### Actual Behaviour
+The serialization mapping fails to map the account creation timestamp into the outbound response.
 
-### Impact
-Client applications crash across iOS and Android on login.
+### Starter Files
+`serializer.py` - Serializes user models for outbound JSON responses.
 
-### Requirements
-- Include `created_at` in the serialized output dictionary.
+### Task
+Add the missing `created_at` field to the serialization dictionary in `serializer.py`.
 
-**Files in Sandbox:**
-- `serializer.py`
+### Acceptance Criteria
+1. Serialized output contains `id`, `username`, `email`, and `created_at`.
+2. Empty or None user inputs safely return an empty dictionary.
 
-**Verification Criteria (3 Test Cases):**
-- [Visible Sample Test] **Visible: Serializer output includes created_at**
-- [Visible Sample Test] **Visible: Exact value serialized**
-- [Hidden Test] **Hidden: Empty input handling**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Client contracts depend on strict schema conformance; every required field in the domain model must be mapped.
+- **Level 2 (Directional)**: Check the dictionary literal constructed in `serialize_user_profile` in `serializer.py`.
+- **Level 3 (Root Cause)**: Extract `created_at` using `.get("created_at")` and include it as a key in the returned dictionary.
 
 ---
 
-### Challenge 13: [CODE-E13] An Incorrect Timeout Conversion Causes Premature Expiration
+##### Challenge 13: User Session Tokens Expire Seconds After Generation
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Easy` | **Technology**: `Python` | **Category**: `Backend`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `Authentication`, `Math & Units`, `Tokens`
-- **Skills Tested**: `Python`, `Backend`
-- **Bug Signature**: `return current_timestamp + int(seconds_to_live / 1000)`
-- **Suspected Component**: `token_service.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An authentication service issues ephemeral short-lived access tokens configured to expire after `seconds_to_live` (default 3600 seconds = 1 hour).
+### Incident Report
+"Every time I log into my account, I get kicked back to the login screen after just a few seconds. I barely have time to click my profile before seeing 'Session expired. Please log in again.' This is happening on every device across our entire team."
 
 ### Bug Report
-Users are logged out within 3.6 seconds of logging in!
+Newly issued authentication tokens intended to remain valid for 1 hour expire almost immediately after generation, forcing users into continuous re-authentication loops.
 
 ### Steps to Reproduce
-1. Call `calculate_expiration(current_timestamp=1000000, seconds_to_live=3600)`.
-2. Notice the calculated timestamp is `1000003` instead of `1003600`.
+1. Call `calculate_expiration(current_timestamp=1700000000, seconds_to_live=3600)` with a known base timestamp and duration.
+2. Compare the returned timestamp against the expected expiration time.
+3. Observe that the calculated expiry timestamp expires almost immediately rather than remaining valid for the requested duration.
 
-### Expected Behavior
-`calculate_expiration(now, seconds)` must add the full number of seconds: `now + seconds`.
+### Expected Behaviour
+Given a base timestamp in seconds and a validity duration in seconds, the expiration function must return an integer timestamp representing the sum of both values (e.g. `1700000000 + 3600 = 1700003600`).
 
-### Actual Behavior
-The code incorrectly divides seconds by 1000 (`seconds_to_live / 1000`), treating seconds as if they were milliseconds.
+### Actual Behaviour
+The calculated expiration timestamp is significantly smaller than expected, resulting in session tokens that expire after only a few seconds instead of the requested duration.
 
-### Impact
-Mass user session disconnection and login loops across the production website.
+### Starter Files
+`token_service.py` - Computes validity expiration times for authorization tokens.
 
-### Requirements
-- Add `seconds_to_live` directly to `current_timestamp` without dividing.
+### Task
+Investigate `token_service.py` and correct the session expiration calculation so that authentication tokens return their full validity timestamp as an integer.
 
-**Files in Sandbox:**
-- `token_service.py`
+### Acceptance Criteria
+1. `calculate_expiration(1700000000, 3600)` returns integer timestamp `1700003600`.
+2. `calculate_expiration(100, 60)` returns integer timestamp `160`.
+3. `calculate_expiration(500, 0)` returns integer timestamp `500`.
 
-**Verification Criteria (3 Test Cases):**
-- [Visible Sample Test] **Visible: 1 hour token expiration**
-- [Visible Sample Test] **Visible: 60 second token**
-- [Hidden Test] **Hidden: Zero duration token**
+### Constraints
+- `current_timestamp` is a valid Unix epoch timestamp in seconds (`1_000_000_000 <= current_timestamp <= 2_500_000_000`).
+- `seconds_to_live` is a non-negative integer representing session validity duration in seconds (`0 <= seconds_to_live <= 604_800`).
+- The returned timestamp must be an integer representing `current_timestamp + seconds_to_live`.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Verify the units of measurement for timestamps and durations: both values here represent seconds.
+- **Level 2 (Directional)**: Examine how `seconds_to_live` is combined with `current_timestamp` in `token_service.py`.
+- **Level 3 (Root Cause)**: Both parameters are already measured in seconds; applying a scaling divisor mistakenly treats the input as milliseconds, reducing 3600 seconds down to only 3 seconds.
 
 ---
 
-### Challenge 14: [CODE-E14] An Empty List Causes an Indexing Error
+##### Challenge 14: Background Queue Worker Crashes When Task Buffer Is Empty
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Easy` | **Technology**: `Python` | **Category**: `Error Handling`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `Defensive Programming`, `Lists`, `Queue`
-- **Skills Tested**: `Python`, `Error Handling`
-- **Bug Signature**: `return jobs[0]`
-- **Suspected Component**: `queue_processor.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An asynchronous queue worker polls pending notification messages to batch send emails.
+### Incident Report
+Our on-call SRE was paged at 03:00 AM because queue consumer pods were stuck in a crash-restart loop during low-traffic periods when no jobs were queued.
 
 ### Bug Report
 When worker polls an idle queue with no pending messages, it crashes with `IndexError: list index out of range` and exits.
 
 ### Steps to Reproduce
 1. Call `peek_next_job([])`.
-2. Observe unhandled `IndexError`.
+2. Worker crashes with unhandled `IndexError`.
 
-### Expected Behavior
-Return `None` when queue has 0 jobs.
+### Expected Behaviour
+Return `None` when queue has 0 jobs without throwing an indexing exception.
 
-### Actual Behavior
-Accesses `jobs[0]` directly without checking `len(jobs)`.
+### Actual Behaviour
+The function attempts to read the first element of the job collection without checking if the collection contains any items.
 
-### Impact
-Worker processes exit, triggering alerting noise and leaving system in degraded state.
+### Starter Files
+`queue_processor.py` - Inspects the next pending job in an asynchronous worker queue.
 
-### Requirements
-- Check `if not jobs: return None` before indexing.
+### Task
+Add a guard in `queue_processor.py` to handle empty job collections safely.
 
-**Files in Sandbox:**
-- `queue_processor.py`
+### Acceptance Criteria
+1. An empty job collection safely returns `None`.
+2. Non-empty job collections return the first pending job.
 
-**Verification Criteria (3 Test Cases):**
-- [Visible Sample Test] **Visible: Non-empty queue returns first job**
-- [Visible Sample Test] **Visible: Empty queue safely returns None**
-- [Hidden Test] **Hidden: Single item queue**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Accessing positional index 0 on an empty sequence raises an immediate error in Python.
+- **Level 2 (Directional)**: Check `jobs` for truthiness or length before attempting an index lookup.
+- **Level 3 (Root Cause)**: Add an initial check: `if not jobs: return None` before reading `jobs[0]`.
 
 ---
 
-### Challenge 15: [CODE-E15] Incorrect Rounding Produces Wrong Invoice Totals
+##### Challenge 15: Invoice Tax Calculation Shows Discrepancy on Summed Line Items
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Easy` | **Technology**: `Python` | **Category**: `Data & Processing`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `Finance`, `Rounding`, `Precision`
-- **Skills Tested**: `Python`, `Backend`, `Data Processing`
-- **Bug Signature**: `tax_sum = sum(round(item * tax_rate, 2) for item in line_items)`
-- **Suspected Component**: `invoice_calculator.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An enterprise billing service calculates sales tax across line items on customer invoices.
+### Incident Report
+An enterprise customer contacted billing support because their monthly invoice total was off by one cent compared to their payment gateway charge receipt.
 
 ### Bug Report
 Customer invoices show a total that is 1 cent off from payment gateway settlements due to rounding line-item tax amounts individually before summing them.
 
 ### Steps to Reproduce
-1. Calculate tax on 3 line items of $10.05 at 8.25% tax rate.
+1. Calculate tax on 3 line items of $10.04 at 8.25% tax rate.
 2. Rounding each item produces $0.83 + $0.83 + $0.83 = $2.49.
-3. True tax on total $30.15 is $2.487375 -> rounded to $2.49, but on other amounts like $10.04 it drifts.
+3. True tax on total $30.12 is $2.4849 -> rounded to $2.48.
 
-### Expected Behavior
+### Expected Behaviour
 Sum line item subtotals first, then compute and round the total tax once: `round(sum(items) * tax_rate, 2)`.
 
-### Actual Behavior
-The calculator rounds each individual item's tax before summing: `sum(round(i * tax_rate, 2) for i in items)`.
+### Actual Behaviour
+The tax calculator rounds tax amounts at the per-item level before summing, accumulating rounding discrepancies.
 
-### Impact
-Discrepancies in billing reconciliation cause automated bank audit rejections.
+### Starter Files
+`invoice_calculator.py` - Computes total sales tax on customer order line items.
 
-### Requirements
-- Compute total subtotal first, then apply tax and round once to 2 decimal places.
+### Task
+Refactor `calculate_total_tax` in `invoice_calculator.py` to sum all line items before applying tax and rounding.
 
-**Files in Sandbox:**
-- `invoice_calculator.py`
+### Acceptance Criteria
+1. Line item amounts are summed before tax calculation and rounding.
+2. The final total is rounded to 2 decimal places.
+3. Empty line item lists return `0.0`.
 
-**Verification Criteria (3 Test Cases):**
-- [Visible Sample Test] **Visible: Total tax calculation without intermediate rounding**
-- [Visible Sample Test] **Visible: Single item invoice**
-- [Hidden Test] **Hidden: Empty invoice handling**
+### Constraints
+- Numerical calculations must maintain precision without unintended unit scaling or integer truncation.
+- Timestamps and durations are non-negative integer values.
+- Character encodings must support full UTF-8 Unicode characters without encoding crashes.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
 
----
-
-### Challenge 16: [CODE-M01] API Retries Accidentally Repeat a Non-Idempotent Operation
-
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `API & Web`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Idempotency`, `Retries`, `Payments`
-- **Skills Tested**: `Python`, `Backend`, `APIs`
-- **Bug Signature**: `idempotency_key = f"idem_{uuid.uuid4().hex[:8]}"`
-- **Suspected Component**: `payment_client.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A billing microservice sends charge requests to Stripe. To prevent duplicate charges upon network drops, each payment must carry a stable idempotency key.
-
-### Bug Report
-When network packets drop and the client retries the charge, customers are charged twice on their credit cards!
-
-### Steps to Reproduce
-1. Execute `charge_with_retry(order_id="ord_100", amount=50, max_retries=2)`.
-2. Observe that each retry loop iteration generates a brand new `uuid4()` idempotency key.
-3. The payment processor treats each attempt as a distinct transaction.
-
-### Expected Behavior
-The idempotency key must be generated once before the retry loop and reused across all retry attempts.
-
-### Actual Behavior
-`idempotency_key = str(uuid.uuid4())` is inside the loop body, generating new keys for each retry.
-
-### Impact
-Double billing of customers, surge in chargeback fees, and payment merchant disputes.
-
-### Requirements
-- Generate or derive the idempotency key once outside the retry loop so all attempts for the order share the identical key.
-
-**Files in Sandbox:**
-- `payment_client.py`
-
-**Verification Criteria (2 Test Cases):**
-- [Visible Sample Test] **Visible: Retries reuse identical idempotency key**
-- [Visible Sample Test] **Visible: Successful first attempt**
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Intermediate rounding during financial calculations compounds precision errors across multiple transactions.
+- **Level 2 (Directional)**: Examine where the `round()` function is called inside the comprehension in `invoice_calculator.py`.
+- **Level 3 (Root Cause)**: Sum the line items first (`sum(line_items)`), multiply the cumulative subtotal by the tax rate, and round the final result once.
 
 ---
 
-### Challenge 17: [CODE-M02] Cache Invalidation Leaves Stale Product Prices
+#### Tier: Medium (20 Challenges)
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `Caching`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Caching`, `Cache Invalidation`, `Data Consistency`
-- **Skills Tested**: `Python`, `Caching`
-- **Suspected Component**: `pricing_service.py`
+##### Challenge 16: Payment Gateway Retries Result in Duplicate Customer Charges
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-**Scenario & Defect Overview:**
-### Company Scenario
-A flash-sale retail store caches individual product details as well as category catalog summaries.
+### Incident Report
+"I was purchasing event tickets and got an error modal saying 'Connection lost, retrying'. When the page finally refreshed, I saw two identical charges of $50 on my credit card statement. Why was I billed twice for a single order?"
 
 ### Bug Report
-When an administrator edits a product price from $100 down to $60, the category browse page still shows the old $100 price for hours.
+When network packets drop and the client retries the payment request, customers are charged twice on their credit cards because the gateway treats each attempt as a distinct transaction.
 
 ### Steps to Reproduce
-1. Update product price via `update_product_price(product_id, new_price, category_id)`.
-2. Notice `cache.delete(f"product:{product_id}")` is called.
-3. Category listing cache `f"category:{category_id}"` is never invalidated!
+1. Execute `charge_with_retry(gateway, order_id="ORD-1", amount=50, max_attempts=3)`.
+2. Mock a gateway where attempt 1 experiences a connection drop.
+3. Observe that each attempt transmits a newly generated idempotency token.
 
-### Expected Behavior
-Both the item cache and the parent category catalog cache must be invalidated when a product price changes.
+### Expected Behaviour
+The idempotency key must remain identical across all retry attempts for a given order so the gateway can detect and prevent duplicate charges.
 
-### Actual Behavior
-Only the specific product cache key is deleted.
+### Actual Behaviour
+The loop body generates a new random UUID token on every retry iteration.
 
-### Impact
-Customers see contradictory pricing between catalog search and checkout, causing cart abandonment.
+### Starter Files
+`payment_client.py` - Wraps external payment gateway calls with automated retry logic.
 
-### Requirements
-- Invalidate both `f"product:{product_id}"` and `f"category:{category_id}"` in cache.
+### Task
+Refactor `charge_with_retry` in `payment_client.py` so that retrying an operation reuses a single, stable idempotency token.
 
-**Files in Sandbox:**
-- `pricing_service.py`
+### Acceptance Criteria
+1. Subsequent retry attempts for an order submit the exact same idempotency key as the initial attempt.
+2. Successful charges return the gateway response.
+3. If all retry attempts are exhausted, the terminal exception is propagated.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Invalidate both product and category keys**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In distributed systems, idempotency keys must be stable across all retries of the same logical operation.
+- **Level 2 (Directional)**: Look at the variable scoping of `idempotency_key` relative to the `while` retry loop in `payment_client.py`.
+- **Level 3 (Root Cause)**: Generate the idempotency key once before entering the retry loop so that every subsequent attempt reuses the identical key.
 
 ---
 
-### Challenge 18: [CODE-M03] Pagination Produces Duplicates When Sorting is Applied
+##### Challenge 17: Category Browse Page Displays Outdated Product Pricing
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `Data & Processing`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Sorting`, `Pagination`, `Determinism`
-- **Skills Tested**: `Python`, `Data Processing`
-- **Bug Signature**: `sorted_posts = sorted(posts, key=lambda p: p["upvotes"], reverse=True)`
-- **Suspected Component**: `paginator.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A community feed ranks posts by upvote counts. Multiple posts frequently have identical upvote numbers.
+### Incident Report
+"Our merchandising team marked down the summer apparel collection from $100 to $60. When clicking the individual product link, the price shows $60, but on the main category browse page, the old $100 price is still showing. Shoppers are complaining about false advertising."
 
 ### Bug Report
-When users scroll through the feed, the same post appears on both Page 1 and Page 2!
+When an administrator edits a product price from $100 down to $60, the individual product page updates, but the parent category catalog cache remains stale.
 
 ### Steps to Reproduce
-1. Feed has 10 posts, all with 5 upvotes.
-2. Slicing with non-deterministic ordering shifts identical elements between pages.
+1. Update product price via `update_product_price(db, cache, "P10", "CAT2", 60)`.
+2. Inspect cache deletion calls.
+3. Observe that only `product:P10` is purged, leaving `category:CAT2` untouched.
 
-### Expected Behavior
-Sorting must have a secondary deterministic tie-breaker: sort primarily by `upvotes` descending, then secondarily by `id` ascending.
+### Expected Behaviour
+When an item's price is updated, both the item's individual cache and its parent category cache must be purged to maintain catalog consistency.
 
-### Actual Behavior
-Sorts only by `post["upvotes"]` without a tie-breaker.
+### Actual Behaviour
+The invalidation logic only deletes the specific item key, ignoring related aggregation keys.
 
-### Impact
-Users see duplicate posts in feeds and review lists.
+### Starter Files
+`pricing_service.py` - Manages database updates and cache invalidation for catalog items.
 
-### Requirements
-- Update sort key to `(-post["upvotes"], post["id"])`.
+### Task
+Update `pricing_service.py` to ensure all dependent cache entries are properly evicted upon price updates.
 
-**Files in Sandbox:**
-- `paginator.py`
+### Acceptance Criteria
+1. `cache.delete` is invoked for both the product key and category key.
+2. The database record is successfully updated.
+3. Returns `True` upon successful completion.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Deterministic sort with tie-breaker**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Cache invalidation strategies must purge both granular item keys and composite list/category keys.
+- **Level 2 (Directional)**: Examine which cache keys are deleted in `update_product_price` in `pricing_service.py`.
+- **Level 3 (Root Cause)**: Add an invalidation call targeting `f"category:{category_id}"` alongside the product key deletion.
 
 ---
 
-### Challenge 19: [CODE-M04] A Webhook Handler Processes the Same Event More Than Once
+##### Challenge 18: Social Feed Pagination Displays Duplicate Posts Across Pages
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `API & Web`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Webhooks`, `Idempotency`, `Deduplication`
-- **Skills Tested**: `Python`, `Backend`, `APIs`
-- **Bug Signature**: `order_actions.append(f"FULFILL_{event.get('order_id')}")`
-- **Suspected Component**: `webhook_dispatcher.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A payment webhook consumer processes `payment.succeeded` events sent by Stripe.
+### Incident Report
+"As I scroll through the trending feed, post #5 appears on page 1 and then appears again at the top of page 2. Other posts seem to be getting pushed off the feed completely because tied posts keep jumping across page boundaries."
 
 ### Bug Report
-Stripe retries webhook delivery if an ACK is delayed. The handler processes the duplicate event and ships the order twice!
+When posts share identical upvote totals, sorting solely by upvotes produces non-deterministic ordering across page boundaries, shifting items into multiple pages.
 
 ### Steps to Reproduce
-1. Deliver event `{"id": "evt_001", "type": "payment.succeeded"}` twice.
-2. Handler executes side effect both times.
+1. Create posts where multiple items share the same upvote count (e.g. 5 upvotes).
+2. Fetch page 1 with page size 2, then fetch page 2.
+3. Observe items shifting and appearing across both pages.
 
-### Expected Behavior
-The handler must check if `event_id` was already processed, record it in processed set/DB, and skip duplicate processing.
+### Expected Behaviour
+Feed ordering must be completely deterministic by including a secondary unique attribute (such as `id`) as a tie-breaker.
 
-### Actual Behavior
-The handler executes side effects unconditionally without checking or recording `processed_event_ids`.
+### Actual Behaviour
+The sorting function keys only on `upvotes`, leaving relative order of ties undefined.
 
-### Impact
-Duplicate physical orders shipped to customers for a single payment.
+### Starter Files
+`paginator.py` - Ranks community posts and slices them into paginated result sets.
 
-### Requirements
-- Check `if event_id in processed_events: return "ALREADY_PROCESSED"`.
-- Otherwise add `event_id` to `processed_events` and proceed with processing.
+### Task
+Modify the sorting key in `paginator.py` to ensure stable, deterministic ordering across pages.
 
-**Files in Sandbox:**
-- `webhook_dispatcher.py`
+### Acceptance Criteria
+1. Posts are sorted primarily by descending upvotes, secondarily by ascending ID.
+2. Paginated subsets contain no duplicate items across pages.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Duplicate event skipped**
+### Constraints
+- Slicing and pagination operations must include all items up to the final boundary record.
+- Record transformations and exports must preserve embedded delimiters, quotation marks, and line breaks.
+- Nested configuration merges must preserve non-conflicting sibling properties.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: When paginating ordered datasets, sort criteria must produce a total, unambiguous ordering.
+- **Level 2 (Directional)**: Inspect the lambda function supplied to `sorted()` in `paginator.py`.
+- **Level 3 (Root Cause)**: Use a composite tuple key combining descending upvotes (`-p["upvotes"]`) and ascending ID (`p["id"]`).
 
 ---
 
-### Challenge 20: [CODE-M05] Concurrent Updates Overwrite Newer User Preferences
+##### Challenge 19: Order Fulfillment Webhook Triggers Duplicate Shipments on Replay
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `Concurrency`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Optimistic Locking`, `Concurrency`, `Versioning`
-- **Skills Tested**: `Python`, `Concurrency`, `Backend`
-- **Bug Signature**: `current_record.update(incoming_update)
-    return True`
-- **Suspected Component**: `preference_manager.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-Users update notification preferences from mobile devices and desktop browsers simultaneously.
+### Incident Report
+Warehouse operators reported duplicate dispatch labels printed for identical orders whenever payment gateway webhooks were re-delivered.
 
 ### Bug Report
-A user toggles dark mode at 10:00:05. A delayed sync request sent at 10:00:01 arrives late and overwrites the newer preference!
+When network delays cause payment webhooks to be resent, the consumer processes the retransmitted message and triggers warehouse fulfillment actions again.
 
 ### Steps to Reproduce
-1. Current profile has `version=3, updated_at=100`.
-2. Stale request arrives with `version=2, updated_at=90`.
-3. Handler accepts the stale request and overwrites current profile.
+1. Deliver webhook event `{"id": "evt_1", "order_id": "101"}`.
+2. Deliver the identical event a second time.
+3. Observe that fulfillment action is recorded twice in `order_actions`.
 
-### Expected Behavior
-Reject or ignore incoming updates if `incoming["version"] <= current["version"]`.
+### Expected Behaviour
+The webhook handler must check whether the event ID has already been recorded, returning `"ALREADY_PROCESSED"` and ignoring repeated side effects.
 
-### Actual Behavior
-Unconditional overwrite: `current.update(incoming)`.
+### Actual Behaviour
+The handler triggers fulfillment actions unconditionally without checking historical event IDs.
 
-### Impact
-User changes are lost and overwritten by delayed background sync packets.
+### Starter Files
+`webhook_dispatcher.py` - Processes incoming payment provider event notifications.
 
-### Requirements
-- Implement optimistic concurrency version check: only update if `incoming["version"] > current["version"]`.
-- Return `True` if applied, `False` if rejected due to stale version.
+### Task
+Add idempotency deduplication to `handle_webhook_event` in `webhook_dispatcher.py`.
 
-**Files in Sandbox:**
-- `preference_manager.py`
+### Acceptance Criteria
+1. Previously unseen event IDs trigger fulfillment and return `"PROCESSED"`.
+2. Seen event IDs return `"ALREADY_PROCESSED"` without duplicate fulfillment actions.
+3. The event ID is recorded in the processed set.
 
-**Verification Criteria (2 Test Cases):**
-- [Visible Sample Test] **Visible: Stale version rejected**
-- [Visible Sample Test] **Visible: Newer version accepted**
+### Constraints
+- Network retry attempts for a given logical operation must reuse a stable, invariant idempotency token.
+- Tenant-isolated caches must partition keys cleanly by tenant identifier.
+- Expired sliding window timestamps must be pruned to avoid permanent request starvation.
+- Operational errors (such as `ConnectionError`) must propagate rather than being masked as user validation errors.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Webhook consumers must be idempotent because delivery guarantees are typically "at least once".
+- **Level 2 (Directional)**: Check `processed_events` before appending new entries to `order_actions`.
+- **Level 3 (Root Cause)**: If `event_id` is present in `processed_events`, return `"ALREADY_PROCESSED"`; otherwise register the ID and proceed.
 
 ---
 
-### Challenge 21: [CODE-M06] Timezone Conversion Breaks Scheduled Notifications
+##### Challenge 20: Concurrent Profile Edits Silently Overwrite Recent Changes
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `Data & Processing`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Timezones`, `Datetime`, `Scheduling`
-- **Skills Tested**: `Python`, `Backend`
-- **Bug Signature**: `return (local_hour + utc_offset_hours) % 24`
-- **Suspected Component**: `scheduler.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A medical reminder app sends SMS notifications at 08:00 AM local patient time.
+### Incident Report
+Users editing notification preferences from their phone and computer simultaneously reported that recent changes were mysteriously undone.
 
 ### Bug Report
-Patients in New York (UTC-5) receive medication alerts at 03:00 AM in the middle of the night!
+When a user updates preferences at version 5, an older offline request at version 3 arriving milliseconds later unconditionally overwrites the newer state.
 
 ### Steps to Reproduce
-1. Schedule alert for 08:00 AM in timezone `UTC-5`.
-2. Convert to UTC timestamp.
-3. System subtracts 5 hours instead of adding 5 hours to reach UTC.
+1. Start with record `{"theme": "dark", "version": 5}`.
+2. Submit delayed update `{"theme": "light", "version": 3}`.
+3. Observe that theme is overwritten to `"light"` and version downgraded.
 
-### Expected Behavior
-Local time 08:00 at UTC-5 equals 13:00 UTC (8 - (-5) = 13).
+### Expected Behaviour
+Optimistic concurrency must reject incoming updates whose version is less than or equal to the current record version.
 
-### Actual Behavior
-Code applies offset in reverse direction: `local_hour - offset` -> `8 - 5 = 3` AM UTC.
+### Actual Behaviour
+The handler applies incoming updates unconditionally without checking if the incoming version is strictly greater than the currently stored version.
 
-### Impact
-Patients woken up by late-night alerts, resulting in compliance complaints and unsubscribes.
+### Starter Files
+`preference_manager.py` - Handles state updates for user preferences.
 
-### Requirements
-- Correctly convert scheduled local notification hours into a 24-hour UTC format.
-- Ensure positive and negative timezone offsets shift hours properly across day boundaries.
+### Task
+Implement optimistic locking version checks in `preference_manager.py`.
 
-**Files in Sandbox:**
-- `scheduler.py`
+### Acceptance Criteria
+1. Incoming updates with version numbers higher than current are applied and return `True`.
+2. Stale updates with version numbers less than or equal to current are rejected and return `False`.
+3. Current record values remain unchanged on rejection.
 
-**Verification Criteria (3 Test Cases):**
-- [Visible Sample Test] **Visible: NYC (UTC-5) 8am local -> 1pm UTC**
-- [Visible Sample Test] **Visible: Tokyo (UTC+9) 8am local -> 11pm previous day (23)**
-- [Hidden Test] **Hidden: London (UTC+0) 8am -> 8am**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Optimistic locking relies on monotonicity: updates are valid only if their version counter exceeds the current state.
+- **Level 2 (Directional)**: Compare `incoming_update.get("version", 0)` with `current_record.get("version", 0)` in `preference_manager.py`.
+- **Level 3 (Root Cause)**: Reject the update and return `False` if incoming version is not strictly greater than current version.
 
 ---
 
-### Challenge 22: [CODE-M07] An API Client Incorrectly Handles HTTP 429 Responses
+##### Challenge 21: Scheduled Maintenance Reminders Trigger at Wrong Hour After Timezone Shift
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `API & Web`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `HTTP`, `Rate Limiting`, `Resilience`
-- **Skills Tested**: `Python`, `Backend`, `APIs`
-- **Bug Signature**: `raw_delay = response_headers["Retry-After"]`
-- **Suspected Component**: `http_client.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An algorithmic trading service fetches market depth feeds from a third-party crypto exchange API.
+### Incident Report
+Patients in New York (UTC-5) complained they were woken up by automated medication reminder SMS messages sent at 03:00 AM instead of 08:00 AM.
 
 ### Bug Report
-When exchange returns HTTP 429 Too Many Requests with header `Retry-After: 5`, client crashes with `ValueError: could not convert string to float` when header is missing or non-numeric, or immediately hammers server with 0 delay.
+Converting local 08:00 AM in UTC-5 produces 03:00 UTC instead of 13:00 UTC because the timezone offset is added rather than subtracted.
 
 ### Steps to Reproduce
-1. Simulate 429 response without `Retry-After` header.
-2. Client throws `KeyError` or crashes.
+1. Schedule a reminder for 8:00 AM in timezone offset -5.
+2. Call `convert_local_to_utc_hour(8, -5)`.
+3. Observe returned UTC hour is `3` instead of `13`.
 
-### Expected Behavior
-Parse `Retry-After` safely as integer seconds; if missing or invalid, default to a safe exponential backoff (e.g. `default_backoff = 2 ** attempt`).
+### Expected Behaviour
+Converting local time to UTC follows `UTC = (Local - Offset) % 24`. For 8:00 AM at UTC-5, `8 - (-5) = 13:00 UTC`.
 
-### Actual Behavior
-Unsafe dictionary lookup and lack of default fallback.
+### Actual Behaviour
+The calculation adds the offset directly instead of adjusting backward to UTC for negative offsets, inverting the time difference.
 
-### Impact
-Trading bot crashes during high market volatility.
+### Starter Files
+`scheduler.py` - Converts local patient alert times to normalized UTC hours.
 
-### Requirements
-- Safely extract `Retry-After` header. If missing or non-digit, return `min(60, 2 ** attempt)`.
+### Task
+Correct the timezone offset calculation in `scheduler.py` to properly map local schedule hours into UTC.
 
-**Files in Sandbox:**
-- `http_client.py`
+### Acceptance Criteria
+1. Negative UTC offsets correctly advance UTC hours (e.g. UTC-5 at 8am -> 13).
+2. Positive UTC offsets correctly rewind UTC hours across 24-hour boundaries (e.g. UTC+9 at 8am -> 23).
+3. Zero offset preserves the identical hour.
 
-**Verification Criteria (3 Test Cases):**
-- [Visible Sample Test] **Visible: Valid Retry-After header**
-- [Visible Sample Test] **Visible: Missing header uses exponential backoff**
-- [Hidden Test] **Hidden: Non-numeric header fallback**
+### Constraints
+- Numerical calculations must maintain precision without unintended unit scaling or integer truncation.
+- Timestamps and durations are non-negative integer values.
+- Character encodings must support full UTF-8 Unicode characters without encoding crashes.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Remember the standard timezone formula: `UTC = Local - Offset`.
+- **Level 2 (Directional)**: Check the arithmetic operator used with `utc_offset_hours` in `scheduler.py`.
+- **Level 3 (Root Cause)**: Subtract `utc_offset_hours` from `local_hour` before taking modulo 24: `(local_hour - utc_offset_hours) % 24`.
 
 ---
 
-### Challenge 23: [CODE-M08] A File-Processing Pipeline Silently Drops Malformed Records
+##### Challenge 22: Ingestion Worker Crashes When Upstream API Rate Limit Returns HTTP 429
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `Data & Processing`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Data Pipelines`, `Error Handling`, `Auditability`
-- **Skills Tested**: `Python`, `Data Processing`
-- **Bug Signature**: `except Exception:
-            pass`
-- **Suspected Component**: `pipeline.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A payroll pipeline imports weekly employee timesheets from CSV rows.
+### Incident Report
+An algorithmic trading daemon crashed in production during market volatility when an exchange API rate-limited requests with HTTP 429.
 
 ### Bug Report
-When an employee enters their hours as `"forty"` instead of `40`, their entire timesheet is silently deleted without notifying HR!
+When `Retry-After` header is missing or contains non-numeric text, `parse_rate_limit_delay` crashes with `KeyError` or `ValueError`, preventing the client from backing off.
 
 ### Steps to Reproduce
-1. Ingest row `{"emp_id": "E100", "hours": "forty"}`.
-2. Broad `except: pass` silently discards the row.
-3. Employee receives a $0 paycheck on Friday.
+1. Receive rate limit response without `Retry-After` header.
+2. Call `parse_rate_limit_delay(response_headers={}, attempt=3)`.
+3. Function crashes with unhandled exception.
 
-### Expected Behavior
-Capture errors in a quarantine list: `{"emp_id": emp_id, "error": str(err)}` so HR is alerted to fix the row.
+### Expected Behaviour
+Safely extract numeric `Retry-After` seconds; if missing or invalid, fall back to exponential backoff `min(60, 2 ** attempt)`.
 
-### Actual Behavior
-Bare `except: pass` suppresses the exception and drops the record from both successful and error outputs.
+### Actual Behaviour
+The header parser assumes the rate limit header is always present and strictly numeric, crashing on missing or non-standard header formats.
 
-### Impact
-Employees underpaid, triggering wage compliance law penalties.
+### Starter Files
+`http_client.py` - Parses rate limit feedback headers to determine retry delay.
 
-### Requirements
-- Valid records added to `valid_records`.
-- Invalid records captured in `quarantined_records` with `{"record": r, "error": str(e)}`.
+### Task
+Refactor `parse_rate_limit_delay` in `http_client.py` to defensively parse headers with safe exponential fallback.
 
-**Files in Sandbox:**
-- `pipeline.py`
+### Acceptance Criteria
+1. Valid numeric headers return their integer delay value.
+2. Missing or malformed headers return exponential delay `min(60, 2 ** attempt)`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Malformed row quarantined**
+### Constraints
+- Slicing and pagination operations must include all items up to the final boundary record.
+- Record transformations and exports must preserve embedded delimiters, quotation marks, and line breaks.
+- Nested configuration merges must preserve non-conflicting sibling properties.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: API response headers cannot be assumed to always exist or contain valid integer strings.
+- **Level 2 (Directional)**: Use safe dictionary `.get()` lookup and verify that the value consists of digits before converting.
+- **Level 3 (Root Cause)**: Fall back to calculating `min(60, 2 ** attempt)` whenever the header is absent or non-numeric.
 
 ---
 
-### Challenge 24: [CODE-M09] A Background Worker Loses Failed Jobs
+##### Challenge 23: Telemetry Ingestion Pipeline Silently Drops Malformed Records
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `Backend`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Queues`, `Resilience`, `Dead-Letter Queue`
-- **Skills Tested**: `Python`, `Backend`
-- **Bug Signature**: `queue.ack(job["id"])
-    job_fn(job)`
-- **Suspected Component**: `worker_queue.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An order processing background queue executes customer notification and inventory reservation tasks.
+### Incident Report
+Payroll audit reported that employees were missing paychecks because timesheet rows with formatting errors were silently erased.
 
 ### Bug Report
-When an unhandled database lock error occurs during job execution, the job vanishes forever instead of being sent to the Dead-Letter Queue (DLQ).
+When a timesheet row has an invalid numerical string (e.g. `"forty"` instead of `40`), a bare `except: pass` discards the record without alerting operators.
 
 ### Steps to Reproduce
-1. Dequeue job.
-2. Worker marks job as "COMPLETED" before executing.
-3. Job crashes, leaving it marked finished.
+1. Ingest rows `[{"emp_id": "E1", "hours": "40"}, {"emp_id": "E2", "hours": "forty"}]`.
+2. Run `process_timesheets`.
+3. Notice that `quarantined` remains empty and record `E2` vanishes from all outputs.
 
-### Expected Behavior
-Acknowledge completion only after successful execution. If execution raises, route job to DLQ.
+### Expected Behaviour
+Valid records are parsed into `valid`, while malformed rows are collected in `quarantined` along with their error description.
 
-### Actual Behavior
-Early acknowledgment removes the job from recovery mechanisms.
+### Actual Behaviour
+The ingestion routine suppresses parsing failures silently, dropping corrupted records from the audit trail without error tracking.
 
-### Impact
-Orders remain in pending state indefinitely with no retry attempt.
+### Starter Files
+`pipeline.py` - Ingestion parser for worker timesheet records.
 
-### Requirements
-- Execute job in try block.
-- On success: `queue.ack(job["id"])`.
-- On exception: `queue.send_to_dlq(job, str(e))`.
+### Task
+Update `process_timesheets` in `pipeline.py` to route failed records into a quarantine dead-letter collection.
 
-**Files in Sandbox:**
-- `worker_queue.py`
+### Acceptance Criteria
+1. Valid rows are parsed and added to `valid`.
+2. Failed rows are placed in `quarantined` with structure `{"record": r, "error": str(e)}`.
+3. Processing continues for subsequent rows without halting.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Failed job sent to DLQ**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Silent exception swallowing destroys observability and causes unrecoverable data loss.
+- **Level 2 (Directional)**: Inspect what happens inside the `except Exception:` block in `pipeline.py`.
+- **Level 3 (Root Cause)**: Capture the exception object as `e` and append `{"record": r, "error": str(e)}` to `quarantined_records`.
 
 ---
 
-### Challenge 25: [CODE-M10] A Database Transaction Partially Updates Related Records
+##### Challenge 24: Worker Daemon Permanently Loses Failed Background Jobs
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `Transactions`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Transactions`, `Atomicity`, `Rollback`
-- **Skills Tested**: `Python`, `Backend`, `Transactions`
-- **Bug Signature**: `if receiver not in balances:
-        return False`
-- **Suspected Component**: `account_transfer.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A banking service transfers money between customer balances.
+### Incident Report
+Operations noticed customer email notification jobs vanished from queue logs whenever downstream mail gateways were unreachable.
 
 ### Bug Report
-$100 is deducted from Sender account, but a database constraint error occurs when crediting Receiver account. The transaction does not rollback, and $100 simply disappears into thin air!
+The worker acknowledges completion of the job before invoking the worker task function. If the task crashes, the job is already dequeued and acknowledged, losing it forever.
 
 ### Steps to Reproduce
-1. Execute `transfer_funds(db, sender_id, receiver_id, amount)`.
-2. Step 1 deducts from sender.
-3. Step 2 raises exception.
-4. Sender balance remains deducted without receiver receiving funds.
+1. Enqueue job `{"id": "JOB-1"}`.
+2. Provide a job function that raises `RuntimeError`.
+3. Run `execute_job`.
+4. Observe that `queue.ack` was already called, and the job was never sent to the Dead-Letter Queue (DLQ).
 
-### Expected Behavior
-Both debit and credit must be atomic. If either fails, sender balance must be restored to its original value.
+### Expected Behaviour
+Acknowledge completion only after successful execution. If execution raises an exception, send the job to the DLQ (`queue.send_to_dlq(job, str(e))`).
 
-### Actual Behavior
-Lack of rollback restores sender balance.
+### Actual Behaviour
+The queue worker acknowledges the message from the queue before running the task, so any runtime crash permanently destroys the uncompleted job.
 
-### Impact
-Account balance discrepancies and regulatory auditing non-compliance.
+### Starter Files
+`worker_queue.py` - Manages message acknowledgment and fault routing for background jobs.
 
-### Requirements
-- Save initial balance snapshot.
-- If receiver credit fails, rollback sender balance to initial value and re-raise.
+### Task
+Reorganize `execute_job` in `worker_queue.py` to ensure reliable acknowledgment and dead-letter routing.
 
-**Files in Sandbox:**
-- `account_transfer.py`
+### Acceptance Criteria
+1. Successful jobs are acknowledged via `queue.ack(job["id"])`.
+2. Failed jobs are not acknowledged and are routed to DLQ via `queue.send_to_dlq(job, str(e))`.
 
-**Verification Criteria (2 Test Cases):**
-- [Visible Sample Test] **Visible: Sender balance restored on receiver failure**
-- [Visible Sample Test] **Visible: Successful transfer**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Reliable queue processing requires "at least once" acknowledgment semantics: acknowledge only after work succeeds.
+- **Level 2 (Directional)**: Notice that `queue.ack` is executed before `job_fn(job)` in `worker_queue.py`.
+- **Level 3 (Root Cause)**: Wrap `job_fn(job)` in a try/except block; call `queue.ack` on success, and `queue.send_to_dlq` on error.
 
 ---
 
-### Challenge 26: [CODE-M11] An Asynchronous Request Returns Stale Data
+##### Challenge 25: Ledger Transfer Deducts Funds When Recipient Account Does Not Exist
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `Concurrency`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Race Conditions`, `Async`, `Sequence Ordering`
-- **Skills Tested**: `Python`, `Concurrency`
-- **Bug Signature**: `self.current_result = data
-        return True`
-- **Suspected Component**: `data_fetcher.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An async search suggestion service dispatches backend lookups as the user types queries into a search bar.
+### Incident Report
+Banking compliance detected discrepancies in customer ledgers where sender balances were debited even though transfers failed to reach non-existent accounts.
 
 ### Bug Report
-User quickly types "react", then deletes and types "python". The slower "react" request completes after "python", overwriting the search results with "react"!
+When sending money to an invalid recipient, `transfer_funds` debits the sender balance first. When crediting the receiver fails with `KeyError`, the sender's balance is not restored.
 
 ### Steps to Reproduce
-1. Issue Request 1 for "react" (takes 200ms).
-2. Issue Request 2 for "python" (takes 50ms).
-3. Request 1 finishes last and overwrites the state.
+1. Initialize balance `{"Alice": 200}`.
+2. Attempt transfer: `transfer_funds(balances, "Alice", "NonExistent", 50)`.
+3. Catch the expected `KeyError`.
+4. Observe Alice's balance remains at 150 instead of rolling back to 200.
 
-### Expected Behavior
-Only apply the response if the request sequence ID matches or exceeds the latest issued sequence ID.
+### Expected Behaviour
+Money transfers must satisfy atomic all-or-nothing guarantees. If crediting the recipient fails, any prior sender deduction must be rolled back.
 
-### Actual Behavior
-Every response writes to `state["result"]` regardless of sequence order.
+### Actual Behaviour
+The transfer deducts funds from the sender before confirming that the recipient exists, leaving the sender's account short if the transfer fails.
 
-### Impact
-Users see search results for previous queries they already deleted.
+### Starter Files
+`account_transfer.py` - Executes balance transfers between internal accounts.
 
-### Requirements
-- Track `latest_seq_id`.
-- Ignore responses where `response_seq_id < latest_seq_id`.
+### Task
+Implement transactional rollback in `account_transfer.py` to restore sender balances upon failed credits.
 
-**Files in Sandbox:**
-- `data_fetcher.py`
+### Acceptance Criteria
+1. If the recipient does not exist, the sender balance remains completely unchanged.
+2. Successful transfers update both sender and receiver accounts accurately.
+3. Insufficient balance checks are enforced.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Stale response discarded**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Financial mutations must adhere to ACID principles: multi-step operations must undo prior steps if later steps fail.
+- **Level 2 (Directional)**: Look at the order of state changes relative to the validation check for `receiver in balances`.
+- **Level 3 (Root Cause)**: Roll back the sender debit (`balances[sender] += amount`) before raising the error, or validate the recipient prior to debiting.
 
 ---
 
-### Challenge 27: [CODE-M12] A Token Refresh Process Creates Intermittent Authentication Failures
+##### Challenge 26: Dashboard Search Box Replaces Fresh Results With Stale Response
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `Authentication`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Authentication`, `Token Management`, `Concurrency`
-- **Skills Tested**: `Python`, `Backend`, `Security`
-- **Bug Signature**: `self.access_token = self.refresh_fn()`
-- **Suspected Component**: `token_refresh.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An OAuth client issues refresh token requests when access tokens expire.
+### Incident Report
+Users searching a document catalog noticed search results frequently flickered and displayed results for older queries they had already backspaced over.
 
 ### Bug Report
-When 5 API calls return 401 at the same millisecond, 5 separate refresh requests are launched concurrently. The authorization server detects reuse of the same refresh token and revokes user access entirely!
+When a user rapidly types "react" followed by "python", the slower asynchronous request for "react" resolves after "python", overwriting fresh results with stale data.
 
 ### Steps to Reproduce
-1. Call `get_active_token` concurrently from multiple threads.
-2. Observe 5 separate refresh calls executed.
+1. Set store `latest_issued_seq = 2`.
+2. Apply response with sequence ID 1 (`"stale_react"`).
+3. Apply response with sequence ID 2 (`"fresh_python"`).
+4. Apply delayed response with sequence ID 1 (`"late_stale_react"`).
+5. Notice that `current_result` is overwritten by the stale sequence 1 result.
 
-### Expected Behavior
-A single refresh request must be shared (single-flight / mutex) across all concurrent callers.
+### Expected Behaviour
+Responses with a sequence ID older than the latest issued request sequence must be ignored.
 
-### Actual Behavior
-No synchronization lock, triggering multiple duplicate refresh token calls.
+### Actual Behaviour
+The response handler updates the active search result with whatever packet arrives last over the network, regardless of which query was initiated first.
 
-### Impact
-Legitimate users logged out and account sessions invalidated.
+### Starter Files
+`data_fetcher.py` - Stores and resolves asynchronous search result payloads.
 
-### Requirements
-- Use a flag / in-flight token check to ensure only one refresh runs, and subsequent calls reuse the refreshed token.
+### Task
+Implement sequence order verification in `data_fetcher.py` to discard out-of-order responses.
 
-**Files in Sandbox:**
-- `token_refresh.py`
+### Acceptance Criteria
+1. Responses with sequence IDs matching or exceeding `latest_issued_seq` are applied.
+2. Responses with older sequence IDs are discarded without mutating `current_result`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Reuses cached token when valid**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Asynchronous network requests do not guarantee arrival in the order they were dispatched.
+- **Level 2 (Directional)**: Examine `response_seq_id` relative to `self.latest_issued_seq` in `apply_response`.
+- **Level 3 (Root Cause)**: Add a condition to reject responses if `response_seq_id < self.latest_issued_seq` before updating `self.current_result`.
 
 ---
 
-### Challenge 28: [CODE-M13] An Incorrect Merge Algorithm Loses Configuration Fields
+##### Challenge 27: Concurrent API Requests Trigger Redundant Token Refresh Requests
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `Data & Processing`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Deep Merge`, `Recursion`, `Configuration`
-- **Skills Tested**: `Python`, `Data Processing`
-- **Bug Signature**: `result.update(override)
-    return result`
-- **Suspected Component**: `config_merger.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A Kubernetes operator merges user-provided Helm chart override values with default cluster configurations.
+### Incident Report
+Security logs detected repeated OAuth token revocation alarms caused by multiple concurrent client threads refreshing expired tokens simultaneously.
 
 ### Bug Report
-User supplies `{"database": {"port": 5433}}`. The merged config completely deletes `{"database": {"host": "localhost", "name": "prod"}}`!
+When multiple client requests discover an expired token at the same millisecond, each thread invokes the refresh function independently instead of reusing an active token.
 
 ### Steps to Reproduce
-1. Default: `{"db": {"host": "localhost", "port": 5432}}`.
-2. Override: `{"db": {"port": 5433}}`.
-3. Output: `{"db": {"port": 5433}}` (host is missing!).
+1. Create a `TokenManager` with a mock refresh callback.
+2. Call `get_token()` twice in succession.
+3. Observe that the refresh callback is called twice even though a valid token was already cached.
 
-### Expected Behavior
-Deeply merge nested dictionaries so non-conflicting sibling keys are preserved.
+### Expected Behaviour
+`get_token` must return the existing valid `access_token` if one is already cached, invoking `refresh_fn` only when no token is present.
 
-### Actual Behavior
-Shallow `dict.update()` replaces the entire nested `db` dictionary.
+### Actual Behaviour
+The token manager issues a fresh authentication exchange on every single request instead of reusing cached active credentials.
 
-### Impact
-Production clusters fail to start because database hosts and connection settings are wiped.
+### Starter Files
+`token_refresh.py` - Token manager maintaining OAuth access credentials.
 
-### Requirements
-- Implement recursive deep merge of nested dictionaries.
+### Task
+Update `get_token` in `token_refresh.py` to reuse the existing access token when present.
 
-**Files in Sandbox:**
-- `config_merger.py`
+### Acceptance Criteria
+1. Repeated calls to `get_token` reuse the cached token without re-triggering `refresh_fn`.
+2. Initial token acquisition correctly calls `refresh_fn`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Sibling nested keys preserved**
+### Constraints
+- `current_timestamp` is a valid Unix epoch timestamp in seconds (`1_000_000_000 <= current_timestamp <= 2_500_000_000`).
+- `seconds_to_live` is a non-negative integer representing session validity duration in seconds (`0 <= seconds_to_live <= 604_800`).
+- The returned timestamp must be an integer representing `current_timestamp + seconds_to_live`.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Token managers must cache active credentials to avoid redundant round-trips to identity providers.
+- **Level 2 (Directional)**: Examine whether `self.access_token` is checked before calling `self.refresh_fn()` in `token_refresh.py`.
+- **Level 3 (Root Cause)**: Return `self.access_token` immediately if it is already populated, calling `self.refresh_fn()` only when absent.
 
 ---
 
-### Challenge 29: [CODE-M14] An Inventory Update Produces Incorrect Stock Totals
+##### Challenge 28: Environment Configuration Merge Drops Nested Database Settings
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `Backend`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Inventory`, `Validation`, `Business Logic`
-- **Skills Tested**: `Python`, `Backend`
-- **Bug Signature**: `inventory[item_id] -= qty
-    return inventory[item_id]`
-- **Suspected Component**: `inventory_service.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An order checkout processor decrements warehouse stock when an order is placed.
+### Incident Report
+After deploying an environment override specifying custom database port `5433`, production containers crashed because the database hostname setting was completely wiped out.
 
 ### Bug Report
-When available stock is 2 and customer orders 5, stock becomes `-3`, allowing customer to buy non-existent goods.
+When supplying a nested dictionary override such as `{"db": {"port": 5433}}`, the merge logic replaces the entire `db` object, destroying unmentioned sibling properties like `host`.
 
 ### Steps to Reproduce
-1. Stock is 2.
-2. Call `decrement_stock(item_id, requested_qty=5)`.
-3. Stock decremented to -3 without raising error.
+1. Base configuration has `{"db": {"host": "localhost", "port": 5432}}`.
+2. Override is `{"db": {"port": 5433}}`.
+3. Call `deep_merge(base, override)`.
+4. Result is `{"db": {"port": 5433}}`, missing `"host"`.
 
-### Expected Behavior
-If `requested_qty > available_qty`, raise `ValueError("Insufficient stock")` and do not alter stock.
+### Expected Behaviour
+Nested dictionaries must be recursively merged so sibling keys in the base dictionary are preserved unless explicitly overridden.
 
-### Actual Behavior
-Blind subtraction without verifying availability.
+### Actual Behaviour
+The configuration loader replaces entire nested dictionaries wholesale, erasing unmentioned sibling properties when applying nested overrides.
 
-### Impact
-Overselling physical stock resulting in unfulfillable orders and customer refunds.
+### Starter Files
+`config_merger.py` - Combines default application configurations with environment overrides.
 
-### Requirements
-- Check `if current_stock < qty: raise ValueError("Insufficient stock")`.
+### Task
+Implement a recursive deep merge in `config_merger.py` to preserve non-conflicting nested keys.
 
-**Files in Sandbox:**
-- `inventory_service.py`
+### Acceptance Criteria
+1. Nested dictionaries are merged recursively.
+2. Unmentioned sibling keys in nested structures are preserved.
+3. Explicit override values take precedence.
 
-**Verification Criteria (2 Test Cases):**
-- [Visible Sample Test] **Visible: Oversell raises ValueError**
-- [Visible Sample Test] **Visible: Valid decrement**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Standard Python `dict.update()` performs a shallow replacement of top-level keys.
+- **Level 2 (Directional)**: Iterate through the keys in `override` and check if both `result[key]` and `override[key]` are dictionaries.
+- **Level 3 (Root Cause)**: Recursively call `deep_merge` for nested dictionaries, assigning primitive values directly.
 
 ---
 
-### Challenge 30: [CODE-M15] A CSV Export Corrupts Embedded Commas and Newlines
+##### Challenge 29: Flash Sale Checkout Allows Negative Warehouse Inventory Stock
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `Data & Processing`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `CSV`, `Export`, `RFC 4180`
-- **Skills Tested**: `Python`, `Data Processing`
-- **Bug Signature**: `return ",".join(str(f) for f in fields) + "\n"`
-- **Suspected Component**: `csv_exporter.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An admin panel exports user support feedback comments to CSV for analytical reporting in Excel.
+### Incident Report
+During a flash clearance sale, an e-commerce platform sold 15 units of an item when only 2 units existed in the physical warehouse, leading to order cancellations.
 
 ### Bug Report
-When user feedback contains commas or line breaks (e.g., `"Great service,
-fast delivery"`), the exported CSV breaks across lines and shifts columns in Excel.
+When available stock is 2 and an order requests 5 units, `decrement_stock` subtracts the quantity blindly, leaving stock at -3 without throwing an error.
 
 ### Steps to Reproduce
-1. Export row with comment `"Great service,
-fast delivery"`.
-2. Raw string join produces broken unquoted text.
+1. Initialize inventory `{"SKU1": 2}`.
+2. Call `decrement_stock(inv, "SKU1", 5)`.
+3. Observe inventory drops to `-3` without raising an exception.
 
-### Expected Behavior
-Fields with commas, quotes, or newlines must be enclosed in quotes according to RFC 4180.
+### Expected Behaviour
+If the requested quantity exceeds available stock, raise `ValueError("Insufficient stock")` and leave inventory unaltered.
 
-### Actual Behavior
-Naive string join `",".join(row)`.
+### Actual Behaviour
+The function performs unchecked subtraction directly on the inventory dictionary.
 
-### Impact
-Corrupted spreadsheets in corporate accounting and analytics teams.
+### Starter Files
+`inventory_service.py` - Decrements warehouse stock allocations during order checkout.
 
-### Requirements
-- Use Python standard library `csv.writer` and `io.StringIO` to format CSV rows properly.
+### Task
+Add validation guards in `inventory_service.py` to prevent negative inventory balances.
 
-**Files in Sandbox:**
-- `csv_exporter.py`
+### Acceptance Criteria
+1. Requests exceeding available stock raise `ValueError("Insufficient stock")`.
+2. Inventory balances remain unchanged when an order is rejected.
+3. Valid orders deduct stock correctly and return the remaining count.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Escaped field with comma**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Inventory operations must enforce invariants: available quantities cannot drop below zero.
+- **Level 2 (Directional)**: Check `inventory.get(item_id, 0)` against `qty` before modifying the dictionary in `inventory_service.py`.
+- **Level 3 (Root Cause)**: Raise `ValueError("Insufficient stock")` if requested quantity exceeds current availability.
 
 ---
 
-### Challenge 31: [CODE-M16] A Batch Processor Mishandles Partial Failures
+##### Challenge 30: Report Export Corrupts Rows With Embedded Commas and Line Breaks
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `Backend`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Batch Processing`, `Resilience`, `Error Isolation`
-- **Skills Tested**: `Python`, `Backend`
-- **Bug Signature**: `for item in items:
-        send_fn(item)`
-- **Suspected Component**: `batch_processor.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A bulk notification engine delivers SMS messages in batches of 100 recipients.
+### Incident Report
+Marketing analysts reported that CSV exports of user survey comments were corrupted, with user text wrapping across lines and misaligning spreadsheet columns.
 
 ### Bug Report
-If recipient #42 has an invalid phone number, the entire batch aborts, and recipients 43-100 never receive their alerts!
+When survey comments contain commas (e.g. `"Hello, World"`), raw string concatenation joins fields without enclosing quotes, causing spreadsheet tools to split the cell.
 
 ### Steps to Reproduce
-1. Send batch with 5 items where item 3 throws an error.
-2. Whole function throws, aborting remaining items.
+1. Export row `["Alice", "Hello, World", 100]`.
+2. Inspect output string: `"Alice,Hello, World,100\n"`.
+3. Note that `"Hello, World"` lacks enclosing quotes.
 
-### Expected Behavior
-Catch individual item exceptions, collect success and failed items separately, and continue processing the rest of the batch.
+### Expected Behaviour
+Fields containing commas, quotes, or whitespace must be properly quoted and escaped according to RFC 4180.
 
-### Actual Behavior
-Uncaught exception aborts the loop.
+### Actual Behaviour
+The exporter tokenizes and concatenates values with raw delimiters without enclosing quotes around text fields containing commas.
 
-### Impact
-Single invalid user input disrupts alerts for thousands of unaffected users.
+### Starter Files
+`csv_exporter.py` - Converts database records into formatted CSV rows.
 
-### Requirements
-- Return `{"succeeded": [...], "failed": [{"id": ..., "error": ...}]}`.
+### Task
+Refactor `export_to_csv_row` in `csv_exporter.py` to produce RFC 4180 compliant CSV formatting that properly quotes and escapes complex text fields.
 
-**Files in Sandbox:**
-- `batch_processor.py`
+### Acceptance Criteria
+1. Fields with embedded commas are wrapped in quotes.
+2. Standard fields format correctly with proper delimiters.
+3. Trailing newline character is included.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Sibling items processed despite middle failure**
+### Constraints
+- Slicing and pagination operations must include all items up to the final boundary record.
+- Record transformations and exports must preserve embedded delimiters, quotation marks, and line breaks.
+- Nested configuration merges must preserve non-conflicting sibling properties.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Manual string joining cannot properly handle special characters like delimiters, quotes, or newlines.
+- **Level 2 (Directional)**: Use Python's standard `csv` library and `io.StringIO` in `csv_exporter.py`.
+- **Level 3 (Root Cause)**: Instantiate a `csv.writer` writing into an in-memory `StringIO` buffer, write the row, and return the buffer value.
 
 ---
 
-### Challenge 32: [CODE-M17] Incorrect Pagination Cursors Produce Infinite Loops
+##### Challenge 31: Bulk Email Notification Batch Halts on First Invalid Address
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `API & Web`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Pagination`, `Cursors`, `Infinite Loops`
-- **Skills Tested**: `Python`, `Backend`, `APIs`
-- **Bug Signature**: `next_cursor = f"cur_{last_id}"
-    return`
-- **Suspected Component**: `cursor_paginator.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A data sync crawler fetches external CRM records page-by-page until no more records remain.
+### Incident Report
+Marketing noticed that monthly newsletter delivery stopped halfway through, leaving thousands of customers without scheduled announcements.
 
 ### Bug Report
-The sync crawler runs for 24 hours in an infinite loop, continuously requesting the same empty page millions of times.
+When sending a batch of 100 notifications, an unhandled exception thrown on item #42 crashes the entire loop, leaving items 43-100 completely unprocessed.
 
 ### Steps to Reproduce
-1. Fetch final page (returns 0 items).
-2. API response continues to return `next_cursor="cur_end"` instead of `None`.
-3. Client continues requesting `next_cursor` endlessly.
+1. Submit batch `[{"id": 1}, {"id": 2}, {"id": 3}]`.
+2. Provide a mock send function where item 2 raises `ValueError`.
+3. Observe that execution terminates prematurely, and item 3 is never attempted.
 
-### Expected Behavior
-When returned items count is 0 or less than `page_size`, `next_cursor` must be `None`.
+### Expected Behaviour
+Individual send failures must be caught and recorded in `failed`, allowing subsequent valid batch items to process normally into `succeeded`.
 
-### Actual Behavior
-Always returns a non-null `next_cursor`.
+### Actual Behaviour
+An error on a single recipient halts the entire dispatcher loop, abandoning all remaining messages in the batch.
 
-### Impact
-Server CPU exhaustion, API rate-limit exhaustion, and runaway cloud infrastructure costs.
+### Starter Files
+`batch_processor.py` - Dispatches bulk notification items and aggregates results.
 
-### Requirements
-- If fewer records than page_size are returned, terminate pagination by setting the next cursor to None.
+### Task
+Isolate item errors in `batch_processor.py` to prevent partial batch failures from abandoning remaining items.
 
-**Files in Sandbox:**
-- `cursor_paginator.py`
+### Acceptance Criteria
+1. Successful items are recorded in `succeeded`.
+2. Failing items are recorded in `failed` with structure `{"id": item["id"], "error": str(e)}`.
+3. Subsequent batch items continue processing after an error.
 
-**Verification Criteria (2 Test Cases):**
-- [Visible Sample Test] **Visible: Final page next_cursor is None**
-- [Visible Sample Test] **Visible: Full page generates next cursor**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Batch processors must isolate item-level failures to protect overall pipeline throughput.
+- **Level 2 (Directional)**: Examine the exception handling inside the `for item in items:` loop in `batch_processor.py`.
+- **Level 3 (Root Cause)**: Wrap `send_fn(item)` in a try/except block, appending successful IDs to `succeeded` and failures to `failed`.
 
 ---
 
-### Challenge 33: [CODE-M18] A Data Transformation Fails for Optional Nested Properties
+##### Challenge 32: Exhausted Dataset Slicing Causes Infinite Client Pagination Loop
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `Data & Processing`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Data Transformation`, `Defensive Programming`, `Null Safety`
-- **Skills Tested**: `Python`, `Data Processing`
-- **Bug Signature**: `city = profile["address"]["city"]`
-- **Suspected Component**: `transformer.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An address formatting service processes user profile forms to produce postal labels.
+### Incident Report
+API gateway monitors detected an external client making millions of identical requests overnight, consuming massive server bandwidth.
 
 ### Bug Report
-When a user profile has no secondary address (`address["secondary"]` is `None` or omitted), formatting throws `TypeError: 'NoneType' object is not subscriptable`.
+When a client reaches the end of paginated results and fewer than `page_size` items remain, the server continues returning a non-null `next_cursor`, trapping clients in an infinite loop.
 
 ### Steps to Reproduce
-1. Pass profile `{"name": "Alice", "address": None}`.
+1. Query a page with `page_size=10` containing only 1 record.
+2. Call `build_page_response(records=[{"id": 1}], page_size=10, last_id=1)`.
+3. Inspect `res["next_cursor"]`: returns `"cur_1"` instead of `None`.
+
+### Expected Behaviour
+When the returned record count is strictly less than `page_size`, the dataset is exhausted and `next_cursor` must be `None`.
+
+### Actual Behaviour
+The response builder generates an opaque next-page token even when the returned page has fewer items than requested, indicating the dataset is exhausted.
+
+### Starter Files
+`cursor_paginator.py` - Formats paginated API responses and cursor tokens.
+
+### Task
+Update `build_page_response` in `cursor_paginator.py` to signal pagination completion when records are exhausted.
+
+### Acceptance Criteria
+1. Partial pages (record count < page_size) return `next_cursor: None`.
+2. Full pages return the formatted cursor string.
+
+### Constraints
+- Slicing and pagination operations must include all items up to the final boundary record.
+- Record transformations and exports must preserve embedded delimiters, quotation marks, and line breaks.
+- Nested configuration merges must preserve non-conflicting sibling properties.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Cursor-based pagination signals the end of a collection by returning a null or empty cursor token.
+- **Level 2 (Directional)**: Check the count of `records` compared to `page_size` in `build_page_response`.
+- **Level 3 (Root Cause)**: Assign `next_cursor` only if `len(records) == page_size`; otherwise set it to `None`.
+
+---
+
+##### Challenge 33: User Profile Enrichment Service Crashes on Missing Optional Addresses
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
+
+### Incident Report
+Customer support reported that newly signed-up users could not access their account settings because the profile page displayed an internal server error.
+
+### Bug Report
+When a user profile has no address (`address` is `None` or omitted), formatting throws `TypeError: 'NoneType' object is not subscriptable` when attempting to access city.
+
+### Steps to Reproduce
+1. Submit profile `{"name": "Alice", "address": None}`.
 2. Call `format_postal_address`.
-3. Crash on `profile["address"]["city"]`.
+3. Observe unhandled `TypeError` on nested property lookup.
 
-### Expected Behavior
-Safely handle missing or None address fields, defaulting city to `"Unknown City"`.
+### Expected Behaviour
+Safely handle missing or `None` address objects, defaulting city to `"Unknown City"`.
 
-### Actual Behavior
-Direct nested indexing without null safety.
+### Actual Behaviour
+The formatter attempts to read nested address properties without verifying that the parent address object exists.
 
-### Impact
-Users without full address details cannot access checkout screens.
+### Starter Files
+`transformer.py` - Transforms raw profile records into formatted postal labels.
 
-### Requirements
-- Safely extract nested properties using `.get()` with dictionary default: `(profile.get("address") or {}).get("city", "Unknown City")`.
+### Task
+Implement safe navigation in `transformer.py` to handle missing address metadata gracefully.
 
-**Files in Sandbox:**
-- `transformer.py`
+### Acceptance Criteria
+1. Profiles with `None` or missing address format with `"Unknown City"`.
+2. Profiles with valid address dictionaries format with the actual city name.
 
-**Verification Criteria (2 Test Cases):**
-- [Visible Sample Test] **Visible: Missing address safely handled**
-- [Visible Sample Test] **Visible: Full address formatted**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Chained indexing on nested dictionaries raises errors whenever an intermediate parent property is missing or `None`.
+- **Level 2 (Directional)**: Inspect how `address` is retrieved from `profile` in `transformer.py`.
+- **Level 3 (Root Cause)**: Use safe dictionary access: `addr = profile.get("address") or {}`, then retrieve `city` with default `"Unknown City"`.
 
 ---
 
-### Challenge 34: [CODE-M19] A Rate Limiter Resets Counters Incorrectly
+##### Challenge 34: Sliding Window API Rate Limiter Fails to Expire Old Request Counters
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `Rate Limiting`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Rate Limiting`, `Sliding Window`, `Algorithms`
-- **Skills Tested**: `Python`, `Backend`, `Security`
-- **Bug Signature**: `if len(self.history) >= self.max_requests:
-            return False`
-- **Suspected Component**: `rate_limiter.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An API gateway limits free-tier API clients to 100 requests per minute to protect upstream services from DDoS traffic.
+### Incident Report
+API users complained that their applications were permanently blocked with rate limit errors even after waiting hours between requests.
 
 ### Bug Report
-A client sends 100 requests at 12:00:59, and another 100 requests at 12:01:01. The server receives 200 requests within a 2-second window without rate limiting!
+The rate limiter records request timestamps into a history list, but never purges timestamps older than the sliding window, causing the count to grow indefinitely until all future requests are rejected.
 
 ### Steps to Reproduce
-1. Fix-window counter resets exactly at the minute mark.
-2. Burst across the minute boundary allows 2x limit.
+1. Configure `SlidingWindowLimiter(max_requests=2, window_size=60)`.
+2. Send requests at `t=10` and `t=20`.
+3. Advance clock to `t=80` (where `t=10` is expired: 80 - 10 = 70 > 60).
+4. Send request at `t=80`.
+5. Observe that the request is rejected because history length is still 2.
 
-### Expected Behavior
-A sliding-window rate limiter must purge timestamps older than `now - 60` and check if remaining requests exceed limit.
+### Expected Behaviour
+Before checking request limits, timestamps older than `current_time - window_size` must be evicted from the history list.
 
-### Actual Behavior
-Fixed-window resets counter to 0 on every minute rollover.
+### Actual Behaviour
+The limiter checks request history size without evicting timestamps that have aged out of the active time window.
 
-### Impact
-API servers overwhelmed by boundary burst attacks.
+### Starter Files
+`rate_limiter.py` - Sliding window rate limiter for gateway traffic.
 
-### Requirements
-- Prune timestamps older than `current_time - window_size`.
-- If `len(timestamps) >= max_requests`, return `False` (rate limited).
-- Otherwise append `current_time` and return `True`.
+### Task
+Implement window pruning in `allow_request` in `rate_limiter.py`.
 
-**Files in Sandbox:**
-- `rate_limiter.py`
+### Acceptance Criteria
+1. Requests outside the active window are pruned, allowing new requests through.
+2. Requests within the active window exceeding the limit are blocked.
+3. Allowed requests append their timestamp to history.
 
-**Verification Criteria (2 Test Cases):**
-- [Visible Sample Test] **Visible: Expired timestamps pruned allowing new request**
-- [Visible Sample Test] **Visible: Active window limit enforced**
+### Constraints
+- Network retry attempts for a given logical operation must reuse a stable, invariant idempotency token.
+- Tenant-isolated caches must partition keys cleanly by tenant identifier.
+- Expired sliding window timestamps must be pruned to avoid permanent request starvation.
+- Operational errors (such as `ConnectionError`) must propagate rather than being masked as user validation errors.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Sliding window rate limiters must filter out expired events before evaluating current traffic volume.
+- **Level 2 (Directional)**: Look at `self.history` in `allow_request` in `rate_limiter.py` before the length check.
+- **Level 3 (Root Cause)**: Filter `self.history` to keep only entries where `current_time - t < self.window_size` before comparing against `self.max_requests`.
 
 ---
 
-### Challenge 35: [CODE-M20] An Exception Handler Hides a Meaningful Application Failure
+##### Challenge 35: Generic Exception Catch Block Conceals Root Cause of Service Failure
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Medium` | **Technology**: `Python` | **Category**: `Error Handling`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `Error Handling`, `Exceptions`, `Observability`
-- **Skills Tested**: `Python`, `Error Handling`, `Backend`
-- **Bug Signature**: `except Exception:
-        return False`
-- **Suspected Component**: `service_client.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An authentication service queries an external LDAP server for corporate credentials.
+### Incident Report
+Infrastructure teams spent 48 hours investigating supposed customer credential lockouts, only to find the external authentication server had network outage issues.
 
 ### Bug Report
-When LDAP server credentials expire, the service catches `Exception` and returns `{"authenticated": False, "reason": "Bad credentials"}`. Administrators spend days resetting user passwords when LDAP service was actually unreachable.
+When an LDAP authentication server times out with `ConnectionError`, `verify_credentials` catches broad `Exception` and returns `{"authenticated": False, "error": "Invalid credentials"}`.
 
 ### Steps to Reproduce
-1. LDAP server raises `ConnectionRefusedError`.
-2. Generic handler masks the server error as user password failure.
+1. Mock an authentication function that raises `ConnectionError("LDAP timeout")`.
+2. Call `verify_credentials(mock_auth, "alice", "secret")`.
+3. Observe that network failure is swallowed and reported as user password error.
 
-### Expected Behavior
-Differentiate operational errors (`ConnectionError`) from authentication errors (`AuthenticationError`), re-raising operational errors.
+### Expected Behaviour
+Infrastructure errors like `ConnectionError` must propagate upward so monitoring systems detect outages, while credential errors like `ValueError` return bad credential responses.
 
-### Actual Behavior
-Catches broad `Exception` and treats system failure as user error.
+### Actual Behaviour
+Catching generic exceptions silences low-level infrastructure network timeouts and masks them as ordinary validation failures.
 
-### Impact
-Misdiagnosis of production infrastructure outages as end-user mistakes.
+### Starter Files
+`service_client.py` - Wraps external LDAP authentication service queries.
 
-### Requirements
-- Re-raise `ConnectionError` or infrastructure exceptions.
-- Only return `{"authenticated": False}` for expected `ValueError` / invalid password.
+### Task
+Narrow exception handling in `service_client.py` so operational exceptions propagate to system monitors.
 
-**Files in Sandbox:**
-- `service_client.py`
+### Acceptance Criteria
+1. `ConnectionError` and other operational exceptions are allowed to raise.
+2. `ValueError` returns `{"authenticated": False, "error": "Invalid credentials"}`.
 
-**Verification Criteria (2 Test Cases):**
-- [Visible Sample Test] **Visible: ConnectionError re-raised**
-- [Visible Sample Test] **Visible: Bad credentials handled cleanly**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Overly broad exception catching hides severe infrastructure defects under user error messages.
+- **Level 2 (Directional)**: Examine the `except Exception:` clause in `service_client.py`.
+- **Level 3 (Root Cause)**: Catch `ValueError` specifically for invalid credentials, allowing `ConnectionError` and unexpected exceptions to bubble up.
 
 ---
 
-### Challenge 36: [CODE-H01] Concurrent Payment Requests Cause Duplicate Charges
+#### Tier: Hard (15 Challenges)
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Hard` | **Technology**: `Python` | **Category**: `Concurrency`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `Concurrency`, `Distributed Locks`, `Fintech`, `Race Conditions`
-- **Skills Tested**: `Python`, `Concurrency`, `Security`
-- **Bug Signature**: `if order_id in paid_orders:
-        return {"status": "ALREADY_PAID"}`
-- **Suspected Component**: `payment_gateway.py`
+##### Challenge 36: Rapid Double-Tap Submissions Cause Duplicate Checkout Charges
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `Python`
 
-**Scenario & Defect Overview:**
-### Company Scenario
-A high-volume fintech gateway processes credit card checkout submissions. Users on mobile apps frequently double-tap the "Pay Now" button.
+### Incident Report
+Customer support reported numerous complaints from mobile shoppers who were charged twice when double-tapping the checkout submission button on slow connections.
 
 ### Bug Report
-When two requests arrive within 5 milliseconds of each other, both requests pass the `is_order_paid` check before either sets the paid flag, charging the customer's card twice!
+When two requests arrive within milliseconds, both pass the `paid_orders` check before either sets the completed state, charging the customer's payment method twice.
 
 ### Steps to Reproduce
-1. Two concurrent threads execute `process_payment(order_id)`.
-2. Thread 1 checks `is_paid` -> False.
-3. Thread 2 checks `is_paid` -> False.
-4. Both charge credit card and mark paid.
+1. Dispatch two concurrent payment execution calls for order `"ORD1"`.
+2. Notice that both calls check `paid_orders` simultaneously before any charge completes.
+3. Observe duplicate charge function invocations.
 
-### Expected Behavior
-Use an atomic lock (or test-and-set primitive) to ensure only one thread can process payment for a given order ID.
+### Expected Behaviour
+The system must acquire an exclusive processing lock for the order ID prior to executing the charge, returning `{"status": "DUPLICATE_IGNORED"}` (or `"ALREADY_PROCESSING"` / `"LOCKED"`) for concurrent attempts.
 
-### Actual Behavior
-Check-then-act race condition (TOCTOU) allows parallel executions.
+### Actual Behaviour
+Check-then-act race condition executes charges before locking, allowing parallel executions to proceed.
 
-### Impact
-Double payments, cardholder disputes, and merchant processing account penalties.
+### Starter Files
+`payment_gateway.py` - Payment processing service coordinating order status and merchant charges.
 
-### Requirements
-- Acquire lock with `lock_set.add(order_id)`. If order is already in `lock_set` or `paid_set`, return `{"status": "DUPLICATE_IGNORED"}`.
-- Upon completion, add to `paid_set` and remove from `lock_set`.
+### Task
+Implement mutually exclusive locking in `payment_gateway.py` so only one worker can process payment for an order at any given time.
 
-**Files in Sandbox:**
-- `payment_gateway.py`
+### Acceptance Criteria
+1. The first request acquires the lock, completes the charge, registers the order in `paid_orders`, and releases the lock.
+2. Concurrent requests targeting a locked or already paid order return a duplicate or locked status without charging.
+3. Charge exceptions do not leave locks dangling.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Concurrent lock prevents duplicate charge**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In multi-threaded checkout systems, check-then-act sequences must be protected by atomic locks to prevent race conditions.
+- **Level 2 (Directional)**: Inspect when `processing_locks` is checked and acquired relative to `charge_fn` in `payment_gateway.py`.
+- **Level 3 (Root Cause)**: Check both `paid_orders` and `processing_locks` upfront; acquire the lock before calling `charge_fn`, and release it once complete.
 
 ---
 
-### Challenge 37: [CODE-H02] A Distributed Job Processor Executes Non-Idempotent Jobs Twice
+##### Challenge 37: Long Video Transcoding Jobs Reassigned Mid-Execution
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Hard` | **Technology**: `Python` | **Category**: `Backend`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `Distributed Systems`, `Leases`, `Heartbeats`
-- **Skills Tested**: `Python`, `Backend`, `Architecture`
-- **Bug Signature**: `def renew_lease(leases, job_id, current_time, extension=30):
-    pass`
-- **Suspected Component**: `job_scheduler.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A video transcoding cluster distributes heavy rendering jobs across worker nodes with a 30-second lease timeout.
+### Incident Report
+Engineering noticed rendering worker clusters producing corrupted, duplicated MP4 assets because long video transcoding jobs were being reassigned to second workers.
 
 ### Bug Report
-When a video takes 45 seconds to transcode, the cluster scheduler assumes worker 1 died, revokes its lease, and assigns the job to worker 2, causing both workers to write conflicting output files!
+When a high-definition video takes 45 seconds to render, the 30-second worker lease expires. The scheduler marks Worker 1 dead and assigns the job to Worker 2, causing both nodes to render concurrently.
 
 ### Steps to Reproduce
-1. Worker 1 starts long-running job.
-2. Lease expires after 30s while worker 1 is still processing.
-3. Scheduler re-queues job to worker 2.
+1. Assign job `"J1"` with initial lease expiration at `t=100`.
+2. Worker processes job actively at `t=90`.
+3. Clock reaches `t=105` without heartbeat extension.
+4. `should_reassign_job` flags the job for reassignment while Worker 1 is still running.
 
-### Expected Behavior
-Long-running jobs must periodically send heartbeats to extend their lease while active.
+### Expected Behaviour
+Active workers must periodically send heartbeat renewals (`renew_lease`) to extend their expiration deadline by `extension` seconds while processing.
 
-### Actual Behavior
-Fixed timeout without heartbeat extension causes false-positive dead worker assumptions.
+### Actual Behaviour
+The heartbeat renewal routine lacks logic to extend expiration deadlines, allowing active worker leases to lapse prematurely.
 
-### Impact
-Wasted compute, corrupted multi-part video uploads, and doubled cloud rendering bills.
+### Starter Files
+`job_scheduler.py` - Coordinates worker leases and dead node task reassignment.
 
-### Requirements
-- Provide `heartbeat(lease_tracker, job_id, extension_seconds)` method to extend the expiration deadline during execution.
+### Task
+Implement `renew_lease` in `job_scheduler.py` so active workers can extend their lease expiration.
 
-**Files in Sandbox:**
-- `job_scheduler.py`
+### Acceptance Criteria
+1. `renew_lease` updates the job's `expires_at` timestamp by adding `extension` seconds.
+2. A renewed lease prevents `should_reassign_job` from triggering premature reassignment.
+3. Unrenewed expired jobs continue to be reassigned.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Heartbeat renews lease preventing reassignment**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Distributed leasing algorithms require periodic heartbeats from healthy workers to prove liveness for long-running tasks.
+- **Level 2 (Directional)**: Look at the empty `pass` statement in `renew_lease` in `job_scheduler.py`.
+- **Level 3 (Root Cause)**: Update the lease dictionary for `job_id` so that `expires_at` is recalculated as `current_time + extension`.
 
 ---
 
-### Challenge 38: [CODE-H03] Incorrect Transaction Isolation Causes Inconsistent Inventory
+##### Challenge 38: Airline Seat Allocation Confirms Tickets Beyond Flight Capacity
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Hard` | **Technology**: `Python` | **Category**: `Concurrency`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `Concurrency`, `Inventory`, `Race Conditions`
-- **Skills Tested**: `Python`, `Concurrency`
-- **Bug Signature**: `current_seats = inventory.get(flight_id, 0)
-    if current_seats < requested_seats:`
-- **Suspected Component**: `inventory_allocator.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An airline seat allocation service processes flight bookings during holiday flash sales.
+### Incident Report
+Airport gate agents reported passenger boarding denial emergencies after holiday flash sales allowed more passengers to purchase tickets than seats available.
 
 ### Bug Report
-Two customers buy the last seat on Flight 302 simultaneously. The system confirms both tickets, leading to passenger boarding denial at the gate!
+When only 1 seat remains on Flight 100, two simultaneous customer booking requests read available seats as 1, decrement stock, and confirm both tickets, overselling the flight.
 
 ### Steps to Reproduce
-1. Available seats = 1.
-2. User A and User B check availability concurrently.
-3. Both read 1, decrement to 0, and confirm.
+1. Initialize inventory with 1 seat: `inv = {"FL100": 1}`.
+2. User A and User B concurrently attempt to book 1 seat each.
+3. Observe both allocations return `True`, leaving negative seats or unseated passengers.
 
-### Expected Behavior
-Perform atomic compare-and-swap or conditional reservation: only decrement if `available > 0`.
+### Expected Behaviour
+Seat reservations must conditionally allocate stock: only decrement and return `True` if available seats satisfy the request; otherwise return `False`.
 
-### Actual Behavior
-Unsynchronized read followed by separate write.
+### Actual Behaviour
+Check-then-act window allows concurrent requests to read stale available counts and oversell.
 
-### Impact
-Oversold flights, regulatory passenger compensation penalties, and reputational damage.
+### Starter Files
+`inventory_allocator.py` - Allocates seats from flight inventory batches.
 
-### Requirements
-- Atomically check and reserve: if `stock[flight_id] >= seats`, decrement and return `True`. Otherwise return `False`.
+### Task
+Implement atomic conditional reservation in `inventory_allocator.py` to prevent capacity overselling.
 
-**Files in Sandbox:**
-- `inventory_allocator.py`
+### Acceptance Criteria
+1. The first reservation for the last available seat succeeds and decrements inventory to 0.
+2. Subsequent reservations return `False` and do not alter depleted inventory.
+3. Requests with insufficient seats leave stock unchanged.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Second allocation fails when stock exhausted**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Concurrency bugs in reservation engines arise when reading state and writing state are separated in time.
+- **Level 2 (Directional)**: Examine `reserve_seats` in `inventory_allocator.py` to ensure the balance check is validated before mutation.
+- **Level 3 (Root Cause)**: Ensure the stock check `inventory.get(flight_id, 0) >= requested_seats` evaluates the live state immediately prior to deduction.
 
 ---
 
-### Challenge 39: [CODE-H04] Cache Invalidation Races with Concurrent Database Updates
+##### Challenge 39: Cache-Aside Strategy Restores Stale Bio After Database Update
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Hard` | **Technology**: `Python` | **Category**: `Caching`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `Cache-Aside`, `Concurrency`, `Data Consistency`
-- **Skills Tested**: `Python`, `Caching`
-- **Bug Signature**: `cache.delete(f"user:{user_id}")
-    db[user_id] = new_bio`
-- **Suspected Component**: `cache_aside.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A social media platform caches user profile bios using the cache-aside pattern.
+### Incident Report
+Users changing their public profile bio noticed that after refreshing the page, their old bio reverted and remained stuck in production caches for hours.
 
 ### Bug Report
-User updates bio from "Dev" to "Senior Dev". A concurrent read request repopulates the cache with the old value "Dev", where it stays stuck forever!
+When an update runs, it purges the cache before updating the database. A concurrent reader misses cache, reads the still-uncommitted old database value, and repopulates the cache with stale data.
 
 ### Steps to Reproduce
-1. Update starts: deletes cache.
-2. Concurrent read misses cache, reads old DB value "Dev", and puts "Dev" into cache.
-3. Update writes "Senior Dev" to DB.
-4. Cache is now permanently out of sync with DB!
+1. Call `update_user_bio(db, cache, "u1", "New Bio")`.
+2. Observe operation sequence in trace logs.
+3. Notice `CACHE_DELETE` is executed prior to `DB_WRITE`.
 
-### Expected Behavior
-Write to the database first, and delete the cache AFTER the database commit succeeds.
+### Expected Behaviour
+In the standard Cache-Aside pattern, the database write must commit first, and cache invalidation must be triggered afterward (`["DB_WRITE", "CACHE_DELETE"]`).
 
-### Actual Behavior
-Deletes cache BEFORE writing to the database.
+### Actual Behaviour
+The code deletes the cache key prior to persisting the new database value.
 
-### Impact
-Permanent cache drift where users see stale profiles until the next manual cache purge.
+### Starter Files
+`cache_aside.py` - Synchronizes database writes with key-value cache eviction.
 
-### Requirements
-- Ensure database write executes first: `db.write(key, value)`.
-- Then invalidate cache: `cache.delete(key)`.
+### Task
+Reorder operations in `update_user_bio` in `cache_aside.py` to follow the standard Cache-Aside invalidation sequence.
 
-**Files in Sandbox:**
-- `cache_aside.py`
+### Acceptance Criteria
+1. Database mutation executes before cache eviction.
+2. Returns `True` upon successful completion.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: DB write precedes cache deletion**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In cache-aside architecture, deleting cache before database updates creates a window for readers to cache stale database rows.
+- **Level 2 (Directional)**: Inspect the execution order in `update_user_bio` in `cache_aside.py`.
+- **Level 3 (Root Cause)**: Swap the statements: write to `db[user_id] = new_bio` first, and call `cache.delete(...)` immediately following the write.
 
 ---
 
-### Challenge 40: [CODE-H05] A Distributed Lock is Released by the Wrong Request
+##### Challenge 40: Delayed Worker Task Releases Unrelated Lock Held by New Owner
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Hard` | **Technology**: `Python` | **Category**: `Concurrency`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `Distributed Locks`, `Redis`, `Concurrency`
-- **Skills Tested**: `Python`, `Concurrency`, `Security`
-- **Bug Signature**: `if lock_key in lock_storage:
-        del lock_storage[lock_key]`
-- **Suspected Component**: `distributed_lock.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A microservices system uses distributed Redis locks to serialize critical report generation tasks.
+### Incident Report
+Multiple background analytics workers started executing simultaneously, corrupting data tables despite an explicit mutual-exclusion distributed lock.
 
 ### Bug Report
-Request A acquires the lock with TTL=10s. Request A runs slow (12s). The lock expires and Request B acquires it. Request A finally finishes and calls `release_lock`, inadvertently releasing Request B's lock!
+Worker A acquired a 10s lock. Worker A experienced a 12s GC pause. The lock expired and Worker B acquired it. Worker A resumed and called `release_lock`, inadvertently deleting Worker B's lock!
 
 ### Steps to Reproduce
-1. Client A acquires lock with token `"token_A"`.
-2. Lock expires, Client B acquires with `"token_B"`.
-3. Client A calls `release_lock(key)` without passing token.
-4. Client B's lock is prematurely released.
+1. Lock is currently held by `"owner_B"`.
+2. Worker A calls `release_lock(locks, "report_lock", "owner_A")`.
+3. Observe lock is deleted, allowing Worker C to acquire it concurrently with Worker B.
 
-### Expected Behavior
-`release_lock(key, token)` must check that the stored lock value matches the caller's unique token before releasing.
+### Expected Behaviour
+`release_lock` must only delete the lock key if the stored owner token exactly matches the caller's `owner_token`.
 
-### Actual Behavior
-Unconditional deletion of the lock key.
+### Actual Behaviour
+The release function deletes the lock key unconditionally as long as the key exists in storage.
 
-### Impact
-Multiple workers execute critical mutual-exclusion tasks concurrently.
+### Starter Files
+`distributed_lock.py` - Implements token-validated distributed lock acquisition and release.
 
-### Requirements
-- Only delete the lock if `lock_storage.get(key) == token`.
+### Task
+Add token ownership verification in `release_lock` in `distributed_lock.py`.
 
-**Files in Sandbox:**
-- `distributed_lock.py`
+### Acceptance Criteria
+1. Releasing with a mismatched token returns `False` and leaves the lock intact.
+2. Releasing with the matching owner token deletes the lock and returns `True`.
 
-**Verification Criteria (2 Test Cases):**
-- [Visible Sample Test] **Visible: Wrong token cannot release lock**
-- [Visible Sample Test] **Visible: Valid owner releases lock**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Distributed locks require fencing tokens: a client must prove it is the current legitimate owner before releasing a lock.
+- **Level 2 (Directional)**: Check what condition is evaluated before `del lock_storage[lock_key]` in `distributed_lock.py`.
+- **Level 3 (Root Cause)**: Verify that `lock_storage.get(lock_key) == owner_token` before deleting the key and returning `True`.
 
 ---
 
-### Challenge 41: [CODE-H06] A Retry Mechanism Causes a Request Storm During an Outage
+##### Challenge 41: Synchronized Retries Trigger Thundering Herd Request Storm
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Hard` | **Technology**: `Python` | **Category**: `API & Web`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `Resilience`, `Exponential Backoff`, `Jitter`, `Thundering Herd`
-- **Skills Tested**: `Python`, `Backend`, `APIs`
-- **Bug Signature**: `return min(max_delay, base_delay * attempt + jitter)`
-- **Suspected Component**: `backoff_client.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A mobile banking application connects to payment backend clusters during peak sale events.
+### Incident Report
+When a payment cluster recovered from a brief 2-second blip, tens of thousands of client devices retried at the exact same second, immediately knocking the servers offline again.
 
 ### Bug Report
-When an upstream server encounters a 1-second lag, 50,000 mobile apps retry on exact synchronized 2-second intervals, creating massive spike waves (thundering herd) that crash the database.
+The retry formula uses deterministic linear backoff (`base_delay * attempt`). Because thousands of clients retry at the exact same delay intervals, they create catastrophic synchronized traffic waves (thundering herd).
 
 ### Steps to Reproduce
-1. Execute retry delay formula `delay = base_delay * attempt`.
-2. All clients calculate exact identical delays without randomization.
+1. Calculate delay for attempt 3 with `base_delay=2, max_delay=60, jitter=0`.
+2. Linear formula returns `2 * 3 = 6` seconds.
+3. Observe lack of exponential expansion (expected `2 * (2^3) = 16` seconds).
 
-### Expected Behavior
-Add exponential backoff with randomized jitter to spread retry attempts over time.
+### Expected Behaviour
+Retries must grow exponentially according to `min(max_delay, base_delay * (2 ** attempt)) + jitter` to spread load and give servers breathing room to recover.
 
-### Actual Behavior
-Deterministic linear backoff with zero jitter.
+### Actual Behaviour
+The delay calculation scales linearly without exponential growth.
 
-### Impact
-Self-inflicted DDoS preventing upstream servers from recovering from outages.
+### Starter Files
+`backoff_client.py` - Calculates backoff wait duration for failed network requests.
 
-### Requirements
-- Implement exponential backoff with jitter: `min(max_delay, base_delay * (2 ** attempt)) + jitter`.
+### Task
+Implement truncated exponential backoff in `calculate_backoff` in `backoff_client.py`.
 
-**Files in Sandbox:**
-- `backoff_client.py`
+### Acceptance Criteria
+1. Delays scale exponentially with attempt number: `base_delay * (2 ** attempt)`.
+2. Delays are capped at `max_delay`.
+3. Jitter offsets are added to the final delay.
 
-**Verification Criteria (2 Test Cases):**
-- [Visible Sample Test] **Visible: Exponential growth at attempt 3**
-- [Visible Sample Test] **Visible: Capped at max_delay**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Resilient distributed systems use exponential backoff rather than linear backoff to prevent thundering herd spikes.
+- **Level 2 (Directional)**: Examine the multiplier applied to `base_delay` in `calculate_backoff` in `backoff_client.py`.
+- **Level 3 (Root Cause)**: Replace the linear multiplication with power of two exponentiation: `base_delay * (2 ** attempt)`.
 
 ---
 
-### Challenge 42: [CODE-H07] Concurrent File Writes Corrupt Generated Reports
+##### Challenge 42: Simultaneous Report Generations Produce Interleaved CSV Output
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Hard` | **Technology**: `Python` | **Category**: `Data & Processing`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `File I/O`, `Atomicity`, `Concurrency`
-- **Skills Tested**: `Python`, `Backend`
-- **Bug Signature**: `file_system[dest_path] = content
-    return dest_path`
-- **Suspected Component**: `report_writer.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An automated financial reporting system generates end-of-day summary CSV files.
+### Incident Report
+Financial compliance officers discovered that nightly ledger export files were corrupted with split rows and mangled headers due to concurrent report tasks writing directly to the target file.
 
 ### Bug Report
-When two scheduled reports generate simultaneously, they append lines to the same target file at the same time, producing interleaved, corrupted CSV records.
+Writing directly to the target file path without temporary file staging allows concurrent or partial writes to overwrite or interleave data in destination files.
 
 ### Steps to Reproduce
-1. Two processes write to `report.csv` simultaneously in append mode.
-2. Rows interleave mid-line.
+1. Execute `write_report_safely(file_system, "report.csv", "DATA", pid=123)`.
+2. Inspect file system operations.
+3. Observe that no `.tmp.` staging file was utilized.
 
-### Expected Behavior
-Write to a unique temporary file first, and atomically replace the destination file upon completion.
+### Expected Behaviour
+Reports must be written to an isolated temporary file path (`f"{dest_path}.tmp.{pid}"`) first, and moved/renamed atomically to the destination path upon completion.
 
-### Actual Behavior
-Direct non-atomic write to destination path.
+### Actual Behaviour
+The export routine writes directly to the shared destination path rather than staging chunks into an isolated temporary workspace.
 
-### Impact
-Corrupted financial compliance reports sent to regulators.
+### Starter Files
+`report_writer.py` - File persistence helper for generated regulatory exports.
 
-### Requirements
-- Generate unique temp filename `f"{dest_path}.tmp.{pid}"`.
-- Write content to temp file, then rename/replace to `dest_path`.
+### Task
+Implement temporary file staging and atomic replacement in `report_writer.py`.
 
-**Files in Sandbox:**
-- `report_writer.py`
+### Acceptance Criteria
+1. Report content is staged to a temporary file containing `.tmp.{pid}`.
+2. The staged content is atomically moved to `dest_path`.
+3. Returns `dest_path` upon completion.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Writes to temp file then renames**
+### Constraints
+- Slicing and pagination operations must include all items up to the final boundary record.
+- Record transformations and exports must preserve embedded delimiters, quotation marks, and line breaks.
+- Nested configuration merges must preserve non-conflicting sibling properties.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Atomic file replacement prevents partial writes and corruption by writing to a hidden temporary file before renaming.
+- **Level 2 (Directional)**: Look at how `dest_path` is written directly into `file_system` in `report_writer.py`.
+- **Level 3 (Root Cause)**: Write first to `f"{dest_path}.tmp.{pid}"`, then assign `file_system[dest_path] = file_system.pop(temp_path)`.
 
 ---
 
-### Challenge 43: [CODE-H08] An Asynchronous Task Deadlocks Under Concurrent Execution
+##### Challenge 43: Concurrent Resource Allocation Leads to Worker Thread Deadlock
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Hard` | **Technology**: `Python` | **Category**: `Concurrency`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `Deadlocks`, `Concurrency`, `Lock Ordering`
-- **Skills Tested**: `Python`, `Concurrency`
-- **Bug Signature**: `return list(required_resources)`
-- **Suspected Component**: `resource_manager.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A resource allocator manages access to GPU clusters and high-speed NVMe storage arrays.
+### Incident Report
+High-performance computing cluster nodes froze completely when running distributed machine learning training jobs that allocate both GPUs and fast NVMe storage.
 
 ### Bug Report
-Task 1 acquires GPU, then waits for NVMe. Task 2 acquires NVMe, then waits for GPU. Both tasks hang forever in a circular deadlock!
+Worker 1 requests `["NVMe", "GPU"]` while Worker 2 requests `["GPU", "NVMe"]`. Worker 1 locks NVMe and waits for GPU; Worker 2 locks GPU and waits for NVMe, causing a circular deadlock.
 
 ### Steps to Reproduce
-1. Worker 1 locks resources in order `['GPU', 'NVMe']`.
-2. Worker 2 locks resources in order `['NVMe', 'GPU']`.
-3. System deadlocks.
+1. Worker A calls `determine_lock_order(["NVMe", "GPU", "CPU"])`.
+2. Worker B calls `determine_lock_order(["CPU", "NVMe", "GPU"])`.
+3. Notice returned lock orders differ (`['NVMe', 'GPU', 'CPU']` vs `['CPU', 'NVMe', 'GPU']`), allowing circular lock acquisition.
 
-### Expected Behavior
-Enforce a global canonical ordering (e.g. alphabetical) on lock acquisition so all workers acquire resources in the identical sequence.
+### Expected Behaviour
+Lock acquisition must enforce a strict, global canonical ordering (e.g. alphabetical) regardless of caller parameter order: `["CPU", "GPU", "NVMe"]`.
 
-### Actual Behavior
-Arbitrary resource locking sequence.
+### Actual Behaviour
+The function converts input to a list without sorting, preserving caller-specified arbitrary order.
 
-### Impact
-Entire cluster worker pool freezes, halting all computational jobs.
+### Starter Files
+`resource_manager.py` - Determines acquisition order for shared hardware resources.
 
-### Requirements
-- Sort resource IDs alphabetically before acquisition: `sorted(required_resources)`.
+### Task
+Ensure consistent canonical resource acquisition ordering in `resource_manager.py`.
 
-**Files in Sandbox:**
-- `resource_manager.py`
+### Acceptance Criteria
+1. Resource lists are returned in deterministic sorted order regardless of input permutation.
+2. Circular wait conditions are prevented.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Deterministic sorted lock order**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Coffman's condition for deadlock (circular wait) can be eliminated by enforcing a total ordering on all shared locks.
+- **Level 2 (Directional)**: Inspect what `determine_lock_order` returns in `resource_manager.py`.
+- **Level 3 (Root Cause)**: Sort the collection before returning: `return sorted(required_resources)`.
 
 ---
 
-### Challenge 44: [CODE-H09] A Permission Check Occurs After a Sensitive State Change
+##### Challenge 44: Security Guard Runs After Modifying User Role Assignment
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Hard` | **Technology**: `Python` | **Category**: `Security`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `Security`, `Authorization`, `Defensive Programming`
-- **Skills Tested**: `Python`, `Security`, `Backend`
-- **Bug Signature**: `user_db[target] = new_role
-    if not auth_checker(actor):`
-- **Suspected Component**: `access_controller.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An enterprise access management portal processes role upgrades and administrative privilege assignments.
+### Incident Report
+A security audit flagged a critical vulnerability in the administrative identity portal where unprivileged users could escalate their role to Superuser.
 
 ### Bug Report
-An unprivileged user submits a request to promote themselves to Superuser. The handler grants the role in the database before running the authorization check. If the check throws, the user still remains Superuser!
+`elevate_user_role` updates the database role record first, and only then executes the authorization check. When unauthorized actors invoke the function, the database role is already modified.
 
 ### Steps to Reproduce
-1. Call `elevate_user_role(actor="guest", target_user="guest", new_role="admin")`.
-2. State changed before authorization guard.
+1. Target user has `"guest"` role.
+2. Guest user submits role promotion to `"admin"` with failing authorization check.
+3. Catch the expected `PermissionError`.
+4. Inspect `users["guest_user"]`: user has been elevated to `"admin"`.
 
-### Expected Behavior
-Check permissions first. If unauthorized, reject immediately without touching user state.
+### Expected Behaviour
+Authorization checks must execute before modifying any protected system state. Unauthorized callers must leave database state completely unchanged.
 
-### Actual Behavior
-Modifies user state before checking authorization.
+### Actual Behaviour
+State mutation precedes access control verification.
 
-### Impact
-Privilege escalation vulnerability allowing ordinary users to seize administrator rights.
+### Starter Files
+`access_controller.py` - Assigns administrative roles and executes privilege verification.
 
-### Requirements
-- Verify `is_authorized(actor, "ADMIN_UPGRADE")` at the beginning of the function.
+### Task
+Reorder logic in `access_controller.py` so authorization checks guard state mutations.
 
-**Files in Sandbox:**
-- `access_controller.py`
+### Acceptance Criteria
+1. Unauthorized actors trigger `PermissionError` and leave target roles unchanged.
+2. Authorized actors update target roles successfully.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Unauthorized attempt leaves target role unchanged**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Security gates must always validate permissions before executing privileged state mutations.
+- **Level 2 (Directional)**: Look at the order of operations in `elevate_user_role` in `access_controller.py`.
+- **Level 3 (Root Cause)**: Invoke `if not auth_checker(actor): raise PermissionError(...)` before executing `user_db[target] = new_role`.
 
 ---
 
-### Challenge 45: [CODE-H10] A Batch Migration Loses Records After a Partial Failure
+##### Challenge 45: Interrupted Database Migration Leaves No Resumption Checkpoint
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Hard` | **Technology**: `Python` | **Category**: `Data & Processing`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `Migrations`, `Checkpoints`, `Fault Tolerance`
-- **Skills Tested**: `Python`, `Backend`, `Data Processing`
-- **Bug Signature**: `for record in batch:
-            self.transform(record)
-        return True`
-- **Suspected Component**: `migration_runner.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A customer database migration script transfers 1,000,000 user rows to a new cloud datastore in batches of 1,000.
+### Incident Report
+During a major database platform upgrade, a network timeout halted the migration job at record 500,000, forcing engineers to start over from record 1 due to lack of checkpoints.
 
 ### Bug Report
-At batch 500, a transient network error terminates the migration. When re-run, the script starts over from batch 1 without checkpointing, creating duplicate rows and missing records.
+`migrate_batch` transfers records into the destination database, but fails to record the progress cursor or highest record ID in `checkpoint_store`.
 
 ### Steps to Reproduce
-1. Execute migration without saving checkpoint.
-2. Interruption leaves no record of the last successful cursor.
+1. Ingest batch `[{"id": 10}, {"id": 20}, {"id": 30}]`.
+2. Run `migrate_batch(db, cp, batch)`.
+3. Check `cp.get("last_id")`.
+4. Observe that `cp` is completely empty.
 
-### Expected Behavior
-After each batch commits, persist the last processed record ID to a checkpoint store. On resume, start from `checkpoint_id`.
+### Expected Behaviour
+After persisting a batch of records, the migration runner must record the last processed record's ID into `checkpoint_store["last_id"]`.
 
-### Actual Behavior
-No checkpoint persistence.
+### Actual Behaviour
+No checkpoint metadata is recorded during batch commits.
 
-### Impact
-Corrupted migrations and multi-day manual database recovery operations.
+### Starter Files
+`migration_runner.py` - Migrates records in batches while updating checkpoint state.
 
-### Requirements
-- Persist the last processed record identifier in the checkpoint store after each successful batch write.
+### Task
+Add checkpoint tracking in `migrate_batch` in `migration_runner.py`.
 
-**Files in Sandbox:**
-- `migration_runner.py`
+### Acceptance Criteria
+1. The highest record ID in the batch is stored in `checkpoint_store["last_id"]`.
+2. Records are persisted to `destination_db`.
+3. Returns `True` upon batch completion.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Checkpoint updated after batch**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Large-scale data pipelines require persistent checkpoints to enable crash recovery without duplicating work.
+- **Level 2 (Directional)**: Examine what `migrate_batch` writes to `checkpoint_store` in `migration_runner.py`.
+- **Level 3 (Root Cause)**: After writing records, update `checkpoint_store["last_id"] = batch[-1]["id"]` if the batch contains records.
 
 ---
 
-### Challenge 46: [CODE-H11] An Event-Processing Pipeline Reorders Dependent Events
+##### Challenge 46: Entity Event Stream Reorders Sequential Account Actions
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Hard` | **Technology**: `Python` | **Category**: `Concurrency`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `Event Sourcing`, `Partitioning`, `Concurrency`
-- **Skills Tested**: `Python`, `Concurrency`, `Architecture`
-- **Bug Signature**: `return random.randint(0, num_shards - 1)`
-- **Suspected Component**: `event_stream.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An e-commerce order event processor receives `ORDER_CREATED` followed by `ORDER_CANCELLED`.
+### Incident Report
+E-commerce customers reported that cancelled orders were still being billed and shipped because order cancellation events processed before creation events.
 
 ### Bug Report
-Because events are assigned to random thread pool workers, `ORDER_CANCELLED` executes before `ORDER_CREATED`, failing with "Order not found", and the order is created afterward and remains active!
+The event streaming partitioner assigns incoming events to random shards. As a result, `ORDER_CANCELLED` and `ORDER_CREATED` for the same order route to different worker threads, executing out of sequence.
 
 ### Steps to Reproduce
-1. Emit `ORDER_CREATED` and `ORDER_CANCELLED` for `order_id="101"`.
-2. Random worker assignment processes them out of order.
+1. Emit creation event `e1` for order `"ORD_99"`.
+2. Emit cancellation event `e2` for order `"ORD_99"`.
+3. Call `assign_event_shard` on both events.
+4. Observe that events for the same order route to different shards.
 
-### Expected Behavior
-Events with the same partition key (`order_id`) must route to the same worker shard to preserve FIFO sequence.
+### Expected Behaviour
+Events with identical `entity_id` values must deterministically route to the exact same shard to preserve strict FIFO processing.
 
-### Actual Behavior
-Random round-robin routing breaks entity event sequencing.
+### Actual Behaviour
+The partitioner distributes incoming events across shards randomly without keying off the entity identifier.
 
-### Impact
-Cancelled orders are fulfilled and shipped to customers.
+### Starter Files
+`event_stream.py` - Assigns incoming event records to processing shards.
 
-### Requirements
-- Compute partition shard assignments deterministically from the entity identifier so all events for the same entity route to the same worker in order.
+### Task
+Implement deterministic entity-based hash partitioning in `assign_event_shard` in `event_stream.py`.
 
-**Files in Sandbox:**
-- `event_stream.py`
+### Acceptance Criteria
+1. Events with identical `entity_id` consistently route to the exact same shard.
+2. Shard numbers are valid integers in range `[0, num_shards - 1]`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Same entity ID always routes to identical shard**
+### Constraints
+- Slicing and pagination operations must include all items up to the final boundary record.
+- Record transformations and exports must preserve embedded delimiters, quotation marks, and line breaks.
+- Nested configuration merges must preserve non-conflicting sibling properties.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Event streaming platforms preserve per-entity order by routing messages with matching partition keys to the same partition.
+- **Level 2 (Directional)**: Notice that `assign_event_shard` uses `random.randint` in `event_stream.py`.
+- **Level 3 (Root Cause)**: Use hash partitioning: derive the shard by computing `abs(hash(event["entity_id"])) % num_shards`.
 
 ---
 
-### Challenge 47: [CODE-H12] Incorrect Rollback Logic Leaves Related Resources Inconsistent
+##### Challenge 47: Travel Booking Saga Leaves Orphaned Flight After Rental Failure
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Hard` | **Technology**: `Python` | **Category**: `Transactions`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `Saga Pattern`, `Distributed Transactions`, `Compensating Actions`
-- **Skills Tested**: `Python`, `Architecture`, `Transactions`
-- **Bug Signature**: `if completed:
-                completed[-1].rollback()`
-- **Suspected Component**: `saga_coordinator.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A multi-service travel booking saga coordinates Flight, Hotel, and Car Rental reservations.
+### Incident Report
+Travelers booking vacation packages were charged for standalone flights when their rental car reservation failed, leaving them stranded without a full trip.
 
 ### Bug Report
-Flight succeeds, Hotel succeeds, but Car Rental fails. The rollback coordinator cancels the Hotel but forgets to cancel the Flight!
+When Step 3 (Car Rental) of a 3-step saga fails, the coordinator only rolls back Step 2 (Hotel), completely neglecting to roll back Step 1 (Flight).
 
 ### Steps to Reproduce
-1. Execute multi-step booking.
-2. Step 3 fails.
-3. Flight reservation is never cancelled.
+1. Execute a saga with steps `[Flight, Hotel, Car]`, where Car fails.
+2. Observe rollback actions executed.
+3. Notice that `Hotel` is rolled back, but `Flight` remains confirmed and active.
 
-### Expected Behavior
-A saga rollback must iterate through all completed steps in reverse and invoke their corresponding compensating transactions.
+### Expected Behaviour
+When any step in a distributed saga fails, the coordinator must roll back all completed steps in reverse order (`["Hotel", "Flight"]`).
 
-### Actual Behavior
-Hardcoded partial rollback only cleans up the immediately preceding step.
+### Actual Behaviour
+The failure compensation handler only reverts the single most recent action rather than winding down all previously completed transactions in reverse order.
 
-### Impact
-Customers charged hundreds of dollars for orphaned flights after rental car booking failed.
+### Starter Files
+`saga_coordinator.py` - Orchestrates multi-service transactions and compensating actions.
 
-### Requirements
-- Iterate through `completed_steps` in reverse order: `for step in reversed(completed_steps): step.rollback()`.
+### Task
+Implement complete backward compensation in `saga_coordinator.py` when an execution step fails.
 
-**Files in Sandbox:**
-- `saga_coordinator.py`
+### Acceptance Criteria
+1. All completed steps are rolled back in reverse order upon an exception.
+2. The triggering exception is re-raised.
+3. Fully successful sagas return `True`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: All completed steps rolled back in reverse**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: The Saga pattern ensures eventual consistency by executing compensating transactions for every step completed prior to failure.
+- **Level 2 (Directional)**: Inspect what happens inside the `except Exception:` block in `saga_coordinator.py`.
+- **Level 3 (Root Cause)**: Iterate through all completed steps in reverse: `for s in reversed(completed): s.rollback()` before re-raising.
 
 ---
 
-### Challenge 48: [CODE-H13] A Streaming Parser Leaks Memory for Large Inputs
+##### Challenge 48: Multi-Gigabyte Stream Parsing Causes Out-of-Memory Container Crash
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Hard` | **Technology**: `Python` | **Category**: `Performance`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `Memory Management`, `Streaming`, `Generators`
-- **Skills Tested**: `Python`, `Performance`
-- **Bug Signature**: `all_chunks = []
-    lines = []
-    for chunk in chunks:
-        all_chunks.append(chunk)`
-- **Suspected Component**: `stream_parser.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A log analysis pipeline streams multi-gigabyte server access logs to count 500 error spikes.
+### Incident Report
+Log monitoring Kubernetes pods were killed by the kernel with `OOMKilled` (out of memory) whenever ingesting large server access log streams.
 
 ### Bug Report
-The parser process runs out of memory (`OOMKilled`) when parsing a 2GB file, despite being intended as a streaming generator.
+The parser accumulates all stream chunks into a list (`all_chunks.append(chunk)`), consuming gigabytes of memory rather than yielding lines on the fly.
 
 ### Steps to Reproduce
-1. Feed 100,000 chunks to `stream_lines`.
-2. Notice `all_chunks.append(chunk)` accumulates all previous chunks into memory.
+1. Feed streaming chunks `["line1\nli", "ne2\n", "line3\n"]` into `parse_stream_chunks`.
+2. Inspect memory retention.
+3. Observe all incoming bytes are held in memory simultaneously.
 
-### Expected Behavior
-Keep only the trailing unparsed remainder in memory, discarding consumed bytes.
+### Expected Behaviour
+The parser must operate as a streaming generator, buffering only incomplete fragments and yielding complete lines as they arrive.
 
-### Actual Behavior
-Appends all incoming chunks to a persistent list.
+### Actual Behaviour
+Full stream retention in an accumulating list.
 
-### Impact
-Server container memory exhaustion and pod crash-looping in Kubernetes.
+### Starter Files
+`stream_parser.py` - Tokenizes continuous incoming byte chunks into individual log lines.
 
-### Requirements
-- Maintain only `buffer` string. When newline is found, yield line and retain only `buffer[idx+1:]`.
+### Task
+Refactor `parse_stream_chunks` in `stream_parser.py` into a memory-efficient line generator.
 
-**Files in Sandbox:**
-- `stream_parser.py`
+### Acceptance Criteria
+1. Complete lines are yielded as generators without buffering prior lines.
+2. Split lines across chunk boundaries are properly reassembled.
+3. Trailing newline characters are stripped.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Streaming generator yields lines without full accumulation**
+### Constraints
+- Slicing and pagination operations must include all items up to the final boundary record.
+- Record transformations and exports must preserve embedded delimiters, quotation marks, and line breaks.
+- Nested configuration merges must preserve non-conflicting sibling properties.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Streaming parsers should consume constant memory by yielding tokens as soon as delimiters are encountered.
+- **Level 2 (Directional)**: Avoid keeping an accumulating list of all previous chunks in `stream_parser.py`.
+- **Level 3 (Root Cause)**: Maintain a single `buffer` string; find `\n`, yield lines, and slice `buffer = buffer[idx+1:]`.
 
 ---
 
-### Challenge 49: [CODE-H14] A Multi-Step Account Update Leaves Partially Modified State
+##### Challenge 49: Account Profile Update Leaves Partially Modified State on Validation Failure
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Hard` | **Technology**: `Python` | **Category**: `Transactions`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `Transactions`, `Validation`, `Atomicity`
-- **Skills Tested**: `Python`, `Backend`, `Validation`
-- **Bug Signature**: `if "@" in new_email:
-        profile["email"] = new_email
-    if not (new_phone`
-- **Suspected Component**: `account_service.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A customer portal allows users to update both their account email and phone number in a single action.
+### Incident Report
+Security admins reported data inconsistencies where user profiles had updated email addresses but old phone numbers after validation failed during profile submission.
 
 ### Bug Report
-Email updates successfully, but phone number fails regex validation. The user profile is left with updated email but unchanged phone, creating inconsistent state.
+When a user updates email and phone together, `update_account` modifies `profile["email"]` first. When phone validation fails, the email change remains applied in memory.
 
 ### Steps to Reproduce
-1. Profile: `email="old@test.com", phone="111-222"`.
-2. Submit `email="new@test.com", phone="invalid_phone"`.
-3. Profile has `new@test.com` and `111-222`.
+1. Start with profile `{"email": "old@test.com", "phone": "1111111111"}`.
+2. Submit update with valid email `"new@test.com"` and invalid phone `"bad_phone"`.
+3. Catch the expected `ValueError`.
+4. Inspect `prof["email"]`: observed that email was changed to `"new@test.com"`.
 
-### Expected Behavior
-Validate all fields completely BEFORE modifying any profile fields. If any field fails validation, do not modify the user profile.
+### Expected Behaviour
+All input fields must be validated completely before mutating any profile state. If validation fails, profile attributes must remain completely untouched.
 
-### Actual Behavior
-Modifies email before validating phone number.
+### Actual Behaviour
+Premature partial mutation applies email changes prior to validating phone numbers.
 
-### Impact
-Inconsistent user profiles and failed two-factor SMS verification delivery.
+### Starter Files
+`account_service.py` - Updates user account profile attributes.
 
-### Requirements
-- Validate both email and phone first.
-- Only mutate `profile` if both fields are valid.
+### Task
+Implement pre-validation in `update_account` in `account_service.py` to prevent partial state mutations.
 
-**Files in Sandbox:**
-- `account_service.py`
+### Acceptance Criteria
+1. If phone validation fails, the email property is not modified.
+2. If both fields are valid, both email and phone are updated.
+3. Returns `True` on success.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Invalid phone leaves email untouched**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: State updates should be atomic: perform all validation checks upfront before making any modifications.
+- **Level 2 (Directional)**: Notice that `profile["email"]` is updated before checking `new_phone` in `account_service.py`.
+- **Level 3 (Root Cause)**: Validate both `new_email` and `new_phone` first, and only mutate `profile` once both validations succeed.
 
 ---
 
-### Challenge 50: [CODE-H15] A Concurrent Reservation System Oversells Limited Inventory
+##### Challenge 50: Ticket Checkout Displaces Active Unexpired Seat Reservations
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `Python`
 
-- **Arena Domain**: Code Challenges
-- **Difficulty**: `Hard` | **Technology**: `Python` | **Category**: `Concurrency`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `Concurrency`, `Reservations`, `Timeouts`
-- **Skills Tested**: `Python`, `Concurrency`, `Backend`
-- **Bug Signature**: `reservations[seat_id] = {"user": user_id, "expires_at": current_time + ttl}
-    return True`
-- **Suspected Component**: `seat_reservation.py`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A concert ticketing system reserves front-row seats for buyers during a 5-minute checkout window.
+### Incident Report
+Concertgoers complained that while completing payment for reserved front-row tickets, another buyer checked out the same seats, canceling their active reservation.
 
 ### Bug Report
-Seat A1 is reserved by User 1 at 12:00:00. At 12:00:01, User 2 submits a reservation for Seat A1 and succeeds, displacing User 1!
+When User 1 holds a seat reservation expiring at `t=400`, User 2 requesting the same seat at `t=150` overwrites the reservation owner unconditionally.
 
 ### Steps to Reproduce
-1. User 1 reserves Seat A1.
-2. User 2 requests Seat A1 before User 1's reservation expires.
-3. System overwrites reservation owner.
+1. User 1 reserves Seat `"A1"` at `t=100` with `ttl=300` (expires `t=400`).
+2. User 2 requests Seat `"A1"` at `t=150`.
+3. Notice that User 2 successfully claims the seat, displacing User 1 while their hold was active.
 
-### Expected Behavior
-A seat can only be reserved if it is currently unreserved OR if its previous reservation has expired: `now > res["expires_at"]`.
+### Expected Behaviour
+A seat can only be reserved if it is unreserved OR if its previous reservation has expired (`current_time >= existing["expires_at"]`). Active unexpired holds must reject new buyers (`return False`).
 
-### Actual Behavior
-Unconditional assignment: `reservations[seat_id] = {"user": user, "expires_at": now + ttl}`.
+### Actual Behaviour
+The function overwrites the seat reservation unconditionally without checking existing holds.
 
-### Impact
-Double booked concert seats leading to customer disputes at box office.
+### Starter Files
+`seat_reservation.py` - Manages temporary hold allocations for event seating.
 
-### Requirements
-- Check `if seat_id in reservations and current_time < reservations[seat_id]["expires_at"]: return False`.
-- Otherwise reserve and return `True`.
+### Task
+Add unexpired reservation protection in `reserve_seat` in `seat_reservation.py`.
 
-**Files in Sandbox:**
-- `seat_reservation.py`
+### Acceptance Criteria
+1. Active reservations block new buyers from reserving the seat (`return False`).
+2. Expired reservations allow new buyers to successfully claim the seat (`return True`).
+3. Initial reservation of an empty seat succeeds.
 
-**Verification Criteria (2 Test Cases):**
-- [Visible Sample Test] **Visible: Active reservation blocks new buyer**
-- [Visible Sample Test] **Visible: Expired reservation allows new buyer**
+### Constraints
+- State mutations must enforce mutual exclusion and atomicity against concurrent check-then-act race conditions.
+- Distributed locks and leases must require ownership token validation before releasing resources.
+- Multi-step transaction sagas must execute compensating rollback actions in reverse order upon step failure.
+- Resource locks must be acquired in deterministic order to eliminate worker deadlock conditions.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Time-based lease reservations must check whether an existing lease is active before allowing re-allocation.
+- **Level 2 (Directional)**: Look at whether existing reservation state is evaluated in `reserve_seat` in `seat_reservation.py`.
+- **Level 3 (Root Cause)**: Check `existing = reservations.get(seat_id)`. If `existing and current_time < existing["expires_at"]: return False`.
 
 ---
 
-## 3. Arena 2: SQL Lab (Databases, Query Optimization & Isolation)
+### Arena 2: SQL Lab (IDs 51 - 85)
 
-Covering Challenges **51 through 85**. These challenges test relational database query writing, schema constraints, multi-table joins, NULL logic, window functions, recursive CTE hierarchies, concurrent transaction anomalies, and indexing.
+#### Tier: Easy (10 Challenges)
 
-### Challenge 51: [SQL-E01] Customer Report Excludes Records Containing NULL Values
+##### Challenge 51: Marketing Contact Export Omits Customers With Unset Preferences
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Easy` | **Technology**: `SQL` | **Category**: `Filtering`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `SQL`, `NULL Handling`, `Three-Valued Logic`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `WHERE opt_out != 1`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A customer success team generates a contact list of all registered clients who have not opted out of marketing updates (`opt_out = 0` or NULL).
+### Incident Report
+Marketing operations reported that nearly half of their customer contact list vanished from automated email campaign exports.
 
 ### Bug Report
-Customers whose opt-out preference is unset (stored as `NULL` in the database) are completely missing from the campaign export.
+Customers whose opt-out status has never been explicitly toggled (stored as `NULL` in the database) are completely omitted from the contact export when using direct inequality comparison.
 
 ### Steps to Reproduce
 1. Execute query in `query.sql`.
-2. Observe only customers with explicit `opt_out = 0` are returned.
+2. Notice only customers with explicit `opt_out = 0` are returned.
 3. Customers with `opt_out IS NULL` are omitted.
 
-### Expected Behavior
-Include both `opt_out = 0` and `opt_out IS NULL`.
+### Expected Behaviour
+The query must return all customers who have not explicitly chosen to opt out (`opt_out = 0` or `opt_out IS NULL`).
 
-### Actual Behavior
-Clients whose opt-out preference is unset evaluate to UNKNOWN under direct inequality comparisons and are omitted.
+### Actual Behaviour
+In SQL three-valued logic, `NULL != 1` evaluates to `UNKNOWN` rather than `TRUE`, excluding all customers with unset preferences.
 
-### Impact
-Over 40% of the customer base is omitted from critical service announcements.
+### Starter Files
+`schema.sql` - Database table schema and test records.
+`query.sql` - Outbound marketing contact extraction query.
 
-### Requirements
-- Update `query.sql` to select `id`, `name`, and `email` for all clients who have not explicitly chosen to opt out of marketing updates.
-- Clients whose preference is unset (NULL) must be included in the export.
+### Task
+Update `query.sql` so that customers with unset preferences (`NULL`) are included alongside explicit non-opt-out accounts.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Customers with `opt_out = 0` are included.
+2. Customers with `opt_out IS NULL` are included.
+3. Customers with `opt_out = 1` are excluded.
+4. Output columns are `id`, `name`, `email` ordered by `id`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Includes NULL and 0 opt-out records**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- `NULL` denotes missing or unrecorded attributes; evaluate status with explicit `IS NULL` / `IS NOT NULL` checks.
+- Left joins must preserve parent records having zero matched child rows without unintended row elimination.
+- Output column names and row ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In SQL three-valued logic, comparing NULL against any value using `=` or `!=` evaluates to UNKNOWN rather than TRUE.
+- **Level 2 (Directional)**: Examine the WHERE clause in `query.sql` and consider how unset database values behave under standard inequality.
+- **Level 3 (Root Cause)**: Use an explicit `IS NULL` check (e.g. `opt_out = 0 OR opt_out IS NULL`) or `COALESCE` to handle missing values.
 
 ---
 
-### Challenge 52: [SQL-E02] Monthly Revenue Report Uses the Wrong Date Boundary
+##### Challenge 52: Monthly Revenue Report Truncates Final Day Orders
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Easy` | **Technology**: `SQL` | **Category**: `Filtering`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `SQL`, `Dates`, `Half-Open Intervals`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `BETWEEN '2026-10-01' AND '2026-10-31'`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A finance team generates the October 2026 revenue statement.
+### Incident Report
+Finance reported an accounting discrepancy where October revenue was under-reported by $15,000 compared to merchant bank deposits.
 
 ### Bug Report
-Transactions processed on October 31st at 18:30 are missing from the report, under-reporting monthly revenue by $15,000!
+Orders placed on the afternoon of October 31st (e.g. at 18:30) are excluded from the report because date-only string comparison stops at midnight.
+
+### Steps to Reproduce
+1. Ingest an order placed on `'2026-10-31 18:30:00'`.
+2. Run `SELECT SUM(amount) AS total_revenue FROM orders WHERE order_date BETWEEN '2026-10-01' AND '2026-10-31';`.
+3. Observe the October 31st evening order is omitted from the sum.
+
+### Expected Behaviour
+All orders placed during the calendar month of October 2026 (including through 23:59:59 on October 31st) must be included.
+
+### Actual Behaviour
+The `BETWEEN` clause with `'2026-10-31'` casts to `'2026-10-31 00:00:00'`, cutting off all transactions later that day.
+
+### Starter Files
+`schema.sql` - Orders table definition with timestamped transaction entries.
+`query.sql` - Monthly revenue aggregation query.
+
+### Task
+Update `query.sql` to capture all transactions occurring up to the start of the next calendar month.
+
+### Acceptance Criteria
+1. Transactions from the first day through the entire final day of October are summed.
+2. Orders from November 1st are excluded.
+3. The result column is aliased as `total_revenue`.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Financial and numerical aggregates must preserve decimal precision without truncation.
+- Transactions or records filtered out by status or date boundaries must not contribute to calculated totals.
+- Output column names, aliases, and ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Using `BETWEEN` on datetime columns with date-only literals truncates the end date to midnight (00:00:00).
+- **Level 2 (Directional)**: Consider how half-open intervals (`>= start` and `< next_period_start`) cleanly capture full time spans.
+- **Level 3 (Root Cause)**: Filter with `order_date >= '2026-10-01' AND order_date < '2026-11-01'` to capture all timestamps throughout October 31st.
+
+---
+
+##### Challenge 53: Public Storefront Search Displays Obsolete Archived Products
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `SQL`
+
+### Incident Report
+Store managers reported that customers were purchasing discontinued items that had been archived years ago, while current catalog items were missing from search.
+
+### Bug Report
+The product search query filters for `status = 'archived'` rather than active inventory, showing obsolete items on the public storefront.
 
 ### Steps to Reproduce
 1. Execute query in `query.sql`.
-2. Notice `WHERE order_date BETWEEN '2026-10-01' AND '2026-10-31'`.
-3. Datetime values on October 31st (e.g. `'2026-10-31 18:30:00'`) are excluded because `'2026-10-31'` evaluates to `'2026-10-31 00:00:00'`.
+2. Inspect returned items.
+3. Observe only archived items are returned.
 
-### Expected Behavior
-Include all transactions belonging to the calendar month of October 2026, including orders placed on October 31st with non-zero timestamps.
+### Expected Behaviour
+Filter exclusively for currently available products where `status = 'active'`, ordered alphabetically by product name.
 
-### Actual Behavior
-BETWEEN with date-only string cuts off the final day at midnight.
+### Actual Behaviour
+The query filters for archived status instead of targeting live inventory items.
 
-### Impact
-Incorrect revenue reported to investors and fiscal regulators.
+### Starter Files
+`schema.sql` - Products table containing status flags.
+`query.sql` - Public catalog search query.
 
-### Requirements
-- Ensure query.sql includes all orders placed within the calendar month of October 2026, capturing transactions through the end of October 31st.
+### Task
+Update `query.sql` to filter for active products and order them alphabetically by name.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Only products with `status = 'active'` are returned.
+2. Results are sorted in ascending alphabetical order by `name`.
+3. Output columns are `id`, `name`, `price`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Total includes October 31st afternoon order**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- `NULL` denotes missing or unrecorded attributes; evaluate status with explicit `IS NULL` / `IS NOT NULL` checks.
+- Left joins must preserve parent records having zero matched child rows without unintended row elimination.
+- Output column names and row ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Database status flags distinguish between obsolete records and active inventory.
+- **Level 2 (Directional)**: Examine the literal string checked in the WHERE clause of `query.sql`.
+- **Level 3 (Root Cause)**: Update the predicate to `WHERE status = 'active'`.
 
 ---
 
-### Challenge 53: [SQL-E03] Product Search Filters the Wrong Status
+##### Challenge 54: User Roster Omits Newly Registered Customers Without Orders
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Easy` | **Technology**: `SQL` | **Category**: `Filtering`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `SQL`, `Filtering`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `WHERE status = 'archived'`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An online catalog displays currently available products to customers.
+### Incident Report
+The customer onboarding team noticed that new users who registered but had not yet made a purchase were completely missing from onboarding follow-up reports.
 
 ### Bug Report
-Items that are archived or pending approval appear in customer search, while in-stock active items are hidden.
+An `INNER JOIN` between `customers` and `orders` drops customer rows that have no matching records in the orders table.
 
 ### Steps to Reproduce
-1. Query in `query.sql` uses `WHERE status = 'archived'`.
-2. Active products are excluded.
+1. Register customer "Charlie" with 0 orders.
+2. Run `query.sql`.
+3. Observe "Charlie" is omitted from the result set.
 
-### Expected Behavior
-Filter specifically for `status = 'active'`.
+### Expected Behaviour
+Every customer must be listed in the report. For customers who haven't ordered yet, `order_id` should show `NULL`.
 
-### Actual Behavior
-Filters for `status = 'archived'`.
+### Actual Behaviour
+The query joins customer accounts with an inner join that drops registered accounts having zero purchase history.
 
-### Impact
-Customers cannot purchase active inventory; archived obsolete items are erroneously ordered.
+### Starter Files
+`schema.sql` - Definitions for customers and orders tables.
+`query.sql` - Customer order association query.
 
-### Requirements
-- Ensure query.sql filters exclusively for active catalog products.
-- Sort active products in ascending alphabetical order by product name.
+### Task
+Modify the join type in `query.sql` so all customers appear in the output regardless of order history.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. All registered customers are preserved in the result set.
+2. Unmatched customers display `NULL` for `order_id`.
+3. Results are ordered by customer `id`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Returns active products ordered by name**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Priority and numerical ranks must sort in mathematical magnitude order rather than lexicographical character ordering.
+- Window function partitions and tie-breaking order specifications must conform to ranking rules.
+- Output ordering must be deterministic and fully reproducible.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: An INNER JOIN requires matches on both sides of the join condition, omitting unmatched left-table rows.
+- **Level 2 (Directional)**: Consider which relational join type preserves all rows from the primary table even when no foreign key match exists.
+- **Level 3 (Root Cause)**: Change `INNER JOIN` to `LEFT JOIN` (or `LEFT OUTER JOIN`).
 
 ---
 
-### Challenge 54: [SQL-E04] An INNER JOIN Removes Customers Without Orders
+##### Challenge 55: Department Bonus Metrics Overstate Average by Excluding Zero Bonus Staff
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Easy` | **Technology**: `SQL` | **Category**: `Joins`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `SQL`, `Joins`, `LEFT JOIN`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `INNER JOIN orders o`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A customer marketing team wants a complete user roster showing their order counts, including new users who haven't placed an order yet.
+### Incident Report
+Executive HR leadership noticed departmental average bonus metrics were artificially inflated because employees receiving $0 bonuses were excluded from calculations.
 
 ### Bug Report
-New users (0 orders) are completely omitted from the user roster!
+The query filters `WHERE bonus > 0` before computing `AVG(bonus)`. For a department of 2 employees where one received 10% and the other 0%, the query reports an average of 10% instead of 5%.
 
 ### Steps to Reproduce
-1. Customer "Charlie" registered yesterday and has 0 orders.
-2. Query in `query.sql` uses `INNER JOIN orders`.
-3. Charlie is omitted from the result set.
+1. Department Engineering has Alice (10% bonus) and Bob (0% bonus).
+2. Execute query in `query.sql`.
+3. Observe Engineering avg_bonus reports `10.0` instead of `5.0`.
 
-### Expected Behavior
-All customers must appear. Customers without orders should show `order_id = NULL` or `0` orders.
+### Expected Behaviour
+Calculate the true department average bonus across all employees in each department, counting zero bonuses in the denominator.
 
-### Actual Behavior
-`INNER JOIN` drops customers who have no matching rows in the `orders` table.
+### Actual Behaviour
+Filtering out non-bonus recipients prior to aggregation skews the departmental average upwards.
 
-### Impact
-Customer onboarding emails are not triggered for new signups who haven't bought yet.
+### Starter Files
+`schema.sql` - Employees table with department and bonus percentage columns.
+`query.sql` - Departmental bonus aggregation query.
 
-### Requirements
-- Change `INNER JOIN` to `LEFT JOIN` to preserve all customers.
+### Task
+Update `query.sql` to compute the true average bonus across all department employees.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. All employees in each department are factored into `avg_bonus`.
+2. Results are grouped by `department` and sorted by `department` ascending.
+3. Output columns are `department` and `avg_bonus`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: LEFT JOIN includes Charlie with NULL order_id**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Financial and numerical aggregates must preserve decimal precision without truncation.
+- Transactions or records filtered out by status or date boundaries must not contribute to calculated totals.
+- Output column names, aliases, and ordering must strictly match requirements.
 
----
-
-### Challenge 55: [SQL-E05] A GROUP BY Query Calculates the Wrong Average
-
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Easy` | **Technology**: `SQL` | **Category**: `Aggregation`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `SQL`, `Aggregation`, `AVG`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `WHERE bonus > 0 GROUP BY`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An HR performance dashboard calculates the average bonus percentage awarded across departments.
-
-### Bug Report
-Employees who received $0 bonus are omitted from the average, artificially inflating the department's bonus metric.
-
-### Steps to Reproduce
-1. Department has 2 employees: Alice received 10%, Bob received 0% (or NULL).
-2. Query filters `WHERE bonus > 0` before running `AVG(bonus)`.
-3. Average returns 10% instead of true average 5%.
-
-### Expected Behavior
-Average must include all department employees, counting zero/missing bonus as 0.
-
-### Actual Behavior
-Filters out 0 values before aggregation.
-
-### Impact
-HR leadership relies on inflated compensation metrics during budget planning.
-
-### Requirements
-- Calculate the true department average bonus across all employees, accounting for employees with no bonus as 0.
-
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
-
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Department average includes 0% bonus**
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Filtering rows in a WHERE clause removes them from consideration before aggregate functions like AVG are computed.
+- **Level 2 (Directional)**: Review whether employees receiving zero bonus should be counted in the department average denominator.
+- **Level 3 (Root Cause)**: Remove `WHERE bonus > 0` so that all department employees are included in `AVG(bonus)`.
 
 ---
 
-### Challenge 56: [SQL-E06] Duplicate Email Records Are Not Detected Correctly
+##### Challenge 56: Registration Cleanup Report Flags Unique Accounts as Duplicates
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Easy` | **Technology**: `SQL` | **Category**: `Aggregation`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `SQL`, `Duplicates`, `HAVING`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `HAVING COUNT(*) >= 1`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A data cleanup pipeline scans user registration databases to identify accounts sharing duplicate email addresses.
+### Incident Report
+Database administrators alerted that an automated deduplication script flagged every single user account in the system for merge or deletion.
 
 ### Bug Report
-The duplicate detection script returns every single email address in the database, including unique ones!
+The duplicate detection query uses `HAVING COUNT(*) >= 1`, which matches every email address that appears at least once, including completely unique emails.
 
 ### Steps to Reproduce
 1. Execute query in `query.sql`.
-2. Notice `HAVING COUNT(*) >= 1`.
-3. Unique accounts with count = 1 are incorrectly returned.
+2. Observe unique email `"unique@test.com"` is returned in the duplicate list.
 
-### Expected Behavior
-Only emails with `COUNT(*) > 1` (more than one occurrence) are duplicates.
+### Expected Behaviour
+Only email addresses that appear more than once (`COUNT(*) > 1`) should be returned as duplicates.
 
-### Actual Behavior
-Uses `>= 1` which matches every single row.
+### Actual Behaviour
+The threshold `>= 1` captures single-occurrence unique accounts.
 
-### Impact
-Unique accounts are incorrectly flagged for deletion or account merge.
+### Starter Files
+`schema.sql` - User accounts table.
+`query.sql` - Duplicate email detection query.
 
-### Requirements
-- Change condition to `HAVING COUNT(*) > 1`.
+### Task
+Update `query.sql` to filter strictly for duplicate email addresses.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Only emails appearing more than once are returned.
+2. Non-duplicate emails with only one occurrence are excluded.
+3. Output columns are `email` and `count`, ordered by `email`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Only true duplicate emails returned**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- `NULL` denotes missing or unrecorded attributes; evaluate status with explicit `IS NULL` / `IS NOT NULL` checks.
+- Left joins must preserve parent records having zero matched child rows without unintended row elimination.
+- Output column names and row ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: A duplicate item in a relational table is defined by having a frequency count strictly greater than one.
+- **Level 2 (Directional)**: Inspect the comparison operator in the `HAVING` clause of `query.sql`.
+- **Level 3 (Root Cause)**: Change `COUNT(*) >= 1` to `COUNT(*) > 1`.
 
 ---
 
-### Challenge 57: [SQL-E07] An Invoice Query Incorrectly Rounds Monetary Totals
+##### Challenge 57: Customer Invoice Tax Sum Truncates Fractional Pennies
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Easy` | **Technology**: `SQL` | **Category**: `Aggregation`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `SQL`, `Math`, `ROUND`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `ROUND(SUM(subtotal * tax_rate))`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An invoicing database computes tax totals across order line items.
+### Incident Report
+Billing accounting noted that customer sales tax invoices showed whole dollar amounts (e.g. $2.00) instead of exact cents ($2.95), failing tax audit reconciliation.
 
 ### Bug Report
-Invoices report fractional penny differences from bank statements because line items are rounded to integer dollars rather than 2 decimal places.
+The SQL `ROUND()` function is called with only one argument (`ROUND(SUM(...))`), rounding the tax total to the nearest whole integer dollar rather than 2 decimal places.
+
+### Steps to Reproduce
+1. Ingest line items totaling tax $2.94525.
+2. Execute query in `query.sql`.
+3. Output returns whole integer `3.0` instead of `2.95`.
+
+### Expected Behaviour
+Monetary totals must be rounded to exactly 2 decimal places: `ROUND(SUM(subtotal * tax_rate), 2) AS total_tax`.
+
+### Actual Behaviour
+Omitting the decimal places parameter defaults to 0 decimal places.
+
+### Starter Files
+`schema.sql` - Line items table with subtotal and tax rate columns.
+`query.sql` - Invoicing tax calculation query.
+
+### Task
+Update `query.sql` to round tax totals to 2 decimal places.
+
+### Acceptance Criteria
+1. Total tax is rounded to 2 decimal places.
+2. The column is aliased as `total_tax`.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Financial and numerical aggregates must preserve decimal precision without truncation.
+- Transactions or records filtered out by status or date boundaries must not contribute to calculated totals.
+- Output column names, aliases, and ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In standard SQL, `ROUND(value)` without a second parameter rounds to the nearest integer.
+- **Level 2 (Directional)**: Pass the desired scale as a second argument to `ROUND()` for monetary precision.
+- **Level 3 (Root Cause)**: Change to `ROUND(SUM(subtotal * tax_rate), 2)`.
+
+---
+
+##### Challenge 58: Executive Sales Metric Dashboard Includes Cancelled Transactions
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `SQL`
+
+### Incident Report
+Executive leadership noticed daily Gross Merchandise Value (GMV) charts were inflated because cancelled and refunded orders were being summed as valid revenue.
+
+### Bug Report
+The revenue calculation sums the `amount` column across all orders unconditionally without filtering by order status.
+
+### Steps to Reproduce
+1. Database contains orders with status `'completed'` and `'cancelled'`.
+2. Run `SELECT SUM(amount) AS completed_gmv FROM orders;`.
+3. Observe cancelled orders are included in the sum.
+
+### Expected Behaviour
+Only fulfilled, completed orders (`status = 'completed'`) should contribute to net GMV revenue.
+
+### Actual Behaviour
+The aggregation sums every order record in the table without checking whether the transaction status is completed.
+
+### Starter Files
+`schema.sql` - Orders table with amount and status attributes.
+`query.sql` - Completed GMV aggregation query.
+
+### Task
+Add status filtering to `query.sql` so only completed orders are summed.
+
+### Acceptance Criteria
+1. Only orders with `status = 'completed'` are summed.
+2. Result column is aliased as `completed_gmv`.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Financial and numerical aggregates must preserve decimal precision without truncation.
+- Transactions or records filtered out by status or date boundaries must not contribute to calculated totals.
+- Output column names, aliases, and ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Financial metrics must filter on status attributes to exclude cancelled, refunded, or fraudulent transactions.
+- **Level 2 (Directional)**: Notice that `query.sql` currently has no `WHERE` clause.
+- **Level 3 (Root Cause)**: Add `WHERE status = 'completed'` to the query.
+
+---
+
+##### Challenge 59: Emergency Task Dispatch Ordering Misplaces Double-Digit Urgency Levels
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `SQL`
+
+### Incident Report
+Emergency dispatch technicians noticed that priority level 10 tasks were dispatched before priority level 2 tasks because priority numbers were ordered as text strings.
+
+### Bug Report
+The `priority_level` column is stored as `VARCHAR`. Sorting with `ORDER BY priority_level ASC` orders lexicographically as `'10', '100', '2', '20'`, rather than numerically.
+
+### Steps to Reproduce
+1. Tasks have priority levels `'10'`, `'2'`, `'100'`, `'20'`.
+2. Run `query.sql`.
+3. Notice `'10'` appears before `'2'`.
+
+### Expected Behaviour
+Tasks must be ordered according to their numerical integer value: `'2', '10', '20', '100'`.
+
+### Actual Behaviour
+Lexicographical string sorting compares ASCII character codes left-to-right.
+
+### Starter Files
+`schema.sql` - Tasks table with string-typed priority levels.
+`query.sql` - Priority task retrieval query.
+
+### Task
+Update `query.sql` so that priority values are sorted numerically rather than in lexicographical character order.
+
+### Acceptance Criteria
+1. Tasks are ordered by numerical priority level in ascending order.
+2. Output columns are `id`, `name`, `priority_level`.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Priority and numerical ranks must sort in mathematical magnitude order rather than lexicographical character ordering.
+- Window function partitions and tie-breaking order specifications must conform to ranking rules.
+- Output ordering must be deterministic and fully reproducible.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: String columns order alphabetically rather than numerically, placing '10' before '2'.
+- **Level 2 (Directional)**: SQL allows casting column data types inside the ORDER BY clause.
+- **Level 3 (Root Cause)**: Use `CAST(priority_level AS INTEGER)` in the `ORDER BY` clause.
+
+---
+
+##### Challenge 60: Best-Selling Product Card Displays Least-Ordered Inventory Item
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `SQL`
+
+### Incident Report
+Marketing operations reported that the homepage "Item of the Week" promotional card showcased a slow-moving item with only 1 sale instead of the top seller with 500 sales.
+
+### Bug Report
+The top seller query uses `ORDER BY total_sold ASC LIMIT 1`, which sorts ascending and retrieves the minimum seller rather than the maximum.
 
 ### Steps to Reproduce
 1. Execute query in `query.sql`.
-2. Notice `ROUND(SUM(subtotal * tax_rate))` without decimal argument.
-3. Totals are truncated to whole dollars.
+2. Inspect returned item.
+3. Observe "Slow Mover" (1 unit) is returned instead of "Hot Item" (500 units).
 
-### Expected Behavior
-Round currency to exactly 2 decimal places: `ROUND(..., 2)`.
+### Expected Behaviour
+Retrieve the single top-selling product by ordering `total_sold` descending (`DESC`) with `LIMIT 1`.
 
-### Actual Behavior
-Rounds to 0 decimal places.
+### Actual Behaviour
+Ascending sort order returns the lowest sold item.
 
-### Impact
-Accounting ledger totals fail to reconcile with stripe merchant payouts.
+### Starter Files
+`schema.sql` - Product sales table tracking units sold.
+`query.sql` - Top seller extraction query.
 
-### Requirements
-- Update query to `ROUND(SUM(subtotal * tax_rate), 2) AS total_tax`.
+### Task
+Update `query.sql` to sort descending and return the top-selling product.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. The product with highest `total_sold` is returned.
+2. The query limits output to 1 row.
+3. Output columns are `id`, `name`, `total_sold`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Monetary total rounded to 2 decimal places**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Priority and numerical ranks must sort in mathematical magnitude order rather than lexicographical character ordering.
+- Window function partitions and tie-breaking order specifications must conform to ranking rules.
+- Output ordering must be deterministic and fully reproducible.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Ascending order (`ASC`) orders from lowest to highest, while finding top performers requires ordering highest to lowest.
+- **Level 2 (Directional)**: Examine the sorting direction specified in `query.sql`.
+- **Level 3 (Root Cause)**: Change `ORDER BY total_sold ASC` to `ORDER BY total_sold DESC`.
 
 ---
 
-### Challenge 58: [SQL-E08] A Report Includes Cancelled Orders
+#### Tier: Medium (15 Challenges)
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Easy` | **Technology**: `SQL` | **Category**: `Filtering`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `SQL`, `Filtering`, `Revenue`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `SELECT SUM(amount) AS completed_gmv FROM orders;`
-- **Suspected Component**: `query.sql`
+##### Challenge 61: Customer Revenue Report Multiplied by Order Line Items Join
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `SQL`
 
-**Scenario & Defect Overview:**
-### Company Scenario
-An executive sales metric dashboard calculates daily net gross merchandise value (GMV).
+### Incident Report
+Finance leadership noticed customer total spending figures were inflated by up to 300% on executive dashboards compared to actual bank deposits.
 
 ### Bug Report
-Cancelled and refunded orders are included in the sales GMV calculation, inflating daily performance numbers.
+An order of $100 containing 3 line items counts as $300 in total revenue because joining `orders` with `order_items` duplicates order rows before summing `total_amount`.
+
+### Steps to Reproduce
+1. Customer has 1 order of $100 with 2 items in `order_items`.
+2. Run `query.sql`.
+3. Notice reported revenue is $200 instead of $100.
+
+### Expected Behaviour
+Customer revenue must reflect the actual sum of `total_amount` recorded in the `orders` table without cartesian multiplication from joined line item records.
+
+### Actual Behaviour
+The query joins `order_items`, multiplying each order row by the count of items purchased.
+
+### Starter Files
+`schema.sql` - Orders and order_items table definitions.
+`query.sql` - Customer revenue aggregation query.
+
+### Task
+Refactor `query.sql` to calculate true total revenue per customer from the `orders` table directly.
+
+### Acceptance Criteria
+1. Revenue reflects the exact sum of order amounts per customer.
+2. Multiple items per order do not duplicate revenue.
+3. Results are grouped by `customer_id` and ordered by `customer_id` ascending.
+4. Output columns are `customer_id` and `revenue`.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Financial and numerical aggregates must preserve decimal precision without truncation.
+- Transactions or records filtered out by status or date boundaries must not contribute to calculated totals.
+- Output column names, aliases, and ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Joining a one-to-many relationship multiplies rows in the parent table before aggregation occurs.
+- **Level 2 (Directional)**: Examine whether `order_items` is actually needed if `orders` already contains `total_amount`.
+- **Level 3 (Root Cause)**: Query `orders` directly without joining `order_items`: `SELECT customer_id, SUM(total_amount) AS revenue FROM orders GROUP BY customer_id ORDER BY customer_id;`.
+
+---
+
+##### Challenge 62: Average Order Value Metrics Distorted by Day-Level Aggregation
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `SQL`
+
+### Incident Report
+Marketing analytics reported that VIP customer tier thresholds were miscalculated because Average Order Value (AOV) was reporting sums instead of true averages.
+
+### Bug Report
+The AOV query uses `SUM(amount)` instead of `AVG(amount)` across customer orders, conflating total spending with average basket size.
+
+### Steps to Reproduce
+1. Customer has 3 orders: $100, $20, and $30 (true average: $50).
+2. Execute query in `query.sql`.
+3. Observed `aov` is $150 instead of $50.
+
+### Expected Behaviour
+Calculate true average order value as `ROUND(AVG(amount), 2)` grouped by `customer_id`.
+
+### Actual Behaviour
+The query computes `SUM(amount)`, reporting lifetime total spend rather than average order size.
+
+### Starter Files
+`schema.sql` - Orders table tracking transaction amounts.
+`query.sql` - Customer AOV calculation query.
+
+### Task
+Update `query.sql` to compute the true average order value rounded to 2 decimal places.
+
+### Acceptance Criteria
+1. Average order value is computed using `AVG(amount)`.
+2. Output is rounded to 2 decimal places.
+3. Grouped by `customer_id` and ordered by `customer_id` ascending.
+4. Output columns are `customer_id` and `aov`.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Financial and numerical aggregates must preserve decimal precision without truncation.
+- Transactions or records filtered out by status or date boundaries must not contribute to calculated totals.
+- Output column names, aliases, and ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Average Order Value measures the mean transaction size per customer rather than cumulative total spend.
+- **Level 2 (Directional)**: Check the aggregate function used in the SELECT clause of `query.sql`.
+- **Level 3 (Root Cause)**: Replace `SUM(amount)` with `ROUND(AVG(amount), 2) AS aov`.
+
+---
+
+##### Challenge 63: Audit Log Pagination Displays Duplicate Events Across Pages
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `SQL`
+
+### Incident Report
+Security compliance auditors noted that while paginating through security event logs, duplicate log entries appeared across consecutive pages.
+
+### Bug Report
+Multiple audit logs share identical timestamps. Because sorting relies solely on `created_at DESC`, row ordering among ties is non-deterministic, causing rows to shift between pagination windows.
+
+### Steps to Reproduce
+1. Fetch page 1 with `LIMIT 2 OFFSET 0` ordered by `created_at DESC`.
+2. Fetch page 2 with `LIMIT 2 OFFSET 2` ordered by `created_at DESC`.
+3. Notice that identical events shift positions and repeat across pages.
+
+### Expected Behaviour
+Ordering must include a secondary unique tie-breaker (`id ASC`) so that relative positions among identical timestamps remain stable.
+
+### Actual Behaviour
+Sorts only by `created_at DESC`, leaving tie-breaking non-deterministic.
+
+### Starter Files
+`schema.sql` - Audit logs table with timestamped event entries.
+`query.sql` - Paginated audit log retrieval query.
+
+### Task
+Update `query.sql` to ensure deterministic sorting across pagination offsets.
+
+### Acceptance Criteria
+1. Events are ordered primarily by `created_at DESC`, secondarily by `id ASC`.
+2. Window offsets remain stable without row duplication.
+3. Output columns are `id`, `event`, `created_at`.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Priority and numerical ranks must sort in mathematical magnitude order rather than lexicographical character ordering.
+- Window function partitions and tie-breaking order specifications must conform to ranking rules.
+- Output ordering must be deterministic and fully reproducible.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Relational databases do not guarantee deterministic order for duplicate sort keys unless a unique column is included in the ORDER BY.
+- **Level 2 (Directional)**: Examine the ORDER BY clause in `query.sql`.
+- **Level 3 (Root Cause)**: Append `, id ASC` to `ORDER BY created_at DESC` to guarantee stable pagination.
+
+---
+
+##### Challenge 64: Regional Sales Leaderboard Ranks Executives Across Mixed Regions
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `SQL`
+
+### Incident Report
+Regional sales directors complained that quarterly performance medals were misallocated because account executives were ranked globally rather than within their assigned region.
+
+### Bug Report
+The ranking window function `RANK() OVER (ORDER BY revenue DESC)` omits regional partitioning, comparing EMEA reps against APAC reps.
 
 ### Steps to Reproduce
 1. Execute query in `query.sql`.
-2. Notice cancelled orders with `status = 'cancelled'` are summed.
+2. Inspect `regional_rank` for EMEA reps.
+3. Observe ranks 1 through 4 are assigned globally instead of resetting to 1 per region.
 
-### Expected Behavior
-Only orders with `status = 'completed'` (or `status != 'cancelled'`) should be summed.
+### Expected Behaviour
+Each sales executive must be ranked within their specific regional group using `RANK() OVER (PARTITION BY region ORDER BY revenue DESC)`.
 
-### Actual Behavior
-Sums all rows in `orders` regardless of status.
+### Actual Behaviour
+The window function ranks all sales reps globally across the entire table.
 
-### Impact
-Management bases hiring decisions on inflated gross sales numbers.
+### Starter Files
+`schema.sql` - Sales reps table with region and closed revenue.
+`query.sql` - Leaderboard ranking window query.
 
-### Requirements
-- Filter the total revenue query to include only fulfilled, completed orders.
+### Task
+Add regional partitioning to the window function in `query.sql`.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. The top revenue generator in each region is awarded rank 1.
+2. Ranks are partitioned by `region`.
+3. Results are ordered by `region` and `regional_rank` ascending.
+4. Output columns are `id`, `name`, `region`, `revenue`, `regional_rank`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Total only includes completed orders**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Priority and numerical ranks must sort in mathematical magnitude order rather than lexicographical character ordering.
+- Window function partitions and tie-breaking order specifications must conform to ranking rules.
+- Output ordering must be deterministic and fully reproducible.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Window functions require a PARTITION BY clause to break down calculations into distinct subset groupings.
+- **Level 2 (Directional)**: Look inside the `OVER (...)` clause in `query.sql`.
+- **Level 3 (Root Cause)**: Insert `PARTITION BY region` before `ORDER BY revenue DESC`.
 
 ---
 
-### Challenge 59: [SQL-E09] A Query Orders Numeric Values Stored as Text Incorrectly
+##### Challenge 65: Monthly Payment Grouping Misattributes Midnight UTC Renewals
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Easy` | **Technology**: `SQL` | **Category**: `Sorting`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `SQL`, `Sorting`, `Type Casting`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `ORDER BY priority_level ASC;`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A priority dispatch queue sorts tasks by urgency score (`priority_level`), which is stored in a `VARCHAR` column in a legacy table.
+### Incident Report
+Billing reconciliation showed that recurring subscription revenue was misclassified because monthly groupings were derived using fragile string slicing instead of datetime formatters.
 
 ### Bug Report
-Tasks order as `'10', '100', '2', '20'` instead of `'2', '10', '20', '100'`!
+The query extracts month via `substr(payment_date, 6, 2)`, producing two-digit month numbers without year prefixes, which merges September 2025 and September 2026 into the same bucket.
 
 ### Steps to Reproduce
 1. Execute query in `query.sql`.
-2. Observe alphabetical string sorting of numbers.
+2. Observe grouping key is `'09'` rather than `'2026-09'`.
 
-### Expected Behavior
-Order rows by numerical value: `ORDER BY CAST(priority_level AS INTEGER) ASC`.
+### Expected Behaviour
+Group recurring revenue using standardized year-month ISO formatting: `strftime('%Y-%m', payment_date) AS month`.
 
-### Actual Behavior
-Orders by textual lexicographical ASCII value.
+### Actual Behaviour
+The query uses `substr(payment_date, 6, 2)`, dropping the calendar year.
 
-### Impact
-Urgent priority 100 emergency repairs are placed after minor priority 2 maintenance requests.
+### Starter Files
+`schema.sql` - Payments table with ISO timestamp strings.
+`query.sql` - Monthly revenue aggregation query.
 
-### Requirements
-- Cast `priority_level` to `INTEGER` in the `ORDER BY` clause.
+### Task
+Update `query.sql` to group and order payments by full `YYYY-MM` month strings.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Months are formatted as `YYYY-MM` using `strftime('%Y-%m', payment_date)`.
+2. Payments are grouped and ordered by `month` ascending.
+3. Output columns are `month` and `total`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Tasks ordered by numerical priority level**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- `NULL` denotes missing or unrecorded attributes; evaluate status with explicit `IS NULL` / `IS NOT NULL` checks.
+- Left joins must preserve parent records having zero matched child rows without unintended row elimination.
+- Output column names and row ordering must strictly match requirements.
 
----
-
-### Challenge 60: [SQL-E10] A Query Returns the Wrong Top-Selling Product Because of Incorrect Sorting
-
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Easy` | **Technology**: `SQL` | **Category**: `Sorting`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `SQL`, `Sorting`, `LIMIT`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `ORDER BY total_sold ASC LIMIT 1;`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An inventory re-ordering dashboard highlights the #1 best-selling product of the week.
-
-### Bug Report
-The dashboard displays the least-sold item (1 unit sold) as the "Top Seller" instead of the actual best-selling item (500 units sold)!
-
-### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `ORDER BY total_sold ASC LIMIT 1`.
-3. Lowest seller is returned.
-
-### Expected Behavior
-Order by `total_sold DESC LIMIT 1` to retrieve the highest seller.
-
-### Actual Behavior
-Sorts `ASC` (ascending).
-
-### Impact
-Factory re-orders large batches of unsold inventory while popular stock runs out.
-
-### Requirements
-- Update sort direction to `DESC` to return top seller.
-
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
-
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Returns top selling item with highest count**
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Deriving date buckets via manual string substrings breaks across year boundaries.
+- **Level 2 (Directional)**: SQL includes built-in datetime formatting functions like `strftime` for extracting date components.
+- **Level 3 (Root Cause)**: Use `strftime('%Y-%m', payment_date) AS month` and group by month.
 
 ---
 
-### Challenge 61: [SQL-M01] A JOIN Duplicates Revenue Because of Multiple Order Items
+##### Challenge 66: Free Tier Accounts Filtered Out of Customer Directory by WHERE Clause
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Medium` | **Technology**: `SQL` | **Category**: `Joins`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `SQL`, `Joins`, `Aggregation`, `Cartesian Product`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `JOIN order_items i ON o.id = i.order_id GROUP BY o.customer_id`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An analytics query reports total customer spending by joining the `orders` table with the `order_items` table.
+### Incident Report
+Customer support agents reported that free-tier users were missing from the administrative directory, preventing staff from looking up user profiles.
 
 ### Bug Report
-An order of $100 containing 3 line items counts as $300 revenue, tripling customer spending metrics!
+The query joins `users` to `subscriptions` using `LEFT JOIN`, but includes `WHERE s.status = 'active'`. For users without subscriptions, `s.status` is `NULL`. The WHERE clause filters out NULL, converting the LEFT JOIN into an accidental INNER JOIN!
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `orders` table has `total_amount = 100.00`.
-3. Joining with `order_items` replicates the order row for every item.
-4. `SUM(o.total_amount)` multiplies order totals.
+1. User "Bob" has no active subscription.
+2. Run `query.sql`.
+3. Notice Bob is completely absent from the results.
 
-### Expected Behavior
-Sum `o.total_amount` directly from `orders` without joining `order_items`, OR sum `item_price * quantity` from `order_items`.
+### Expected Behaviour
+All users must appear in the directory. Users without active subscriptions should display `NULL` for `plan_name`.
 
-### Actual Behavior
-Joins `order_items` and sums `orders.total_amount`.
+### Actual Behaviour
+Filtering subscription attributes in the query predicate drops churned and free-tier accounts from the output.
 
-### Impact
-Revenue reports inflated by up to 400%, misleading financial stakeholders.
+### Starter Files
+`schema.sql` - Users and subscriptions tables.
+`query.sql` - Customer directory query.
 
-### Requirements
-- Calculate true total revenue per customer from `orders` table directly, grouped by `customer_id`.
+### Task
+Update the subscription join in `query.sql` so active subscription attributes are attached without filtering out non-paying users.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. All users appear in the output.
+2. Users without an active plan show `plan_name: NULL`.
+3. Results are ordered by user `id` ascending.
+4. Output columns are `id`, `name`, `plan_name`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Accurate customer revenue without join duplication**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- `NULL` denotes missing or unrecorded attributes; evaluate status with explicit `IS NULL` / `IS NOT NULL` checks.
+- Left joins must preserve parent records having zero matched child rows without unintended row elimination.
+- Output column names and row ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Placing a filter on the right table in a WHERE clause filters out NULL rows produced by a LEFT JOIN, turning it into an INNER JOIN.
+- **Level 2 (Directional)**: Conditions placed in the ON clause dictate what rows are joined, whereas WHERE filters the entire combined result set.
+- **Level 3 (Root Cause)**: Move `AND s.status = 'active'` into the `ON` clause and remove the `WHERE` clause.
 
 ---
 
-### Challenge 62: [SQL-M02] Customer Lifetime Value is Inflated by an Incorrect Aggregation
+##### Challenge 67: Unreserved Warehouse Inventory Displays NULL Availability
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Medium` | **Technology**: `SQL` | **Category**: `Aggregation`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `SQL`, `Aggregation`, `AVG`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `SELECT customer_id, SUM(amount) AS aov FROM orders`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A customer intelligence report calculates average order value (AOV) per customer across multiple stores.
+### Incident Report
+E-commerce inventory feeds reported in-stock keyboards as unavailable because products with zero reservations showed `NULL` available units.
 
 ### Bug Report
-Customer average order value calculation averages the daily averages, which skews metrics toward low-volume days.
+When an item has no reserved stock (`reserved_stock = NULL`), calculating `physical_stock - reserved_stock` produces `NULL` because arithmetic operations on NULL yield NULL.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `AVG(order_amount)` over aggregated day totals rather than individual orders.
+1. Product "Keyboard" has `physical_stock = 25` and `reserved_stock = NULL`.
+2. Run `query.sql`.
+3. Notice `available_stock` evaluates to `NULL` instead of 25.
 
-### Expected Behavior
-Calculate true AOV as `SUM(amount) / COUNT(id)` directly across all individual orders.
+### Expected Behaviour
+If `reserved_stock` is unset or `NULL`, treat it as 0 so that `available_stock` equals full physical inventory.
 
-### Actual Behavior
-Averages the pre-aggregated daily sums.
+### Actual Behaviour
+Unchecked NULL arithmetic causes availability to evaluate to NULL.
 
-### Impact
-Inaccurate lifetime value projections in VIP customer retention tiers.
+### Starter Files
+`schema.sql` - Inventory table tracking physical and reserved stock quantities.
+`query.sql` - Stock availability calculation query.
 
-### Requirements
-- Compute true average order value: `ROUND(AVG(amount), 2)` grouped by `customer_id`.
+### Task
+Use `COALESCE` in `query.sql` to handle unset reserved stock quantities safely.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Items with NULL reservations compute availability as physical stock minus 0.
+2. Items with positive reservations subtract accurately.
+3. Output columns are `id`, `name`, `available_stock` ordered by `id`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: True average order value per customer**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- `NULL` denotes missing or unrecorded attributes; evaluate status with explicit `IS NULL` / `IS NOT NULL` checks.
+- Left joins must preserve parent records having zero matched child rows without unintended row elimination.
+- Output column names and row ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In SQL arithmetic expressions, any number operated on with NULL results in NULL (e.g. `25 - NULL = NULL`).
+- **Level 2 (Directional)**: Use a null-coalescing function to substitute a default numerical value of zero.
+- **Level 3 (Root Cause)**: Wrap `reserved_stock` in `COALESCE(reserved_stock, 0)`.
 
 ---
 
-### Challenge 63: [SQL-M03] Pagination Skips or Duplicates Rows When Ordering is Not Deterministic
+##### Challenge 68: Delivery Success Rate Metric Inflated by Counting Non-Delivered Rows
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Medium` | **Technology**: `SQL` | **Category**: `Sorting`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `SQL`, `Pagination`, `Deterministic Ordering`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `ORDER BY created_at DESC LIMIT 2 OFFSET 0;`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An audit log viewer paginates system events in chunks of 2 rows using `LIMIT 2 OFFSET n`.
+### Incident Report
+Logistics executives questioned warehouse reporting when the shipment dashboard showed a 100% on-time delivery rate despite thousands of returned packages.
 
 ### Bug Report
-Events with identical timestamps randomly shift positions between queries, so Page 1 and Page 2 display duplicate rows.
+The query calculates delivery totals using `COUNT(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END)`. In SQL, `COUNT()` counts all non-null values—including `0`—counting returned shipments as delivered!
 
 ### Steps to Reproduce
-1. Query `LIMIT 2 OFFSET 0` ordered by `created_at DESC`.
-2. Query `LIMIT 2 OFFSET 2` ordered by `created_at DESC`.
-3. Records with identical `created_at` values appear on both pages.
+1. Table contains 2 delivered and 1 returned shipment.
+2. Run `query.sql`.
+3. Notice reported `delivered_count` is 3 instead of 2.
 
-### Expected Behavior
-Add `id ASC` as a secondary deterministic sort column to guarantee stable row order: `ORDER BY created_at DESC, id ASC`.
+### Expected Behaviour
+Only shipments with `status = 'delivered'` should be counted toward the delivered total.
 
-### Actual Behavior
-Sorts solely by `created_at DESC`.
+### Actual Behaviour
+The `COUNT` aggregate counts the `ELSE 0` branch as a non-null row.
 
-### Impact
-Compliance auditors miss critical security events due to unstable pagination windows.
+### Starter Files
+`schema.sql` - Shipments table with delivery statuses.
+`query.sql` - Delivery success metrics aggregation query.
 
-### Requirements
-- Add secondary unique sort key `id ASC` to the `ORDER BY` clause.
+### Task
+Update conditional aggregation in `query.sql` to accurately tally delivered shipments.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Delivered count equals 2 for the sample dataset.
+2. Returned or non-delivered shipments are not counted.
+3. Output column is aliased as `delivered_count`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Deterministic sort with id tie-breaker**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Financial and numerical aggregates must preserve decimal precision without truncation.
+- Transactions or records filtered out by status or date boundaries must not contribute to calculated totals.
+- Output column names, aliases, and ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In SQL, `COUNT(x)` counts every non-null value; numerical 0 is not null and is therefore counted.
+- **Level 2 (Directional)**: Consider whether `SUM()` with 1 and 0, or `COUNT()` with NULL as the fallback, is the appropriate aggregation function.
+- **Level 3 (Root Cause)**: Change `COUNT(...)` to `SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END)`.
 
 ---
 
-### Challenge 64: [SQL-M04] A Window Function Uses the Wrong Partition
+##### Challenge 69: High-Value Customer Loyalty Tier Excludes Frequent Repeat Buyers
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Medium` | **Technology**: `SQL` | **Category**: `Window Functions`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `SQL`, `Window Functions`, `RANK`, `PARTITION BY`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `RANK() OVER (ORDER BY revenue DESC) AS regional_rank`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An enterprise sales leaderboard ranks account executives by closed revenue within their respective global sales regions.
+### Incident Report
+Marketing noticed loyal customers who placed multiple $300 orders were excluded from the $500 VIP loyalty rewards program, while single-order customers qualified.
 
 ### Bug Report
-Sales reps in the EMEA region are ranked against reps in APAC and Americas, rather than competing solely within their regional teams.
+The CTE filters individual transactions where `amount >= 500` before grouping by customer. As a result, customers whose cumulative spend exceeds $500 across multiple smaller orders are omitted.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `RANK() OVER (ORDER BY revenue DESC)` lacks `PARTITION BY region`.
-3. Rankings are global instead of regional.
+1. Customer 101 placed two $300 orders (total $600).
+2. Execute query in `query.sql`.
+3. Notice Customer 101 is excluded from the high-value list.
 
-### Expected Behavior
-Rank sales executives partitioned by regional division: `RANK() OVER (PARTITION BY region ORDER BY revenue DESC)`.
+### Expected Behaviour
+Aggregate total spending across all orders per customer first in the CTE, then filter for customers whose cumulative `total_spent >= 500`.
 
-### Actual Behavior
-Omits `PARTITION BY region`.
+### Actual Behaviour
+The query filters individual transactions prior to customer aggregation.
 
-### Impact
-Regional sales quarterly performance bonuses distributed to the wrong employees.
+### Starter Files
+`schema.sql` - Orders table tracking transaction amounts.
+`query.sql` - Loyalty program qualification CTE query.
 
-### Requirements
-- Add `PARTITION BY region` to the window ranking function.
+### Task
+Refactor `query.sql` to aggregate all customer orders before applying the $500 qualification threshold.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Customers with cumulative spend >= 500 are included.
+2. Customers with cumulative spend < 500 are excluded.
+3. Results are ordered by `customer_id` ascending.
+4. Output columns are `customer_id` and `total_spent`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Regional partition ranks top rep in each region as #1**
+### Constraints
+- Target Database: SQLite 3.35+ with Recursive Common Table Expression (CTE) support.
+- Hierarchical traversal must safely terminate upon reaching maximum designated depth or cycle boundary.
+- Tree levels must maintain correct parent-child relationship tracking across levels.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Filtering row values before aggregation prevents calculating the total sum across multiple smaller events.
+- **Level 2 (Directional)**: Compute `SUM(amount) AS total_spent` grouped by `customer_id` inside the CTE first.
+- **Level 3 (Root Cause)**: Filter `WHERE total_spent >= 500` in the outer query.
 
 ---
 
-### Challenge 65: [SQL-M05] A Monthly Report Mishandles Timezone Boundaries
+##### Challenge 70: Multi-Account Fraud Filter Groups Legitimate Users With Missing Phones
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Medium` | **Technology**: `SQL` | **Category**: `Aggregation`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `SQL`, `Dates`, `strftime`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `substr(payment_date, 6, 2) AS month`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A subscription billing portal groups recurring payments by calendar month using UTC timestamps.
+### Incident Report
+Security alerts erroneously locked thousands of user accounts because an automated multi-account fraud detection query flagged all users with missing phone numbers as a syndicate.
 
 ### Bug Report
-Subscriptions renewed on September 1st at 00:30 UTC are placed into August because query attempts manual offset subtraction without boundary validation.
+The duplicate detection query groups by `phone` without checking for NULL. In SQL `GROUP BY`, all `NULL` phone numbers collapse into a single cluster with count > 1, flagging legitimate users as fraud rings.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice manual string slicing cuts off date without `strftime('%Y-%m', payment_date)`.
+1. Ingest users where multiple records have `phone = NULL`.
+2. Run `query.sql`.
+3. Notice `NULL` is returned with count = 2 in the duplicate list.
 
-### Expected Behavior
-Extract standard year-month group key: `strftime('%Y-%m', payment_date)`.
+### Expected Behaviour
+Exclude `NULL` and empty phone strings from the duplicate scan, returning only genuine non-null duplicate phone numbers.
 
-### Actual Behavior
-Manual substring parsing shifts dates.
+### Actual Behaviour
+The query groups `NULL` records together and counts them as duplicate accounts.
 
-### Impact
-Revenue numbers misattributed between fiscal months.
+### Starter Files
+`schema.sql` - Users table with phone number columns.
+`query.sql` - Duplicate phone number fraud detection query.
 
-### Requirements
-- Use `strftime('%Y-%m', payment_date) AS month` and group by month.
+### Task
+Add a pre-aggregation filter in `query.sql` to exclude missing or empty phone numbers.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Only non-null, non-empty duplicate phone numbers are returned.
+2. Users with `phone IS NULL` are excluded from duplicate clusters.
+3. Output columns are `phone` and `count`, ordered by `phone`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Grouped by YYYY-MM formatted month**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- `NULL` denotes missing or unrecorded attributes; evaluate status with explicit `IS NULL` / `IS NOT NULL` checks.
+- Left joins must preserve parent records having zero matched child rows without unintended row elimination.
+- Output column names and row ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In SQL GROUP BY operations, NULL values are treated as matching each other and form a single combined group.
+- **Level 2 (Directional)**: Filter out missing records before grouping to avoid false duplicate matches.
+- **Level 3 (Root Cause)**: Add `WHERE phone IS NOT NULL AND phone != ''` before the `GROUP BY phone` clause.
 
 ---
 
-### Challenge 66: [SQL-M06] A LEFT JOIN Becomes an Accidental INNER JOIN
+##### Challenge 71: Competition Leaderboard Skips Placing Positions After Tied Scores
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Medium` | **Technology**: `SQL` | **Category**: `Joins`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `SQL`, `Joins`, `LEFT JOIN`, `WHERE vs ON`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `LEFT JOIN subscriptions s ON u.id = s.user_id WHERE s.status = 'active'`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A customer directory query displays user account profiles along with their most recent premium subscription plan. Users without premium plans must still be displayed.
+### Incident Report
+Hackathon judges reported leaderboard placement anomalies where a participant who scored lower than two tied 1st-place finishers was displayed as 2nd place instead of 3rd place.
 
 ### Bug Report
-Users with no subscription are excluded from the directory despite using a `LEFT JOIN`!
+The leaderboard query uses `DENSE_RANK()`, which assigns consecutive integers without gaps after ties (e.g. 1, 1, 2), violating Olympic competition ranking rules (1, 1, 3).
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `WHERE s.status = 'active'`.
-3. Users with no subscription have `s.status = NULL`. The `WHERE` clause filters out `NULL`, converting the `LEFT JOIN` into an `INNER JOIN`!
+1. Alice and Bob both score 95 points. Charlie scores 90 points.
+2. Execute query in `query.sql`.
+3. Notice Charlie receives rank 2 instead of rank 3.
 
-### Expected Behavior
-Move the condition `s.status = 'active'` into the `ON` clause of the `LEFT JOIN`: `LEFT JOIN subscriptions s ON u.id = s.user_id AND s.status = 'active'`.
+### Expected Behaviour
+Use standard competition ranking (`RANK()`) so that tied positions leave subsequent rank gaps (1, 1, 3).
 
-### Actual Behavior
-Filters `s.status = 'active'` in the `WHERE` clause.
+### Actual Behaviour
+The ranking function assigns consecutive ranking values without leaving gaps for ties, contradicting competition ranking rules.
 
-### Impact
-Free-tier users disappear from administrative moderation lists.
+### Starter Files
+`schema.sql` - Leaderboard scores table.
+`query.sql` - Hackathon standings ranking query.
 
-### Requirements
-- Move filter into `ON` clause so unmatched users remain with NULL subscription details.
+### Task
+Update the ranking window function in `query.sql` to apply standard competition ranking.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Tied participants receive the same rank.
+2. Subsequent finishers skip ranks accordingly (e.g. 1, 1, 3).
+3. Output columns are `id`, `name`, `score`, `rank` ordered by `rank`, `id`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Preserves Bob with NULL plan_name**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Priority and numerical ranks must sort in mathematical magnitude order rather than lexicographical character ordering.
+- Window function partitions and tie-breaking order specifications must conform to ranking rules.
+- Output ordering must be deterministic and fully reproducible.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: DENSE_RANK leaves no gaps after ties, whereas standard competition ranking (RANK) skips ranks corresponding to tied entries.
+- **Level 2 (Directional)**: Examine the window function name used in `query.sql`.
+- **Level 3 (Root Cause)**: Replace `DENSE_RANK()` with `RANK()`.
 
 ---
 
-### Challenge 67: [SQL-M07] An Inventory Report Calculates Incorrect Available Stock
+##### Challenge 72: Product Catalog Crashes When Category Discounts Return Multiple Rows
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Medium` | **Technology**: `SQL` | **Category**: `Aggregation`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `SQL`, `NULL Handling`, `COALESCE`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `(physical_stock - reserved_stock) AS available_stock`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A warehouse management system computes available stock as `physical_stock - reserved_stock`.
+### Incident Report
+Storefront API monitors raised 500 error alerts on category pages whenever merchandising configured more than one promotional coupon for the tech department.
 
 ### Bug Report
-Items with zero pending reservations (`reserved_stock = NULL`) show `available_stock = NULL` instead of their physical stock!
+The query uses scalar comparison `WHERE discount_id = (SELECT id FROM discounts WHERE category = 'tech')`. When multiple coupons exist for `'tech'`, the database throws `subquery returns more than 1 row`.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `physical_stock - reserved_stock`.
-3. In SQL arithmetic, `10 - NULL` evaluates to `NULL`.
+1. Two discount records exist for category `'tech'`.
+2. Run `query.sql`.
+3. Database engine raises an error due to scalar equality comparison against multi-row subquery.
 
-### Expected Behavior
-Use `COALESCE(reserved_stock, 0)` so unreserved items subtract 0.
+### Expected Behaviour
+Use set-membership predicate `IN` so that any products matching any active category discount are returned without errors.
 
-### Actual Behavior
-Subtracts raw NULL, wiping out availability numbers.
+### Actual Behaviour
+The scalar equality operator `=` expects exactly one returned value.
 
-### Impact
-In-stock items show as unavailable in product catalog, halting sales.
+### Starter Files
+`schema.sql` - Products and discounts table definitions.
+`query.sql` - Discounted product retrieval query.
 
-### Requirements
-- Compute available inventory by subtracting reserved stock from physical stock, handling unset reserved quantities as 0.
+### Task
+Update `query.sql` to support subqueries returning multiple matching rows.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Products matching any active category discount ID are returned.
+2. Multi-row discount results do not cause database errors.
+3. Results are ordered by product `id` ascending.
+4. Output columns are `id`, `name`, `discount_id`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Keyboard shows available_stock = 25**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- `NULL` denotes missing or unrecorded attributes; evaluate status with explicit `IS NULL` / `IS NOT NULL` checks.
+- Left joins must preserve parent records having zero matched child rows without unintended row elimination.
+- Output column names and row ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Comparing a scalar column to a subquery using `=` fails whenever the subquery returns more than one row.
+- **Level 2 (Directional)**: Consider which SQL operator evaluates membership within a set of values returned by a subquery.
+- **Level 3 (Root Cause)**: Change `=` to `IN`: `WHERE discount_id IN (SELECT id FROM discounts WHERE category = 'tech')`.
 
 ---
 
-### Challenge 68: [SQL-M08] A Query Incorrectly Handles NULL Values in Conditional Aggregation
+##### Challenge 73: Historical Revenue Audit Distorted by Modern Catalog Price Updates
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Medium` | **Technology**: `SQL` | **Category**: `Aggregation`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `SQL`, `Conditional Aggregation`, `CASE WHEN`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `COUNT(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END)`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A customer engagement dashboard counts how many orders were successfully delivered vs returned.
+### Incident Report
+Financial auditors discovered that audited fiscal revenue from previous years shifted whenever catalog product prices were updated in the current quarter.
 
 ### Bug Report
-The delivered orders column count is inaccurate because `COUNT(CASE WHEN status = 'delivered' THEN 0 ELSE NULL END)` evaluates `0` as non-null!
+The revenue calculation joins `products` and multiplies quantity by `p.current_price` instead of the historical price recorded in `order_items.price_at_purchase`.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `COUNT(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END)`.
-3. `COUNT()` counts non-null values, including `0`, so returned orders are counted as delivered!
+1. Item purchased in 2025 at $50.00. Current 2026 catalog price is $80.00.
+2. Run `query.sql`.
+3. Notice historical total computes as 2 * 80 = $160 instead of 2 * 50 = $100.
 
-### Expected Behavior
-Use `SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END)` OR `COUNT(CASE WHEN status = 'delivered' THEN 1 END)`.
+### Expected Behaviour
+Calculate revenue using historical purchase prices: `SUM(quantity * price_at_purchase) AS total_revenue`.
 
-### Actual Behavior
-Uses `COUNT()` with `ELSE 0`, counting all rows.
+### Actual Behaviour
+The query joins `products` and calculates revenue using modern catalog prices.
 
-### Impact
-Executive dashboard shows a 100% delivery rate despite thousands of returned packages.
+### Starter Files
+`schema.sql` - Products and order_items tables.
+`query.sql` - Product revenue audit query.
 
-### Requirements
-- Accurately calculate delivered order counts without miscounting non-delivered orders in the aggregate.
+### Task
+Update `query.sql` to compute revenue using immutable historical purchase prices.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Revenue is computed using `price_at_purchase`.
+2. Grouped by `product_id`.
+3. Output columns are `product_id` and `total_revenue`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: True delivered count is 2**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Financial and numerical aggregates must preserve decimal precision without truncation.
+- Transactions or records filtered out by status or date boundaries must not contribute to calculated totals.
+- Output column names, aliases, and ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Historical financial metrics must rely on immutable snapshot values captured at transaction time rather than mutable master records.
+- **Level 2 (Directional)**: Check which price column is referenced in the arithmetic multiplication in `query.sql`.
+- **Level 3 (Root Cause)**: Compute `SUM(quantity * price_at_purchase) AS total_revenue` from `order_items` directly.
 
 ---
 
-### Challenge 69: [SQL-M09] A CTE Filters Records Before Aggregation When Filtering Should Occur Afterward
+##### Challenge 74: Unique Active Customer Metric Multiplies Repeat Order Buyers
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Medium` | **Technology**: `SQL` | **Category**: `CTE`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `SQL`, `CTE`, `HAVING vs WHERE`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `SELECT customer_id, amount FROM orders WHERE amount >= 500`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A customer loyalty tier report identifies high-value accounts whose total annual spending exceeds $500.
+### Incident Report
+An investor deck metric reported 10,000 active monthly buyers, but customer analytics revealed there were only 3,000 unique individuals because repeat orders were counted multiple times.
 
 ### Bug Report
-The report filters out individual purchases under $500 in the CTE before summing, omitting loyal customers who made ten $60 purchases!
+The metric query calculates `COUNT(customer_id)` without deduplicating customers, tallying total orders placed rather than unique purchasing individuals.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `WITH large_orders AS (SELECT * FROM orders WHERE amount >= 500)`.
-3. Customers with multiple smaller orders totalling > $500 are omitted.
+1. Ingest 3 orders placed by 2 distinct customers.
+2. Run `query.sql`.
+3. Notice `unique_customers` reports 3 instead of 2.
 
-### Expected Behavior
-Sum all orders first per customer in the CTE, then filter `WHERE total_spent >= 500`.
+### Expected Behaviour
+Count distinct customer accounts using `COUNT(DISTINCT customer_id) AS unique_customers`.
 
-### Actual Behavior
-Filters individual transaction amounts in the initial CTE.
+### Actual Behaviour
+The aggregation counts all customer ID rows rather than deduplicating distinct purchaser accounts.
 
-### Impact
-High-value repeat customers excluded from VIP perks and loyalty reward distributions.
+### Starter Files
+`schema.sql` - Orders table tracking customer IDs.
+`query.sql` - Unique customer metric KPI query.
 
-### Requirements
-- Aggregate total spending per customer across all orders first in the CTE, then filter for qualifying high-value clients in the outer query.
+### Task
+Update `query.sql` to count unique individual customers.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Repeat customer orders are deduplicated.
+2. The result count matches unique customer entities (2 for sample data).
+3. Output column is aliased as `unique_customers`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Customers 101 and 102 both have total >= 500**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Financial and numerical aggregates must preserve decimal precision without truncation.
+- Transactions or records filtered out by status or date boundaries must not contribute to calculated totals.
+- Output column names, aliases, and ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: `COUNT(column)` tallies the total number of non-null rows, whereas measuring user populations requires counting distinct IDs.
+- **Level 2 (Directional)**: Examine the aggregation function in `query.sql`.
+- **Level 3 (Root Cause)**: Insert the `DISTINCT` keyword inside the count function: `COUNT(DISTINCT customer_id) AS unique_customers`.
 
 ---
 
-### Challenge 70: [SQL-M10] A Duplicate-Detection Query Flags Valid Records
+##### Challenge 75: Organizational Hierarchy Chart Cuts Off Sub-Team Employee Reports
+- **Difficulty**: `Medium` | **Points**: `150 XP` | **Estimated Time**: `15 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Medium` | **Technology**: `SQL` | **Category**: `Aggregation`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `SQL`, `Duplicates`, `NULL Handling`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `SELECT phone, COUNT(*) AS count FROM users GROUP BY phone`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A fraud-detection system flags accounts suspected of multi-accounting by matching identical telephone numbers.
+### Incident Report
+HR reported that company org charts cut off after direct reports to the CEO, completely omitting sub-team managers and individual contributors.
 
 ### Bug Report
-Over 15,000 legitimate users who have empty or unset phone numbers (`phone IS NULL`) are all grouped together and flagged as a fraudulent syndicate!
+The recursive join condition in the CTE matches `e.manager_id = org.manager_id` (peers) instead of `e.manager_id = org.id` (ancestor node), terminating tree traversal prematurely.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `GROUP BY phone HAVING COUNT(*) > 1`.
-3. `NULL` phone values group together into a single cluster.
+1. Table contains a 4-level reporting chain: CEO -> VP -> Lead -> Junior.
+2. Execute query in `query.sql`.
+3. Notice only level 1 and direct peers appear; levels 3 and 4 are missing.
 
-### Expected Behavior
-Exclude `NULL` and empty phone strings from the duplicate scan: `WHERE phone IS NOT NULL AND phone != ''`.
+### Expected Behaviour
+The recursive step must join employees whose `manager_id` equals the parent node's primary key `org.id` to descend the complete reporting tree.
 
-### Actual Behavior
-Groups all NULL records into a single false-positive duplicate cluster.
+### Actual Behaviour
+Joins on identical manager IDs, failing to recurse downward.
 
-### Impact
-Thousands of legitimate user accounts locked by automated security filters.
+### Starter Files
+`schema.sql` - Employees table with manager ID self-referencing relationship.
+`query.sql` - Recursive organizational chart query.
 
-### Requirements
-- Exclude missing, null, and empty phone values before evaluating duplicate phone counts.
+### Task
+Correct the recursive join condition in `query.sql` to traverse the full employee hierarchy.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. All 4 levels of the employee hierarchy are traversed.
+2. The tree descends from CEO down to junior developers.
+3. Results are ordered by `level` and `id` ascending.
+4. Output columns are `id`, `name`, `level`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Only non-null duplicate phone 555-0100 returned**
+### Constraints
+- Target Database: SQLite 3.35+ with Recursive Common Table Expression (CTE) support.
+- Hierarchical traversal must safely terminate upon reaching maximum designated depth or cycle boundary.
+- Tree levels must maintain correct parent-child relationship tracking across levels.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In a recursive tree CTE, the recursive step must link child foreign keys to the parent primary key produced by the previous iteration.
+- **Level 2 (Directional)**: Check the join condition linking `employees e` with `org_tree org` in `query.sql`.
+- **Level 3 (Root Cause)**: Change `ON e.manager_id = org.manager_id` to `ON e.manager_id = org.id`.
 
 ---
 
-### Challenge 71: [SQL-M11] A Ranking Query Assigns Incorrect Positions to Tied Values
+#### Tier: Hard (10 Challenges)
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Medium` | **Technology**: `SQL` | **Category**: `Window Functions`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `SQL`, `Window Functions`, `RANK vs DENSE_RANK`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `DENSE_RANK() OVER (ORDER BY score DESC) AS rank`
-- **Suspected Component**: `query.sql`
+##### Challenge 76: Warehouse Reservation Allows Negative Stock Count
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `SQL`
 
-**Scenario & Defect Overview:**
-### Company Scenario
-A hackathon scoring platform displays leaderboard ranks based on judge scores.
+### Incident Report
+During a high-demand flash sale promotion, warehouse operations reported critical physical inventory deficits. For several popular consoles with only one unit remaining in inventory, multiple shoppers checked out at the exact same moment. Both orders were approved, leaving the warehouse inventory stock at negative numbers and forcing customer support to cancel confirmed paid orders.
 
 ### Bug Report
-Two competitors tied for 1st place with 95 points. The next participant with 90 points is displayed as 2nd place instead of 3rd place!
+The reservation routine in `query.sql` executes a blind decrement against the `inventory` table without asserting that available stock is sufficient before committing the reduction. When two concurrent requests run, both reduce the balance below zero.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `DENSE_RANK() OVER (ORDER BY score DESC)`.
-3. Scores 95, 95, 90 receive ranks 1, 1, 2 (dense rank does not skip ranks).
+1. Load physical inventory where available units are `0` or `1`.
+2. Execute the decrement query in `query.sql` for an item ID.
+3. Observe that stock drops to `-1` instead of blocking or skipping when stock is exhausted.
 
-### Expected Behavior
-Standard competition ranking must skip ranks after ties: 1, 1, 3. Use `RANK()`.
+### Expected Behaviour
+The update operation must only decrement physical quantity if sufficient available stock exists (`stock >= 1`), preventing inventory levels from dropping below zero.
 
-### Actual Behavior
-Uses `DENSE_RANK()`.
+### Actual Behaviour
+The update decrements blindly without verifying remaining balance in the predicate, driving `stock` into negative numbers.
 
-### Impact
-Award ceremony medals and prize distributions given to wrong placement tiers.
+### Starter Files
+- `schema.sql`: Table structure for `inventory` with an item containing `0` remaining units.
+- `query.sql`: Unchecked decrement update followed by an inventory status inspection.
 
-### Requirements
-- Review the difference between RANK() and DENSE_RANK(): RANK leaves gaps after tied positions, whereas DENSE_RANK does not.
+### Task
+Investigate `query.sql` and add a safety condition to the `UPDATE` statement so that inventory is only decremented when stock is available (`stock >= 1`).
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. The inventory update ensures stock does not drop below zero.
+2. Depleted items with zero stock are not decremented.
+3. The subsequent verification query reflects the guarded inventory balance.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Competition rank assigns Charlie rank 3**
+### Constraints
+- Target Database: SQLite 3.35+ / ACID compliant database transactions.
+- Inventory and balance mutations must enforce non-negative floor constraints (`balance >= amount` or `stock >= qty`).
+- Partial updates must not commit without corresponding audit log entries.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Consider optimistic concurrency control: an update should only succeed if the current state satisfies availability preconditions.
+- **Level 2 (Directional)**: Look at the WHERE clause of the UPDATE statement. Currently it only filters by record ID without checking whether remaining stock is positive.
+- **Level 3 (Root Cause)**: Append a condition checking that stock is at least 1 (e.g. `AND stock >= 1`) so that out-of-stock items are not decremented.
 
 ---
 
-### Challenge 72: [SQL-M12] A Subquery Returns Multiple Rows Unexpectedly
+##### Challenge 77: Direct Transfer Drops Funds During Partial Write Failure
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Medium` | **Technology**: `SQL` | **Category**: `Subqueries`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `SQL`, `Subqueries`, `IN vs EQUALS`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `WHERE discount_id = (SELECT id FROM discounts`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A product pricing query applies store discounts by matching eligible category promotions.
+### Incident Report
+A banking customer reported a loss of $50 after attempting a peer-to-peer transfer. The sender's account was debited immediately, but the receiving account was nonexistent due to a typo in the target account ID. Because the statements ran without atomic coordination and ledger safeguards, the money vanished from the sender without ever being credited to anyone.
 
 ### Bug Report
-The product API crashes with `OperationalError: subquery returns more than 1 row` whenever a category has multiple active discount coupons.
+In `query.sql`, the transfer script decrements the sender's balance and attempts to credit a nonexistent account ID (`999`). Additionally, the debit statement executes without verifying that the source account actually has sufficient balance (`balance >= 50`).
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice scalar comparison `WHERE discount_id = (SELECT id FROM discounts WHERE category = 'tech')`.
-3. When multiple discounts exist, scalar equality `=` throws a database error.
+1. Inspect the initial account balances in `schema.sql`.
+2. Run `query.sql` to execute the balance updates.
+3. Notice that account 1 loses $50 while account 2 receives nothing because the credit was sent to an invalid target ID.
 
-### Expected Behavior
-Use `IN` instead of `=` for multi-row subqueries: `WHERE discount_id IN (SELECT id FROM discounts WHERE category = 'tech')`.
+### Expected Behaviour
+Funds must only be debited from account 1 if sufficient balance exists (`balance >= 50`), and the credit must target the valid recipient account (`id = 2`).
 
-### Actual Behavior
-Uses scalar `=` operator against a multi-row subquery.
+### Actual Behaviour
+The debit executes unconditionally and the credit statement attempts to update invalid account `999`.
 
-### Impact
-Product catalog crashes across major retail categories.
+### Starter Files
+- `schema.sql`: Table structure and initial balances for `accounts` (Alice with 100.00, Bob with 50.00).
+- `query.sql`: Unchecked debit update followed by an erroneous credit statement targeting id `999`.
 
-### Requirements
-- Use a set-membership operator rather than scalar equality to safely handle subqueries that return multiple matching discount records.
+### Task
+Modify `query.sql` so that the debit is guarded with a balance check (`AND balance >= 50`) and the credit accurately deposits $50 into the recipient account (`id = 2`).
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. The sender balance is debited only when sufficient funds exist.
+2. The receiver account is credited with the transfer amount.
+3. The final query returns all accounts showing balanced amounts.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: IN operator matches all eligible products**
+### Constraints
+- Target Database: SQLite 3.35+ / ACID compliant database transactions.
+- Inventory and balance mutations must enforce non-negative floor constraints (`balance >= amount` or `stock >= qty`).
+- Partial updates must not commit without corresponding audit log entries.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Financial ledger operations must ensure both sides of the transfer match valid entity keys and balance constraints.
+- **Level 2 (Directional)**: Examine the recipient ID in the credit UPDATE statement and check whether the debit ensures sufficient funds exist.
+- **Level 3 (Root Cause)**: Update the debit query to verify `AND balance >= 50` on account 1, and direct the credit update to valid recipient `WHERE id = 2`.
 
 ---
 
-### Challenge 73: [SQL-M13] A Report Combines Historical and Current Prices Incorrectly
+##### Challenge 78: Customer Summary Query Multiplies Order and Ticket Totals
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Medium` | **Technology**: `SQL` | **Category**: `Joins`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `SQL`, `Historical Data`, `Data Integrity`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `SUM(oi.quantity * p.current_price) AS total_revenue`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An order line item audit checks sales totals. Prices change over time, so past orders must multiply by historical unit price, not the current catalog price.
+### Incident Report
+Account managers complained that customer overview dashboards display absurdly inflated numbers. A customer who placed only two orders totaling $150 and opened three support tickets is reported as having spent $450 with six support tickets. The finance and support teams are unable to trust the summary metrics.
 
 ### Bug Report
-A customer bought an item in 2025 for $50. In 2026, the price was raised to $80. The 2025 sales report recalculates the past order at $80, distorting historical revenue!
+The dashboard query joins `customers` simultaneously to two independent one-to-many child tables (`orders` and `tickets`). This creates a Cartesian product between the orders and tickets for each customer (2 orders * 3 tickets = 6 joined rows). Aggregating `SUM(o.amount)` and `COUNT(t.id)` over this joined set multiplies order sums by the number of tickets and multiplies ticket counts by the number of orders.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice query joins `products` table and uses `p.current_price` instead of historical `oi.price_at_purchase`.
+1. Populate a customer with 2 orders ($50, $100) and 3 support tickets.
+2. Run the join query in `query.sql`.
+3. Inspect `total_spent` and `total_tickets`: total spent appears as $450 instead of $150, and ticket count appears as 6 instead of 3.
 
-### Expected Behavior
-Use `oi.price_at_purchase * oi.quantity` recorded at the time of purchase.
+### Expected Behaviour
+Orders and tickets must be aggregated independently so that total spending equals $150 and total tickets equal 3.
 
-### Actual Behavior
-Multiplies by `p.current_price`.
+### Actual Behaviour
+The direct multi-table join produces intermediate Cartesian duplicates, multiplying aggregate measures.
 
-### Impact
-Audited historical balance sheets are altered every time modern catalog prices change.
+### Starter Files
+- `schema.sql`: Tables for `customers`, `orders`, and `tickets` with sample records.
+- `query.sql`: Problematic multi-table JOIN query aggregating both child tables simultaneously.
 
-### Requirements
-- Multiply quantity by historical price: `SUM(oi.quantity * oi.price_at_purchase) AS total_revenue`.
+### Task
+Refactor `query.sql` to pre-aggregate `orders` and `tickets` independently in Common Table Expressions (CTEs) or subqueries grouped by `customer_id`, then join those pre-aggregated summaries back to `customers`.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Order totals and ticket counts are computed in independent CTEs (`o_summary` and `t_summary`).
+2. `customers` is left joined to both summaries, using `COALESCE` to default missing totals to 0.
+3. The final output reports `total_spent` of 150.00 and `total_tickets` of 3.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Total reflects historical purchase price (2 * 50 = 100)**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Financial and numerical aggregates must preserve decimal precision without truncation.
+- Transactions or records filtered out by status or date boundaries must not contribute to calculated totals.
+- Output column names, aliases, and ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Joining two separate one-to-many child tables to the same parent table creates a Cartesian product across the child rows.
+- **Level 2 (Directional)**: Compute aggregates for orders and tickets in separate queries or Common Table Expressions (CTEs) before joining them.
+- **Level 3 (Root Cause)**: Define `WITH o_summary AS (...)` and `WITH t_summary AS (...)` grouping by `customer_id`, then join both to `customers` with `COALESCE`.
 
 ---
 
-### Challenge 74: [SQL-M14] A Query Counts Orders Instead of Distinct Customers
+##### Challenge 79: Settled Invoice Workflow Omits Audit Journal Entry
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Medium` | **Technology**: `SQL` | **Category**: `Aggregation`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `SQL`, `COUNT DISTINCT`, `Metrics`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `SELECT COUNT(customer_id) AS unique_customers FROM orders;`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An executive KPI dashboard reports monthly active unique purchasing customers.
+### Incident Report
+During a quarterly financial compliance audit, external regulators flagged an integrity violation. Several commercial invoices had been marked as settled in the system, but the mandatory audit journal records detailing the settlement event were missing. The compliance failure resulted in flagged reporting and an audit penalty.
 
 ### Bug Report
-If 1 customer places 10 orders in a day, the dashboard reports 10 active customers instead of 1!
+The invoice reconciliation script in `query.sql` executes an update statement to set invoice status to `'paid'`, but fails to create the required audit tracking record in `audit_journal`.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `COUNT(customer_id)`.
-3. Multiple orders by the same customer are counted repeatedly.
+1. Inspect the initial state in `schema.sql` where invoice 1 is in `'pending'` status.
+2. Run `query.sql`.
+3. Notice that `audit_journal` contains zero rows for invoice 1 (`journal_count = 0`), violating audit trail requirements.
 
-### Expected Behavior
-Count distinct customers: `COUNT(DISTINCT customer_id) AS unique_customers`.
+### Expected Behaviour
+When an invoice is marked as `'paid'`, an audit row must also be inserted into `audit_journal` with `invoice_id = 1` and action `'INVOICE_PAID'`.
 
-### Actual Behavior
-Uses `COUNT(customer_id)` without `DISTINCT`.
+### Actual Behaviour
+The invoice status is modified, but no corresponding audit journal row is written.
 
-### Impact
-Customer base size inflated by 300% on investor quarterly reports.
+### Starter Files
+- `schema.sql`: Table definitions for `invoices` and `audit_journal` with a pending invoice.
+- `query.sql`: Solitary status update without the accompanying audit journal write.
 
-### Requirements
-- Use `COUNT(DISTINCT customer_id) AS unique_customers`.
+### Task
+Update `query.sql` to insert an audit record into `audit_journal` with values `(1, 1, 'INVOICE_PAID')` alongside the invoice status update.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. The invoice status is marked as paid.
+2. A corresponding entry is recorded in the audit journal with the invoice reference.
+3. The final verification query outputs the paid status and an audit count of 1.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Distinct customers count is 2**
+### Constraints
+- Target Database: SQLite 3.35+ / ACID compliant database transactions.
+- Inventory and balance mutations must enforce non-negative floor constraints (`balance >= amount` or `stock >= qty`).
+- Partial updates must not commit without corresponding audit log entries.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Financial compliance operations require that every status transition is paired with an immutable journal entry.
+- **Level 2 (Directional)**: Look at the verification query: it expects `journal_count` to reflect an entry in `audit_journal` for invoice 1.
+- **Level 3 (Root Cause)**: Add `INSERT INTO audit_journal VALUES (1, 1, 'INVOICE_PAID');` immediately following the invoice UPDATE statement.
 
 ---
 
-### Challenge 75: [SQL-M15] A Recursive Query Omits Part of an Organizational Hierarchy
+##### Challenge 80: Settings Migration Fails on Unmigrated Missing Emails
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Medium` | **Technology**: `SQL` | **Category**: `CTE`
-- **Points**: `150 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `SQL`, `Recursive CTE`, `Hierarchies`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `ON e.manager_id = org.manager_id`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An HR organizational chart application displays all employees reporting under the CEO (including indirect reports).
+### Incident Report
+During a scheduled production maintenance window, a database migration script failed abruptly when attempting to apply a `NOT NULL` constraint to the `user_settings` table. The failure rolled back the deployment pipeline, delayed a critical release, and left the team scrambling to clean up missing data in historical customer profiles.
 
 ### Bug Report
-Only direct reports to the CEO appear; second-level managers and individual contributors are omitted!
+The data migration script in `query.sql` queries user settings without backfilling existing `NULL` entries in the `notification_email` column. Before adding mandatory schema constraints, historical records with missing emails must be backfilled to a safe default fallback.
 
 ### Steps to Reproduce
-1. Execute recursive query in `query.sql`.
-2. Notice recursive term joins `WHERE e.manager_id = org.manager_id` instead of `WHERE e.manager_id = org.id`.
-3. Hierarchy stops descending after level 1.
+1. Inspect the sample records in `schema.sql`: user accounts 102 and 103 have `NULL` notification emails.
+2. Run `query.sql`.
+3. Notice that `NULL` values persist, which would violate incoming non-nullable constraints.
 
-### Expected Behavior
-The recursive join must match employee `manager_id` with parent `org.id`.
+### Expected Behaviour
+All records with `NULL` in `notification_email` must be backfilled with `'no-reply@domain.com'` prior to displaying the finalized records.
 
-### Actual Behavior
-Joins on identical manager_id, failing to recurse down the tree.
+### Actual Behaviour
+The script simply queries the table without executing the necessary backfill update.
 
-### Impact
-Department heads cannot view full staffing headcount across sub-teams.
+### Starter Files
+- `schema.sql`: Table structure and initial data containing NULL email addresses.
+- `query.sql`: Standalone SELECT statement without backfill logic.
 
-### Requirements
-- Correct the recursive join condition so employee manager relationships properly link to the ancestor node's primary key.
+### Task
+Add an `UPDATE` statement to `query.sql` that sets `notification_email = 'no-reply@domain.com'` for all rows where `notification_email IS NULL` before the final query.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Unset notification emails are backfilled with the default system fallback address.
+2. Existing configured emails remain untouched.
+3. The final query returns all rows with no empty notification addresses.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Full 4-level tree generated**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- `NULL` denotes missing or unrecorded attributes; evaluate status with explicit `IS NULL` / `IS NOT NULL` checks.
+- Left joins must preserve parent records having zero matched child rows without unintended row elimination.
+- Output column names and row ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Applying NOT NULL constraints to legacy tables requires backfilling default values for all existing NULL entries first.
+- **Level 2 (Directional)**: Identify which records have missing emails using `WHERE notification_email IS NULL`.
+- **Level 3 (Root Cause)**: Prepend an `UPDATE user_settings SET notification_email = 'no-reply@domain.com' WHERE notification_email IS NULL;` before the SELECT.
 
 ---
 
-### Challenge 76: [SQL-H01] Concurrent Inventory Reservations Oversell Stock
+##### Challenge 81: Ledger Running Balance Jumps on Tied Transaction Timestamps
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Hard` | **Technology**: `SQL` | **Category**: `Concurrency`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `SQL`, `Concurrency`, `Conditional UPDATE`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `UPDATE inventory SET stock = stock - 1 WHERE id = 10;`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A flash-sale ticketing engine executes warehouse deductions when checkout begins.
+### Incident Report
+Accountants auditing an automated payment ledger noticed anomalies in transaction statements. When two transactions arrived in the same exact second (`2026-10-19 12:00:00`), the running balance printed on the statement jumped ahead, showing the combined cumulative sum of both transactions immediately on the first line instead of incrementing row by row.
 
 ### Bug Report
-When stock is 1, two concurrent buyers both execute `UPDATE inventory SET stock = stock - 1 WHERE id = 10`, setting stock to -1 and overselling the item.
+The window function in `query.sql` uses `SUM(amount) OVER (ORDER BY trans_time)`. By default in SQL standard window specifications, `ORDER BY` without an explicit frame clause defaults to `RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`. Under `RANGE`, rows with identical timestamps are treated as peers and aggregated together in a single step.
 
 ### Steps to Reproduce
-1. Stock = 1.
-2. Two updates execute without condition `stock >= requested_qty`.
-3. Stock becomes negative.
+1. Inspect the test records in `schema.sql`: transactions 1 and 2 share the identical timestamp `'2026-10-19 12:00:00'`.
+2. Run `query.sql`.
+3. Observe that row 1 already shows a running balance of `150.00` instead of `100.00`.
 
-### Expected Behavior
-Guarded update: only decrement if `stock >= 1`: `UPDATE inventory SET stock = stock - 1 WHERE id = 10 AND stock >= 1`.
+### Expected Behaviour
+The running balance must accumulate strictly row-by-row in deterministic order: transaction 1 should show 100.00, transaction 2 should show 150.00, and transaction 3 should show 175.00.
 
-### Actual Behavior
-Blind decrement without checking availability in WHERE clause.
+### Actual Behaviour
+Tied timestamps cause the default `RANGE` window frame to lump peer rows together, skipping individual intermediate totals.
 
-### Impact
-Over-allocated physical inventory and canceled customer orders.
+### Starter Files
+- `schema.sql`: Table structure for `ledger` with transactions occurring at identical timestamps.
+- `query.sql`: Window function using default `RANGE` framing without tie-breaking columns.
 
-### Requirements
-- Add guard condition `AND stock >= 1` (or `stock > 0`) to the UPDATE query.
+### Task
+Update the window function specification in `query.sql` to include `id` in the sort order and explicitly declare `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW` for strict row-by-row accumulation.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. The window function orders by `trans_time, id`.
+2. The frame specification explicitly declares `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`.
+3. Row 1 yields a balance of 100.00 and row 2 yields 150.00.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Guarded update only decrements when stock available**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Priority and numerical ranks must sort in mathematical magnitude order rather than lexicographical character ordering.
+- Window function partitions and tie-breaking order specifications must conform to ranking rules.
+- Output ordering must be deterministic and fully reproducible.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In standard SQL, window ordering without a frame clause defaults to RANGE mode, which aggregates tied order values together.
+- **Level 2 (Directional)**: To calculate a true running total for every row, break ties deterministically and switch from RANGE to ROWS framing.
+- **Level 3 (Root Cause)**: Specify `ORDER BY trans_time, id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW` inside the `OVER(...)` clause.
 
 ---
 
-### Challenge 77: [SQL-H02] A Payment Transaction Updates Balances Without Maintaining Consistency
+##### Challenge 82: Revenue Summary Mistakenly Aggregates Uncommitted Draft Carts
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Hard` | **Technology**: `SQL` | **Category**: `Transactions`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `SQL`, `Transactions`, `Ledger Consistency`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `WHERE id = 999;`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A banking ledger transfers $50 from Account 1 to Account 2.
+### Incident Report
+The executive sales dashboard reported a 20% spike in daily gross merchandise volume. However, when finance reconciled the reported figures against actual payment gateway receipts, the numbers did not match. Further inspection revealed that abandoned checkout carts were being counted as completed sales revenue.
 
 ### Bug Report
-Debit executes, but credit fails due to an invalid account ID. Because the statements are not wrapped in a transaction, Account 1 loses $50 permanently while Account 2 receives nothing!
+The sales aggregation query in `query.sql` calculates `SUM(amount)` across all rows in the `orders` table without filtering by order state. Carts currently in `'draft'` state are erroneously included in official sales figures.
 
 ### Steps to Reproduce
-1. Execute debit without BEGIN TRANSACTION / ROLLBACK.
-2. Receiver update fails.
-3. Total bank ledger is out of balance.
+1. Check the table records in `schema.sql`: order 2 is in `'draft'` status with amount 50.00, while orders 1 and 3 are `'confirmed'`.
+2. Run `query.sql`.
+3. Notice that `total_sales` returns 350.00 instead of the actual confirmed total of 300.00.
 
-### Expected Behavior
-Wrap statements in a database transaction with consistency checks.
+### Expected Behaviour
+The revenue summary must exclusively calculate revenue for completed, confirmed orders (`status = 'confirmed'`), returning 300.00.
 
-### Actual Behavior
-Unmanaged auto-commit executes partial state modifications.
+### Actual Behaviour
+The query computes a blind sum across all records, conflating uncommitted drafts with confirmed transactions.
 
-### Impact
-Financial ledger audit failure and lost customer money.
+### Starter Files
+- `schema.sql`: Table structure and sample order records with both `'confirmed'` and `'draft'` statuses.
+- `query.sql`: Unfiltered aggregation query calculating total sales.
 
-### Requirements
-- Execute atomic update using conditional verification to ensure ledger balance.
+### Task
+Update `query.sql` so that revenue metrics count only confirmed transactions.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Draft transactions are excluded from the aggregate sum.
+2. The calculated sales total reflects strictly confirmed orders.
+3. The total outputs 300.00.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Balances reflect successful atomic transfer**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Financial and numerical aggregates must preserve decimal precision without truncation.
+- Transactions or records filtered out by status or date boundaries must not contribute to calculated totals.
+- Output column names, aliases, and ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Business financial reporting must always isolate committed transactional records from temporary workflow states.
+- **Level 2 (Directional)**: Review the columns of the `orders` table to identify which field tracks order lifecycle state.
+- **Level 3 (Root Cause)**: Add `WHERE status = 'confirmed'` to the query to restrict the calculation to completed purchases.
 
 ---
 
-### Challenge 78: [SQL-H03] A Multi-Table JOIN Multiplies Aggregates Across Independent Relationships
+##### Challenge 83: Archived Customer Documents Surface in Active Document Search
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Hard` | **Technology**: `SQL` | **Category**: `Joins`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `SQL`, `Cartesian Product`, `Multi-Table Joins`, `CTEs`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `LEFT JOIN orders o ON c.id = o.customer_id
-LEFT JOIN tickets t`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A customer summary report calculates both total order spending AND total support tickets opened for each customer.
+### Incident Report
+A compliance and privacy incident was raised when an enterprise client discovered that confidential documents marked as deleted by workspace administrators were still appearing in search results and document listings. Under privacy retention policies, soft-deleted documents must be strictly hidden from standard user listings.
 
 ### Bug Report
-Customer with 2 orders and 3 support tickets produces 2 x 3 = 6 joined rows. Order total is multiplied by 3, and support tickets count is multiplied by 2!
+The document retrieval query in `query.sql` queries the `documents` table without evaluating the soft-delete marker column (`deleted_at`). Consequently, archived and decommissioned records remain visible.
 
 ### Steps to Reproduce
-1. Customer has orders totaling $150 (2 orders) and 3 tickets.
-2. Query joins `customers` to `orders` AND to `tickets`.
-3. Output reports revenue = $450 and tickets = 6.
+1. Inspect `schema.sql`: document 2 (`Deprecated Draft`) has a non-null `deleted_at` timestamp.
+2. Run `query.sql`.
+3. Notice that document 2 is returned along with active documents.
 
-### Expected Behavior
-Aggregate `orders` and `tickets` independently in separate subqueries/CTEs before joining to `customers`.
+### Expected Behaviour
+The query must filter for active documents only (`WHERE deleted_at IS NULL`), returning only records 1 and 3 ordered by `id`.
 
-### Actual Behavior
-Joins multiple independent 1-to-many child tables in a single query.
+### Actual Behaviour
+The query returns all documents indiscriminately, leaking soft-deleted items.
 
-### Impact
-Customer lifetime value and support costs wildly inflated.
+### Starter Files
+- `schema.sql`: Table structure for `documents` with populated `deleted_at` values.
+- `query.sql`: Unfiltered SELECT query returning all documents.
 
-### Requirements
-- Pre-aggregate `orders` by `customer_id` and `tickets` by `customer_id` in CTEs, then join to `customers`.
+### Task
+Update `query.sql` to include a filter ensuring only documents where `deleted_at IS NULL` are returned.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Soft-deleted document rows are filtered out from the active listing.
+2. Active documents are ordered deterministically by primary identifier.
+3. Decommissioned documents with recorded deletion timestamps are excluded.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Independent aggregation reports total_spent=150, tickets=3**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- `NULL` denotes missing or unrecorded attributes; evaluate status with explicit `IS NULL` / `IS NOT NULL` checks.
+- Left joins must preserve parent records having zero matched child rows without unintended row elimination.
+- Output column names and row ordering must strictly match requirements.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In soft-delete schemas, records are marked as removed using a timestamp column rather than being physically deleted.
+- **Level 2 (Directional)**: Check which column indicates deletion state and what value it holds for active records.
+- **Level 3 (Root Cause)**: Add `WHERE deleted_at IS NULL` before the `ORDER BY id` clause to filter out archived documents.
 
 ---
 
-### Challenge 79: [SQL-H04] A Transaction Failure Leaves Related Financial Records Inconsistent
+##### Challenge 84: Recursive Category Navigation Causes Unbounded CTE Loop
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Hard` | **Technology**: `SQL` | **Category**: `Transactions`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `SQL`, `Audit Trail`, `Transactions`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `UPDATE invoices SET status = 'paid' WHERE id = 1;
-SELECT i.status`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An invoice closing script marks invoices as `'paid'` and creates matching audit records.
+### Incident Report
+During peak hours, product navigation on an e-commerce catalog froze and backend database CPU spiked to 100%. Database administrators discovered that a data entry error had introduced an indirect circular reference into product category parent links. The recursive navigation query looped indefinitely, exhausting server memory and dropping database connections.
 
 ### Bug Report
-An invoice is marked paid, but the corresponding audit journal row was missing, failing SOX compliance audits.
+The Common Table Expression (CTE) in `query.sql` traverses the category hierarchy recursively without an upper bound on traversal depth. If circular dependencies or deep hierarchies occur, the recursion executes indefinitely.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice audit logging statement is omitted or failing.
+1. Inspect the recursive CTE definition in `query.sql`.
+2. Notice that the recursive branch joins child categories without restricting traversal depth.
+3. In databases with cycle checks or recursion limits, unbounded traversal risks server exhaustion.
 
-### Expected Behavior
-Insert matching entry in `audit_journal` verifying invoice payment.
+### Expected Behaviour
+The recursive member of the CTE must impose a safety threshold (`WHERE ct.depth < 5`) to prevent runaway recursive cycles.
 
-### Actual Behavior
-Invoice status updated without journal ledger entry.
+### Actual Behaviour
+The recursive union runs without a depth guard, vulnerable to infinite loops on cyclic data.
 
-### Impact
-SOX compliance violation leading to audit fines.
+### Starter Files
+- `schema.sql`: Table structure and category relationships for `categories`.
+- `query.sql`: Recursive CTE `cat_tree` without a depth threshold in the recursive step.
 
-### Requirements
-- Update invoice to `'paid'` and insert corresponding row into `audit_journal`.
+### Task
+Add a recursion depth limit in `query.sql` to prevent cyclic hierarchies from generating infinite loop execution.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Recursive traversal terminates when the depth boundary is reached.
+2. Category hierarchy rows up to the depth threshold are returned.
+3. Results are ordered by depth and category identifier.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Both invoice updated and audit journal written**
+### Constraints
+- Target Database: SQLite 3.35+ with Recursive Common Table Expression (CTE) support.
+- Hierarchical traversal must safely terminate upon reaching maximum designated depth or cycle boundary.
+- Tree levels must maintain correct parent-child relationship tracking across levels.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Recursive CTEs that traverse graph structures require a termination condition or max-depth guard to prevent infinite loops from circular references.
+- **Level 2 (Directional)**: Look at the recursive query term after `UNION ALL`: it increments `depth` by 1 at each iteration.
+- **Level 3 (Root Cause)**: Add `WHERE ct.depth < 5` to the recursive SELECT statement to enforce a safe upper depth limit.
 
 ---
 
-### Challenge 80: [SQL-H05] A Database Migration Incorrectly Handles Existing NULL and Duplicate Values
+##### Challenge 85: Customer Activity Query Scans Full Orders Table
+- **Difficulty**: `Hard` | **Points**: `250 XP` | **Estimated Time**: `25 mins` | **Tech**: `SQL`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Hard` | **Technology**: `SQL` | **Category**: `Schema`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `SQL`, `Migrations`, `NULL Backfill`
-- **Skills Tested**: `SQL`, `Database`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A schema migration prepares to add a `NOT NULL` constraint and default value to a `user_settings.notification_email` column.
+### Incident Report
+Marketing operations reported that their weekly active customer sync job was timing out after running for over twenty minutes. Engineering analysis revealed that an un-indexed subquery in the filtering clause was triggering repeated full table scans over millions of historical order rows, locking memory buffers and exhausting query execution quotas.
 
 ### Bug Report
-Running `ALTER TABLE` crashes or produces corrupted profiles because existing rows contain `NULL` values!
+The customer filtering query in `query.sql` uses `WHERE c.id IN (SELECT o.customer_id FROM orders o)`. In many SQL database engines, unconstrained `IN (SELECT ...)` subqueries materialize large intermediate result sets or fail to utilize semi-join index seeks efficiently compared to correlated existence tests.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Observe NULL values must be backfilled before adding constraints.
+1. Inspect the database schema in `schema.sql`: `customers` and `orders` tables.
+2. Run `query.sql` containing the `IN (SELECT ...)` expression.
+3. Review query execution plans: notice the inefficient table scan pattern instead of a fast semi-join check.
 
-### Expected Behavior
-Backfill existing `NULL` emails with `'no-reply@domain.com'` (or account fallback email).
+### Expected Behaviour
+The query should use an efficient existence predicate: `WHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)`, allowing the optimizer to perform an early-exit semi-join seek.
 
-### Actual Behavior
-Leaves NULL values unmigrated.
+### Actual Behaviour
+The query uses an unoptimized `IN` subquery that requires materializing order customer keys.
 
-### Impact
-Failed database migrations during deployment causing production downtime.
+### Starter Files
+- `schema.sql`: Table structure and seed records for `customers` and `orders`.
+- `query.sql`: Query using `IN (SELECT customer_id FROM orders o)`.
 
-### Requirements
-- Update existing records with missing notification emails to a default fallback address prior to applying constraints.
+### Task
+Refactor `query.sql` to optimize customer order validation using an efficient semi-join existence check.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Customer rows are evaluated against order records using an existence semi-join rather than an unbounded set lookup.
+2. Only customers with at least one matching order (`Alice` and `Bob`) are returned.
+3. Output is ordered deterministically by customer ID.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Backfills NULL notification emails**
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Priority and numerical ranks must sort in mathematical magnitude order rather than lexicographical character ordering.
+- Window function partitions and tie-breaking order specifications must conform to ranking rules.
+- Output ordering must be deterministic and fully reproducible.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Correlated existence checks allow the database engine to short-circuit upon finding the first matching record rather than collecting all values.
+- **Level 2 (Directional)**: Replace the `IN` subquery with an `EXISTS` predicate that links the inner and outer customer identifiers.
+- **Level 3 (Root Cause)**: Change the predicate to `WHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)` while maintaining the order by clause.
 
 ---
 
-### Challenge 81: [SQL-H06] A Running-Total Query Produces Incorrect Results for Tied Timestamps
+### Arena 3: Frontend Studio (IDs 86 - 120)
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Hard` | **Technology**: `SQL` | **Category**: `Window Functions`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `SQL`, `Window Functions`, `Running Total`, `ROWS vs RANGE`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `SUM(amount) OVER (ORDER BY trans_time) AS running_balance`
-- **Suspected Component**: `query.sql`
+#### Tier: Easy (10 Challenges)
 
-**Scenario & Defect Overview:**
-### Company Scenario
-A financial ledger calculates account running balance after each transaction.
+##### Challenge 86: Registration Form Submits With Blank Account Fields
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `React`
+
+### Incident Report
+Customer support reported that newly signed-up user accounts were appearing in the administration console with blank names and corrupted profile records. Backend telemetry showed a surge of HTTP 400 Bad Request errors originating from the new registration page whenever prospective users clicked submit before entering their details.
 
 ### Bug Report
-When two transactions occur at the identical second (`2026-10-19 12:00:00`), the running total jumps ahead and shows the cumulative sum of BOTH transactions on the first row!
+In `RegistrationForm.jsx`, the form submission handler invokes `onSubmit` immediately without validating whether the required name input contains non-whitespace characters. An empty string payload is dispatched to the backend service.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `SUM(amount) OVER (ORDER BY trans_time)`.
-3. Default window frame for tied values groups peers together (`RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`).
+1. Render `RegistrationForm.jsx` in the browser or test suite.
+2. Leave the name input field completely empty (or whitespace only).
+3. Click the "Register" submit button.
+4. Observe that `onSubmit` fires with `{ name: '' }` and no validation error is displayed.
 
-### Expected Behavior
-Include `id` in `ORDER BY` OR specify `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW` to process transactions strictly row by row.
+### Expected Behaviour
+If the user attempts to submit without entering a name, submission must be halted, `onSubmit` must not be invoked, and the validation error message `"Name is required"` must be displayed.
 
-### Actual Behavior
-Tied timestamps cause peer grouping jump.
+### Actual Behaviour
+The form dispatches empty values unconditionally without client-side verification.
 
-### Impact
-Ledger audit mismatch during concurrent transactions.
+### Starter Files
+- `RegistrationForm.jsx`: Controlled React form component with unvalidated submission handler.
 
-### Requirements
-- Use `ORDER BY trans_time, id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`.
+### Task
+Refactor `handleSubmit` in `RegistrationForm.jsx` to validate input presence, blocking submissions that contain only whitespace and displaying 'Name is required'.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Submissions containing empty or whitespace-only names are prevented.
+2. An error message 'Name is required' is displayed when attempting to submit blank inputs.
+3. Valid non-empty names invoke the submission callback.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Strict row-by-row running balance (100.00 then 150.00)**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Form submissions containing empty or whitespace-only inputs must be rejected with appropriate field errors.
+- In-flight submissions must lock the submission trigger to prevent duplicate submissions.
+- Inputs must maintain controlled component state across multi-step flows.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Client forms should validate required fields before dispatching API requests or parent callbacks.
+- **Level 2 (Directional)**: Inspect `handleSubmit`: check whether `name` contains non-whitespace characters before executing `onSubmit`.
+- **Level 3 (Root Cause)**: Add a condition `if (!name.trim()) { setError('Name is required'); return; }` prior to calling `onSubmit`.
 
 ---
 
-### Challenge 82: [SQL-H07] A Reporting Query Uses Incorrect Isolation Assumptions During Concurrent Updates
+##### Challenge 87: Stock Availability Banner Renders Raw Zero on Depleted Inventory
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `React`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Hard` | **Technology**: `SQL` | **Category**: `Transactions`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `SQL`, `Isolation`, `Data Integrity`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `SELECT SUM(amount) AS total_sales FROM orders;`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An analytics query reports confirmed orders.
+### Incident Report
+Shoppers browsing the online store alerted support that product catalog items with zero remaining stock were displaying a raw "0" character directly on the page instead of the styled "Sold Out" badge. The visual glitch distorted the product card layout and created confusion about product availability.
 
 ### Bug Report
-The report includes half-completed cart checkout drafts that are in status `'draft'`, skewing daily performance metrics.
+In `Banner.jsx`, the component uses the logical AND operator `{stock && <span className="in-stock">...</span>}` for conditional rendering. In JavaScript, `0 && <Component />` evaluates to the falsy number `0`, which React renders as a literal text node rather than omitting it.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice missing status filter allows non-committed drafts into reporting tables.
+1. Pass `stock = 0` as a prop to `StockBanner` in `Banner.jsx`.
+2. Inspect the rendered DOM container.
+3. Observe that the character `"0"` is displayed alongside or in place of the expected badge.
 
-### Expected Behavior
-Filter strictly for confirmed, committed orders: `WHERE status = 'confirmed'`.
+### Expected Behaviour
+When `stock` is greater than 0, render `<span className="in-stock">In Stock ({stock})</span>`. When `stock` is 0 or less, render `<span className="sold-out">Sold Out</span>`.
 
-### Actual Behavior
-Reads unconfirmed cart rows.
+### Actual Behaviour
+The expression evaluates to numeric `0`, which React displays as raw text on screen.
 
-### Impact
-Reports include abandoned carts as confirmed sales.
+### Starter Files
+- `Banner.jsx`: Component using numeric short-circuit evaluation in JSX.
 
-### Requirements
-- Filter sales revenue calculations to reflect only confirmed orders.
+### Task
+Refactor the conditional rendering in `Banner.jsx` using an explicit numeric comparison (such as a ternary `stock > 0 ? ... : ...`) so that numeric zero is never rendered as raw text.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. When `stock > 0`, the in-stock badge with item count is rendered.
+2. When `stock <= 0`, the sold-out badge is rendered.
+3. No raw number "0" is outputted to the DOM.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Only confirmed orders summed**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In JavaScript JSX, numeric expressions like `0 && <Tag />` evaluate to the number `0`, which React renders as text.
+- **Level 2 (Directional)**: Avoid relying on short-circuit evaluation with numbers in JSX when the number can be zero.
+- **Level 3 (Root Cause)**: Use an explicit comparison or ternary: `{stock > 0 ? <span className="in-stock">...</span> : <span className="sold-out">...</span>}`.
 
 ---
 
-### Challenge 83: [SQL-H08] A Soft-Delete Implementation Leaks Logically Deleted Records
+##### Challenge 88: Cart Item Card Total Price Fails to Refresh on Quantity Change
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `React`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Hard` | **Technology**: `SQL` | **Category**: `Filtering`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `SQL`, `Soft Deletes`, `Security`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `SELECT id, title FROM documents ORDER BY id;`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A customer portal allows users to soft-delete archived documents (`deleted_at IS NOT NULL`).
+### Incident Report
+Shoppers reported an irritating lag when adjusting item quantities in their order summary. When clicking the `+` button to increment quantity from 1 to 2, the displayed total price remained at the 1-item price. Only on the subsequent click did it reflect the previous quantity, leaving the displayed total consistently one step out of sync.
 
 ### Bug Report
-Soft-deleted documents continue to appear in search queries and public document listings!
+In `ProductCard.jsx`, the component maintains redundant state `totalPrice` alongside `quantity`. In the increment handler, `setTotalPrice(price * quantity)` reads `quantity` synchronously right after `setQuantity(...)`. Because React state updates are scheduled asynchronously, `quantity` holds its old value at calculation time.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice query omits `WHERE deleted_at IS NULL`.
-3. Deleted records are returned.
+1. Render `ProductCard.jsx` with `price = 25`.
+2. Click the `+` increment button once (quantity becomes 2).
+3. Observe that Total still displays `$25` instead of `$50`.
 
-### Expected Behavior
-Filter strictly for active, non-deleted records: `WHERE deleted_at IS NULL`.
+### Expected Behaviour
+The total price must update immediately in lockstep with the quantity, always displaying `price * quantity`.
 
-### Actual Behavior
-Omits soft-delete check.
+### Actual Behaviour
+The component reads stale state synchronously during the event handler, causing redundant state desynchronization.
 
-### Impact
-Privacy violation: users see documents that were deleted by other administrators.
+### Starter Files
+- `ProductCard.jsx`: Card component storing both `quantity` and redundant `totalPrice` in local state.
 
-### Requirements
-- Exclude logically deleted records from active customer listings and order by id.
+### Task
+Refactor `ProductCard.jsx` to remove the redundant `totalPrice` state variable and derive total price directly during render (`price * quantity`).
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Total price computes directly from current price and quantity.
+2. Modifying quantity immediately updates the displayed total amount.
+3. State remains unified without out-of-sync intermediate values.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Only non-deleted documents returned**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- State transitions must be strictly immutable; array mutations and in-place object property assignments are prohibited.
+- Rendered list items must use stable entity identifiers as keys rather than transient array indices.
+- Dependent state values must remain synchronized without stale closures or intermediate rendering lag.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Avoid storing values in state that can be derived directly from existing props or state during render.
+- **Level 2 (Directional)**: React state setter calls do not update variables immediately within the same synchronous event cycle.
+- **Level 3 (Root Cause)**: Remove the `totalPrice` state and calculate `const totalPrice = price * quantity;` directly in the component body.
 
 ---
 
-### Challenge 84: [SQL-H09] A Recursive Hierarchy Query Mishandles Cycles
+##### Challenge 89: Save Draft Toolbar Button Inadvertently Deletes Active Document
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `React`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Hard` | **Technology**: `SQL` | **Category**: `CTE`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `SQL`, `Recursive CTE`, `Cycles`, `Safety`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `FROM categories c JOIN cat_tree ct ON c.parent_id = ct.id
-)`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A category hierarchy explorer queries nested product taxonomy trees.
+### Incident Report
+A critical severity ticket was logged after several content creators lost hours of work. When users clicked the green "Save" button in the document toolbar to preserve their drafts, the document disappeared from their workspace and was permanently deleted from the database.
 
 ### Bug Report
-An invalid database relationship created a circular reference (Category A is parent of Category B, which is parent of Category A). The query runs infinitely until the database crashes with `RecursionError`!
+In `ActionButton.jsx`, a copy-paste error caused the "Save" button to bind `onClick={onDelete}` instead of `onClick={onSave}`. As a result, clicking Save executes the document deletion callback.
 
 ### Steps to Reproduce
-1. Execute recursive query on table with circular reference.
-2. Query runs infinitely without depth bound.
+1. Render `ActionButton.jsx` with mock callbacks for `onSave` and `onDelete`.
+2. Click the "Save" button.
+3. Observe that `onDelete` is invoked instead of `onSave`.
 
-### Expected Behavior
-Add a depth boundary `WHERE depth < 5` to safeguard against infinite loops in recursive CTEs.
+### Expected Behaviour
+Clicking the "Save" button must trigger the `onSave` handler. The "Delete" button should trigger `onDelete`.
 
-### Actual Behavior
-No depth limiter.
+### Actual Behaviour
+The "Save" button is mistakenly wired to the destructive `onDelete` handler.
 
-### Impact
-Database hangs and connection pool exhaustion.
+### Starter Files
+- `ActionButton.jsx`: Toolbar component with inverted event handler binding.
 
-### Requirements
-- Add `AND depth < 5` (or `level < 5`) in the recursive step.
+### Task
+Inspect `ActionButton.jsx` and rebind the Save button's click handler so that it executes `onSave`.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. The "Save" button has `onClick={onSave}`.
+2. The "Delete" button maintains `onClick={onDelete}`.
+3. Clicking Save executes only `onSave`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Hierarchy traversed safely with depth limit**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Global event listeners (`keydown`, `resize`, event bus subscriptions) must be detached in the `useEffect` cleanup return callback.
+- Viewport layouts must scale responsively across mobile (`375px`) and desktop (`1440px`) breakpoints without horizontal overflow.
+- Keyboard interactions (such as Escape key dismissal) must close open overlays reliably.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Check event callback bindings to ensure user actions trigger their intended handlers.
+- **Level 2 (Directional)**: Review the `onClick` prop passed to the Save button.
+- **Level 3 (Root Cause)**: Change `onClick={onDelete}` on the Save button to `onClick={onSave}`.
 
 ---
 
-### Challenge 85: [SQL-H10] An Analytics Query Becomes Extremely Slow Because of Incorrect Query Structure and Indexing Assumptions
+##### Challenge 90: Employee Directory Filter Excludes Names on Mixed-Case Queries
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `React`
 
-- **Arena Domain**: SQL Lab
-- **Difficulty**: `Hard` | **Technology**: `SQL` | **Category**: `Performance`
-- **Points**: `250 XP` | **Time Estimate**: `25 mins`
-- **Topics**: `SQL`, `Query Optimization`, `EXISTS vs IN`, `Performance`
-- **Skills Tested**: `SQL`, `Database`
-- **Bug Signature**: `WHERE c.id IN (SELECT o.customer_id FROM orders o)`
-- **Suspected Component**: `query.sql`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A customer metrics query finds all customers who have placed an order in the last 30 days.
+### Incident Report
+Employees looking up colleagues in the company staff directory complained that search was broken. Typing lowercase names like `"alice"` or uppercase abbreviations returned zero results, even when employee records such as `"Alice Smith"` were clearly listed on the page.
 
 ### Bug Report
-The query uses `IN (SELECT customer_id FROM orders)` on millions of rows, causing a full table scan and locking the database.
+In `SearchBar.jsx`, the filtering predicate uses standard JavaScript `item.name.includes(query)`. Because `.includes()` performs strict case-sensitive character comparisons, any difference in casing between query input and stored records produces false negatives.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice un-indexed `IN (SELECT ...)` subquery.
+1. Render `SearchBar.jsx` with an employee list containing `"Alice"`.
+2. Type `"alice"` into the search input.
+3. Notice that the employee list renders empty.
 
-### Expected Behavior
-Use `EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)` or an indexed `INNER JOIN`.
+### Expected Behaviour
+Search matching must be case-insensitive, allowing users to find records regardless of whether they type in uppercase, lowercase, or mixed case.
 
-### Actual Behavior
-Slow correlated `IN` subquery.
+### Actual Behaviour
+The search filter requires exact casing match, discarding valid matches.
 
-### Impact
-Query timeouts across executive reporting portals.
+### Starter Files
+- `SearchBar.jsx`: Search filter component performing case-sensitive substring matching.
 
-### Requirements
-- Optimize the query using a semi-join or existence check rather than an unindexed full table join.
+### Task
+Update search filtering in `SearchBar.jsx` so that matching operates in a case-insensitive manner.
 
-**Files in Sandbox:**
-- `schema.sql`
-- `query.sql`
+### Acceptance Criteria
+1. Searches match names regardless of upper or lowercase query input.
+2. Submitting uppercase, lowercase, or mixed-case queries returns all matching records.
+3. Filtered results update accurately in the component.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Efficient EXISTS returns Alice and Bob**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Form submissions containing empty or whitespace-only inputs must be rejected with appropriate field errors.
+- In-flight submissions must lock the submission trigger to prevent duplicate submissions.
+- Inputs must maintain controlled component state across multi-step flows.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: User-facing text searches should be case-insensitive to ensure reliable discovery.
+- **Level 2 (Directional)**: Normalize both the source text and the search query before performing substring checks.
+- **Level 3 (Root Cause)**: Update the filter predicate to: `item.name.toLowerCase().includes(query.toLowerCase())`.
 
 ---
 
-## 4. Arena 3: Frontend Studio (React, DOM & State Management)
+##### Challenge 91: Telemetry Viewer Leaves Loading Spinner Trapped on API Error
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `React`
 
-Covering Challenges **86 through 120**. These challenges test interactive UI engineering, React lifecycle and hook patterns, state mutability pitfalls, asynchronous event races, DOM accessibility, forms, and responsive CSS debugging.
-
-### Challenge 86: [FE-E01] A Form Submits Even When Required Fields Are Empty
-
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Easy` | **Technology**: `React` | **Category**: `Forms`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `React`, `Forms`, `Validation`
-- **Skills Tested**: `React`, `Frontend`
-- **Suspected Component**: `RegistrationForm.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A SaaS onboarding registration form collects user name and organization.
+### Incident Report
+Monitoring team operators noted that when upstream telemetry APIs suffered transient 500 errors, the metric viewer dashboard remained stuck on an infinite spinning loading animation. Operators were unable to see the actual error notification or retry the action without manually reloading the entire browser tab.
 
 ### Bug Report
-When a user clicks "Submit" without filling in their name, the form dispatches an API request with an empty payload, causing backend 400 Bad Request errors.
+In `DataViewer.jsx`, the asynchronous fetch chain handles errors in `.catch()`, updating `setError(err.message)`. However, it neglects to call `setLoading(false)`. Because `loading` remains `true` and the render check prioritizes `if (loading) return <Spinner />`, the error message is never displayed.
 
 ### Steps to Reproduce
-1. Load `RegistrationForm.jsx`.
-2. Leave `name` empty and click Submit.
-3. Form dispatches `onSubmit` event without validating.
+1. Render `DataViewer.jsx` with a `fetchFn` that rejects with an error.
+2. Wait for the rejected Promise to complete.
+3. Observe that the loading spinner remains visible indefinitely while the error message is hidden.
 
-### Expected Behavior
-`handleSubmit` must verify `name.trim().length > 0`. If empty, prevent submission and set `error = "Name is required"`.
+### Expected Behaviour
+When an API error occurs, `loading` must be set to `false` and the error message must be presented to the user.
 
-### Actual Behavior
-Submits unconditionally without validation.
+### Actual Behaviour
+When a network or server error occurs, the loading indicator remains active indefinitely, preventing the error message from displaying.
 
-### Impact
-Server logs flooded with 400 bad request errors from incomplete registrations.
+### Starter Files
+- `DataViewer.jsx`: Async data display component with incomplete error state handling.
 
-### Requirements
-- Check `if (!name.trim()) { setError("Name is required"); return; }` before dispatching `onSubmit`.
+### Task
+Update error handling in `DataViewer.jsx` so that the loading indicator is dismissed when an error occurs.
 
-**Files in Sandbox:**
-- `RegistrationForm.jsx`
+### Acceptance Criteria
+1. Network or server errors terminate the loading indicator.
+2. The error message is rendered clearly when requests fail.
+3. Successful requests continue to load data correctly.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Validates empty name before submission**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- State transitions must be strictly immutable; array mutations and in-place object property assignments are prohibited.
+- Rendered list items must use stable entity identifiers as keys rather than transient array indices.
+- Dependent state values must remain synchronized without stale closures or intermediate rendering lag.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Asynchronous operations must reset loading state in both success and error outcomes.
+- **Level 2 (Directional)**: Look at the `.catch(err => { ... })` block in the `useEffect` hook.
+- **Level 3 (Root Cause)**: Add `setLoading(false);` within the catch handler alongside `setError(err.message)`.
 
 ---
 
-### Challenge 87: [FE-E02] A React Component Displays Stale or Incorrect Conditional Content
+##### Challenge 92: Product Detail Card Causes Horizontal Overflow on Mobile Screens
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `CSS`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Easy` | **Technology**: `React` | **Category**: `Conditional Rendering`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `React`, `Conditional Rendering`, `JSX`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `{stock && <span className="in-stock">`
-- **Suspected Component**: `Banner.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An e-commerce banner component notifies users when an item is in stock vs sold out.
+### Incident Report
+Mobile e-commerce shoppers reported that product detail pages were distorted on smartphones. The product card spilled outside the device viewport, triggering an annoying horizontal scroll bar, hiding right-hand buttons, and failing Google Mobile-Friendly usability checks.
 
 ### Bug Report
-When `item.stock` is `0`, the component displays `"0"` on screen instead of the `"Sold Out"` badge because of how JavaScript evaluates `0 && <Component />`!
+In `ResponsiveCard.css`, the `.product-card` class declares a fixed width `width: 600px;`. On screens narrower than 600px (such as standard 375px mobile displays), the fixed pixel width forces the container to overflow the viewport boundaries.
 
 ### Steps to Reproduce
-1. Pass `stock = 0` to `Banner.jsx`.
-2. Notice React renders raw text number `0` on screen.
+1. View the component on a mobile viewport (e.g., width 375px).
+2. Inspect the computed styles on `.product-card`.
+3. Notice the card extends 225px beyond the screen edge, creating horizontal overflow.
 
-### Expected Behavior
-Render `<span className="badge-soldout">Sold Out</span>` when stock is 0, or boolean ternary `stock > 0 ? ... : ...`.
+### Expected Behaviour
+The container should fluidly adapt to narrower screens while maintaining a maximum width of 600px on larger desktop viewports.
 
-### Actual Behavior
-`stock && <span>In Stock</span>` evaluates to `0` and renders literal "0".
+### Actual Behaviour
+The card specifies a rigid `width: 600px;` regardless of screen dimensions.
 
-### Impact
-Broken visual layout with raw digits rendered in place of status badges.
+### Starter Files
+- `ResponsiveCard.css`: Stylesheet containing rigid fixed width styling.
 
-### Requirements
-- Use explicit boolean condition `stock > 0 ? ... : ...` or `Boolean(stock) && ...`.
+### Task
+Replace the fixed `width: 600px;` property in `ResponsiveCard.css` with responsive sizing using `max-width: 600px;` and `width: 100%;` (or fluid width constraints).
 
-**Files in Sandbox:**
-- `Banner.jsx`
+### Acceptance Criteria
+1. The `.product-card` style uses `max-width: 600px;` instead of fixed `width: 600px;`.
+2. The component fits cleanly inside narrow mobile viewports without horizontal scrolling.
+3. Desktop layout maintains optimal reading width up to 600px.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Uses explicit numeric comparison stock > 0**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Fixed pixel widths on container elements frequently cause horizontal overflow on mobile viewports.
+- **Level 2 (Directional)**: Use responsive constraints that allow containers to shrink to 100% of the available viewport width.
+- **Level 3 (Root Cause)**: Replace `width: 600px;` with `max-width: 600px; width: 100%;`.
 
 ---
 
-### Challenge 88: [FE-E03] A Product Card Shows the Wrong Price After a State Update
+##### Challenge 93: Newsletter Form Displays Password Error on Invalid Email
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Easy` | **Technology**: `React` | **Category**: `React State`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `React`, `State`, `Derived State`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `setTotalPrice(price * quantity);`
-- **Suspected Component**: `ProductCard.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A product card displays unit price and calculates total price when the quantity selector increments.
+### Incident Report
+Marketing noticed a high drop-off rate on the email newsletter subscription box. Users who mistyped their email address submitted feedback stating that the site complained their "password must be at least 8 characters", even though the newsletter widget has no password field whatsoever.
 
 ### Bug Report
-User clicks `+` to increase quantity from 1 to 2. The total price continues to display the price for 1 item!
+In `EmailInput.jsx`, the validation function checks if `email.includes('@')`. When the check fails, `setError` is invoked with a copy-pasted string from a password component: `'Password must be at least 8 characters'`.
 
 ### Steps to Reproduce
-1. Load `ProductCard.jsx`.
-2. Click "+" button.
-3. Total price lags by 1 step because state is read synchronously right after `setQuantity`.
+1. Type `"johndoe"` (without `@`) into the input field in `EmailInput.jsx`.
+2. Trigger the blur event by clicking outside the input.
+3. Observe the confusing error message `'Password must be at least 8 characters'`.
 
-### Expected Behavior
-Derive `totalPrice = price * quantity` during render rather than storing redundant stale derived state.
+### Expected Behaviour
+When an invalid email address is entered, display a clear, contextually relevant error message: `'Please enter a valid email address.'`.
 
-### Actual Behavior
-Maintains duplicate state variable `totalPrice` that reads previous `quantity` value.
+### Actual Behaviour
+The component displays an irrelevant password length validation error.
 
-### Impact
-Customers see outdated price totals during cart selection.
+### Starter Files
+- `EmailInput.jsx`: Form input component with copy-paste validation message error.
 
-### Requirements
-- Compute total price directly from current props and state during render to prevent stale derived state.
+### Task
+Update `EmailInput.jsx` so that `setError` sets the message to `'Please enter a valid email address.'` when validation fails.
 
-**Files in Sandbox:**
-- `ProductCard.jsx`
+### Acceptance Criteria
+1. The error message explicitly states `'Please enter a valid email address.'`.
+2. Valid emails clear the error message.
+3. The input properly notifies users of email syntax issues.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Total price derived cleanly from quantity**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Form submissions containing empty or whitespace-only inputs must be rejected with appropriate field errors.
+- In-flight submissions must lock the submission trigger to prevent duplicate submissions.
+- Inputs must maintain controlled component state across multi-step flows.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Form validation messages should accurately describe the field and the specific requirement that failed.
+- **Level 2 (Directional)**: Inspect the string passed to `setError(...)` inside the `validate` function.
+- **Level 3 (Root Cause)**: Replace the password error message with `setError('Please enter a valid email address.');`.
 
 ---
 
-### Challenge 89: [FE-E04] A Button Fires the Wrong Event Handler
+##### Challenge 94: Confirmation Dialog Trap Ignores Escape Key Dismissal
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Easy` | **Technology**: `React` | **Category**: `DOM & Events`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `React`, `Events`, `Event Handlers`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `<button onClick={onDelete} className="bg-emerald-600`
-- **Suspected Component**: `ActionButton.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A task management toolbar contains "Save" and "Delete" buttons.
+### Incident Report
+During a digital accessibility audit, the company was cited for non-compliance with WCAG 2.1 AA criteria. Power users and visually impaired individuals using keyboard-only navigation reported being trapped inside confirmation modals because pressing the standard Escape key failed to dismiss the dialog.
 
 ### Bug Report
-When a user clicks "Save Draft", the task is permanently deleted!
+In `Modal.jsx`, the modal attaches click handlers to its backdrop and close button, but registers no keyboard event listener for the Escape key on the window or document.
 
 ### Steps to Reproduce
-1. Click the "Save" button in `ActionButton.jsx`.
-2. Notice `onClick={onDelete}` is bound to the save button instead of `onClick={onSave}`.
+1. Open the modal dialog by passing `isOpen = true`.
+2. Press the Escape key on the physical keyboard.
+3. Observe that the modal remains open and `onClose` is never invoked.
 
-### Expected Behavior
-Save button triggers `onSave`; Delete button triggers `onDelete`.
+### Expected Behaviour
+Pressing the Escape key (`e.key === 'Escape'`) while the modal is open must trigger `onClose()`.
 
-### Actual Behavior
-Save button is wired to `onDelete`.
+### Actual Behaviour
+The modal only closes via mouse clicks, ignoring keyboard dismissal.
 
-### Impact
-Catastrophic accidental data loss when users intend to save their work.
+### Starter Files
+- `Modal.jsx`: Modal dialog component lacking keyboard event listeners.
 
-### Requirements
-- Connect `onClick={onSave}` to the Save button.
+### Task
+Update `Modal.jsx` to support dismissing open modals when the user presses the Escape key, ensuring listeners are cleaned up when the modal closes.
 
-**Files in Sandbox:**
-- `ActionButton.jsx`
+### Acceptance Criteria
+1. Pressing the Escape key triggers the modal close callback.
+2. Event listeners are properly detached when the modal unmounts or closes.
+3. Keyboard navigation operates consistently.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Save button triggers onSave**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Global event listeners (`keydown`, `resize`, event bus subscriptions) must be detached in the `useEffect` cleanup return callback.
+- Viewport layouts must scale responsively across mobile (`375px`) and desktop (`1440px`) breakpoints without horizontal overflow.
+- Keyboard interactions (such as Escape key dismissal) must close open overlays reliably.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Accessible modal dialogs must provide keyboard support for closing, specifically listening for the Escape key.
+- **Level 2 (Directional)**: Use a `useEffect` hook to attach a `keydown` listener to the global `window` object.
+- **Level 3 (Root Cause)**: Inside the listener, check `if (e.key === "Escape") onClose();` and return a cleanup function that calls `window.removeEventListener`.
 
 ---
 
-### Challenge 90: [FE-E05] A Search Field Ignores Uppercase/Lowercase Normalization
+##### Challenge 95: Team Member List Reorders Input Focus and Checkbox State
+- **Difficulty**: `Easy` | **Points**: `100 XP` | **Estimated Time**: `10 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Easy` | **Technology**: `React` | **Category**: `Validation`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `React`, `Search`, `Normalization`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `item.name.includes(query)`
-- **Suspected Component**: `SearchBar.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An internal employee directory provides live text filtering by employee name.
+### Incident Report
+Workspace administrators reported an alarming bug in the team management screen. When deleting an unwanted user from the top of the team list, checkbox selections, toggle states, and text input values from the deleted row jumped down onto the next team member, causing accidental permission changes.
 
 ### Bug Report
-Typing `"ALICE"` or `"alice"` fails to match employee `"Alice Smith"` due to strict case-sensitive matching.
+In `UserList.jsx`, the map iteration uses the array index as the React key: `<li key={index}>`. When an item is removed from the array, subsequent items shift indices, causing React's reconciliation engine to mistakenly preserve internal DOM state and form inputs across different entities.
 
 ### Steps to Reproduce
-1. Type `"alice"` in search bar.
-2. Filter uses `item.name.includes(query)`.
-3. Zero results returned.
+1. Render `UserList.jsx` with three team members.
+2. Focus or modify an input associated with the first item (index 0).
+3. Click "Delete" on the first item.
+4. Observe that the second item inherits the DOM state of the deleted first item because index 0 was retained.
 
-### Expected Behavior
-Search should be case-insensitive: compare `.toLowerCase()`.
+### Expected Behaviour
+Each list item must use a permanent, unique entity identifier (`key={user.id}`) to guarantee accurate virtual DOM reconciliation during additions, removals, and reordering.
 
-### Actual Behavior
-Case-sensitive substring check.
+### Actual Behaviour
+The component uses array positions as reconciliation keys, causing checkbox selections to shift to incorrect users when items are deleted.
 
-### Impact
-Users fail to find valid contacts in company directory.
+### Starter Files
+- `UserList.jsx`: List component mapping users with index-based keys.
 
-### Requirements
-- Apply `.toLowerCase()` to both `item.name` and `query`.
+### Task
+Update `UserList.jsx` to use persistent unique item identifiers for list keys rather than array indices.
 
-**Files in Sandbox:**
-- `SearchBar.jsx`
+### Acceptance Criteria
+1. List elements use unique stable entity identifiers for item keys.
+2. Deleting an item preserves the checked state of remaining items.
+3. Component identity remains stable across list reorder operations.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Case-insensitive search using toLowerCase**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Form submissions containing empty or whitespace-only inputs must be rejected with appropriate field errors.
+- In-flight submissions must lock the submission trigger to prevent duplicate submissions.
+- Inputs must maintain controlled component state across multi-step flows.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Using array indices as React keys causes state bugs when items are reordered, filtered, or deleted.
+- **Level 2 (Directional)**: React keys must uniquely identify an item across renders so the diffing algorithm tracks the correct DOM node.
+- **Level 3 (Root Cause)**: Change `key={index}` to `key={user.id}` on the `<li>` element.
 
 ---
 
-### Challenge 91: [FE-E06] A Loading Indicator Never Disappears After an API Error
+#### Tier: Medium (15 Challenges)
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Easy` | **Technology**: `React` | **Category**: `React State`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `React`, `Async`, `Loading States`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `setError(err.message);
-      });`
-- **Suspected Component**: `DataViewer.jsx`
+##### Challenge 96: Documentation Typeahead Discards Newest Query Results on Latency Spikes
+- **Difficulty**: `Medium` | **Points**: `200 XP` | **Estimated Time**: `15 mins` | **Tech**: `React`
 
-**Scenario & Defect Overview:**
-### Company Scenario
-A metrics dashboard fetches telemetry data on mount.
+### Incident Report
+Developers searching the enterprise documentation portal reported that live typeahead search was frequently displaying completely wrong search results. For example, after typing `"users"` quickly, the results list showed matches for `"us"` while the input field clearly showed `"users"`. The discrepancy caused developers to navigate into incorrect documentation sections.
 
 ### Bug Report
-When the server returns an HTTP 500 error, the spinner keeps spinning endlessly and the error message never displays.
+In `LiveSearch.jsx`, an asynchronous race condition occurs when subsequent keystrokes dispatch concurrent network requests. If an earlier request (e.g., for `"us"`) takes longer to resolve than a later request (e.g., for `"users"`), the older slow response resolves last and overwrites the newer search results unconditionally.
 
 ### Steps to Reproduce
-1. Fetch API fails.
-2. Catch block sets `setError(err.message)`, but forgets `setLoading(false)`.
-3. Spinner remains visible forever.
+1. Render `LiveSearch.jsx` with a mock search function that simulates variable network latency.
+2. Type a multi-character search term quickly into the search input.
+3. Observe that when the slower preliminary request resolves after the latest request, the preliminary results overwrite the current results list.
 
-### Expected Behavior
-`setLoading(false)` must be executed in both success and error cases (or in `finally`).
+### Expected Behaviour
+The search effect must track active request status or use an abort mechanism so that responses from outdated or superseded queries are ignored.
 
-### Actual Behavior
-`loading` remains `true` on error.
+### Actual Behaviour
+Every resolved promise unconditionally invokes `setResults(data)` regardless of whether the query that initiated it is still the latest user input.
 
-### Impact
-Users stare at an endless loading screen and assume their connection is frozen.
+### Starter Files
+- `LiveSearch.jsx`: Search typeahead component vulnerable to asynchronous race conditions.
 
-### Requirements
-- Add `setLoading(false)` to the error catch block or use `try/finally`.
+### Task
+Refactor `LiveSearch.jsx` to prevent race conditions from out-of-order asynchronous responses overwriting newer search results.
 
-**Files in Sandbox:**
-- `DataViewer.jsx`
+### Acceptance Criteria
+1. Fast-typing queries discard stale responses from previously initiated slower requests.
+2. Only the results for the most recent search query are displayed.
+3. In-flight requests are properly ignored when new queries are submitted.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Loading set to false on catch**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Asynchronous network requests initiated inside `useEffect` must be guarded against out-of-order resolution race conditions.
+- **Level 2 (Directional)**: Maintain a boolean flag (such as `let active = true;`) scoped inside the effect that gets flipped to `false` in the effect cleanup return function.
+- **Level 3 (Root Cause)**: Verify `if (active)` before calling `setResults(data)`, and return `() => { active = false; };` from the effect.
 
 ---
 
-### Challenge 92: [FE-E07] A Responsive Layout Overflows on Mobile
+##### Challenge 97: Warehouse Quick-Add Action Discards Batched Inventory Increments
+- **Difficulty**: `Medium` | **Points**: `200 XP` | **Estimated Time**: `15 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Easy` | **Technology**: `CSS` | **Category**: `CSS & Styling`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `CSS`, `Responsive Design`, `Mobile`
-- **Skills Tested**: `CSS`, `Frontend`
-- **Bug Signature**: `product-card {
-    width: 600px;`
-- **Suspected Component**: `ResponsiveCard.css`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A product detail card contains title, description, and pricing for mobile and desktop screens.
+### Incident Report
+Warehouse floor operators packing outgoing shipments noticed that clicking the "+3 Quick Add" shortcut button on inventory terminals only increased the item box count by 1 instead of 3. Operators were forced to repeatedly click the button, resulting in incorrect box counts and packaging delays.
 
 ### Bug Report
-On mobile devices (screen width 375px), the card overflows horizontally, causing horizontal scrollbars and breaking page layout.
+In `CounterBatch.jsx`, the `incrementByThree` handler calls `setCount(count + 1)` three times sequentially. Because each call closes over the same render's snapshot value of `count`, React batches all three updates and evaluates `setCount(0 + 1)` three times, resulting in a net increase of only 1.
 
 ### Steps to Reproduce
-1. Open layout on 375px screen width.
-2. Observe `width: 600px;` forces horizontal overflow.
+1. Render `CounterBatch.jsx` with an initial count of 0.
+2. Click the "+3 Quick Add" button.
+3. Observe that the displayed box count increments to 1 instead of 3.
 
-### Expected Behavior
-Use fluid responsive sizing: `max-width: 600px; width: 100%; box-sizing: border-box;`.
+### Expected Behaviour
+Each sequential update in a batch must receive and operate on the previous queued state value, properly incrementing the count by 3.
 
-### Actual Behavior
-Hardcoded fixed `width: 600px;`.
+### Actual Behaviour
+All three state updates read the stale closure variable `count`, overwriting one another.
 
-### Impact
-Broken mobile responsiveness and poor Google mobile search ranking.
+### Starter Files
+- `CounterBatch.jsx`: Counter component using repeated direct state updates.
 
-### Requirements
-- Ensure the container adapts fluidly across mobile and desktop viewport sizes using responsive width constraints.
+### Task
+Refactor `incrementByThree` in `CounterBatch.jsx` so that consecutive queued state updates build upon the most recent state value.
 
-**Files in Sandbox:**
-- `ResponsiveCard.css`
+### Acceptance Criteria
+1. State updates use updater functions to avoid reading stale closure state.
+2. Triggering the batch increment increases the counter by exactly 3.
+3. The displayed count accurately reflects all queued modifications.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Uses max-width for responsive scaling**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- State transitions must be strictly immutable; array mutations and in-place object property assignments are prohibited.
+- Rendered list items must use stable entity identifiers as keys rather than transient array indices.
+- Dependent state values must remain synchronized without stale closures or intermediate rendering lag.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Multiple consecutive state updates within the same event execution read from the same render closure unless updater functions are used.
+- **Level 2 (Directional)**: React queues updater functions and passes the pending state as the first argument to each subsequent updater.
+- **Level 3 (Root Cause)**: Replace `setCount(count + 1)` with `setCount(prev => prev + 1)` across all three calls.
 
 ---
 
-### Challenge 93: [FE-E08] A Form Displays an Incorrect Validation Message
+##### Challenge 98: Customer Support Drawer Retains Prior User Profile Across Ticket Switches
+- **Difficulty**: `Medium` | **Points**: `200 XP` | **Estimated Time**: `15 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Easy` | **Technology**: `React` | **Category**: `Validation`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `React`, `Forms`, `Validation Messages`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `setError('Password must be at least 8 characters');`
-- **Suspected Component**: `EmailInput.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A customer newsletter subscription widget validates email syntax.
+### Incident Report
+Customer support agents reported an urgent security and privacy issue: while triaging support tickets, clicking from Customer A's ticket to Customer B's ticket left Customer A's contact info, email address, and billing details displayed in the profile sidebar drawer. An agent inadvertently emailed Customer A regarding Customer B's ticket.
 
 ### Bug Report
-When user enters an invalid email missing `@`, the error displays `"Password must be at least 8 characters"`!
+In `UserProfileLoader.jsx`, the `useEffect` hook that fetches profile information specifies an empty dependency array `[]`. Because `userId` is omitted from dependencies, the effect runs only once when mounted and never refetches when the parent component passes a new `userId` prop.
 
 ### Steps to Reproduce
-1. Type `"invalidemail"` into newsletter input.
-2. Observe copy-paste error in validation message.
+1. Render `UserProfileLoader.jsx` with `userId = "usr_101"`. Profile loads.
+2. Change the incoming prop to `userId = "usr_202"`.
+3. Observe that no network request is dispatched and the component continues to display data for `usr_101`.
 
-### Expected Behavior
-Display `"Please enter a valid email address."`.
+### Expected Behaviour
+The component must fetch and display the updated profile whenever the `userId` prop changes.
 
-### Actual Behavior
-Displays copy-paste password error message.
+### Actual Behaviour
+The effect ignores prop changes due to an empty dependency array, closing over stale profile data.
 
-### Impact
-Confused users cannot figure out why their email is being rejected.
+### Starter Files
+- `UserProfileLoader.jsx`: Profile loader component with omitted hook dependencies.
 
-### Requirements
-- Update error text to `"Please enter a valid email address."`.
+### Task
+Update `UserProfileLoader.jsx` so that changing the active user prop re-fetches and displays the selected user's profile.
 
-**Files in Sandbox:**
-- `EmailInput.jsx`
+### Acceptance Criteria
+1. The dependency array includes `userId`.
+2. Changing `userId` re-triggers loading and retrieves the correct profile.
+3. Component cleanup remains intact to prevent state updates on unmounted instances.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Displays valid email error message**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: All props and variables referenced inside a `useEffect` must be specified in its dependency array.
+- **Level 2 (Directional)**: Look at the empty dependency array `[]` at the bottom of the effect: it prevents the effect from executing when props change.
+- **Level 3 (Root Cause)**: Change the dependency array from `[]` to `[userId, fetchUser]` or `[userId]`.
 
 ---
 
-### Challenge 94: [FE-E09] A Modal Cannot Be Closed Using the Escape Key
+##### Challenge 99: Checkout Cart Subtotal Freezes on In-Place Item Mutation
+- **Difficulty**: `Medium` | **Points**: `200 XP` | **Estimated Time**: `15 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Easy` | **Technology**: `React` | **Category**: `Accessibility`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `React`, `Accessibility`, `Keyboard Events`, `WCAG`
-- **Skills Tested**: `React`, `Frontend`, `Accessibility`
-- **Suspected Component**: `Modal.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An accessible modal dialog component displays order confirmations.
+### Incident Report
+Online shoppers complained that altering product quantities in the grocery checkout cart left the overall subtotal stuck on the initial balance. Only after navigating back and forth between different checkout steps did the price refresh, leading shoppers to believe discounts or items were missing.
 
 ### Bug Report
-Keyboard users and screen readers cannot close the modal by pressing the Escape key, violating WCAG accessibility guidelines.
+In `ShoppingCart.jsx`, `updateQuantity` mutates the existing state array in place via `items[index].qty = newQty` and then calls `setItems(items)`. Because the array reference has not changed, React's shallow comparison treats the state as unchanged, failing to trigger a re-render.
 
 ### Steps to Reproduce
-1. Open modal dialog.
-2. Press "Escape" key.
-3. Modal remains open because keydown listener is missing or checks wrong key.
+1. Render `ShoppingCart.jsx` with sample line items.
+2. Modify the quantity of an item using the number input.
+3. Observe that the subtotal does not recalculate immediately because React skipped re-rendering the mutated array.
 
-### Expected Behavior
-Pressing Escape (`e.key === "Escape"`) invokes `onClose()`.
+### Expected Behaviour
+Updating an item's quantity must produce a new array containing a new item object, preserving state immutability and triggering immediate re-render.
 
-### Actual Behavior
-No Escape key listener attached to document.
+### Actual Behaviour
+The handler directly mutates `items[index].qty` and passes the existing reference back to `setItems`.
 
-### Impact
-Accessibility compliance violation (WCAG 2.1 Level AA) for keyboard-only navigation.
+### Starter Files
+- `ShoppingCart.jsx`: Cart component with direct in-place state mutation.
 
-### Requirements
-- Add `useEffect` listening for `keydown` where `e.key === 'Escape'` triggers `onClose()`.
+### Task
+Refactor `updateQuantity` in `ShoppingCart.jsx` to treat state immutably when modifying item quantities.
 
-**Files in Sandbox:**
-- `Modal.jsx`
+### Acceptance Criteria
+1. The update creates a new array reference without modifying the previous array.
+2. The modified item is cloned with the updated `qty`.
+3. The cart subtotal updates immediately upon quantity changes.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Attaches Escape key listener in useEffect**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- State transitions must be strictly immutable; array mutations and in-place object property assignments are prohibited.
+- Rendered list items must use stable entity identifiers as keys rather than transient array indices.
+- Dependent state values must remain synchronized without stale closures or intermediate rendering lag.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Direct mutation of React state structures prevents re-renders because React relies on reference equality.
+- **Level 2 (Directional)**: Do not assign properties directly onto objects inside state arrays like `items[index].qty = ...`.
+- **Level 3 (Root Cause)**: Use `setItems(items.map(item => item.id === id ? { ...item, qty: newQty } : item))`.
 
 ---
 
-### Challenge 95: [FE-E10] A List Uses an Unstable or Incorrect React Key, Causing UI Inconsistencies
+##### Challenge 100: Catalog Pagination Leaves Filtered Views Trapped on Nonexistent Page
+- **Difficulty**: `Medium` | **Points**: `200 XP` | **Estimated Time**: `15 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Easy` | **Technology**: `React` | **Category**: `DOM & Events`
-- **Points**: `100 XP` | **Time Estimate**: `10 mins`
-- **Topics**: `React`, `Keys`, `Reconciliation`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `<li key={index}`
-- **Suspected Component**: `UserList.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A user list allows administrators to reorder and delete team members.
+### Incident Report
+Store managers managing product inventory reported that category filters were returning "No products found" even for categories with dozens of items. Investigation showed that if a manager was on page 5 of "All Categories" and then clicked "Furniture" (which only has 1 page of items), the view remained stuck on page 5, which had zero items.
 
 ### Bug Report
-When an admin deletes the first user in the list, input values and checkbox states from the deleted row jump onto the next row!
+In `FilterPagination.jsx`, `handleFilterChange` updates `category` via `setCategory(newCategory)`. However, it neglects to reset `page` back to `1`. If the filtered category has fewer total pages than the current page index, the user is stranded on an out-of-range empty page.
 
 ### Steps to Reproduce
-1. Check checkbox on item 0.
-2. Delete item 0.
-3. Item 1 now has its checkbox checked because array index `index` was used as key!
+1. Navigate to page 3 or higher under "All Categories".
+2. Select a category with few items (e.g. "Furniture").
+3. Notice that the catalog displays "No products found" because `page` is still set to 3.
 
-### Expected Behavior
-Use stable unique entity ID `key={user.id}`.
+### Expected Behaviour
+Whenever the user changes the filter category, `page` must reset to `1`.
 
-### Actual Behavior
-Uses array index: `key={index}`.
+### Actual Behaviour
+The page index persists across filter changes, causing out-of-bounds pagination errors.
 
-### Impact
-State corruption in form inputs and reordered lists.
+### Starter Files
+- `FilterPagination.jsx`: Filterable paginated catalog component without page reset logic.
 
-### Requirements
-- Change `key={index}` to `key={user.id}`.
+### Task
+Update `handleFilterChange` in `FilterPagination.jsx` to call `setPage(1)` whenever `newCategory` is selected.
 
-**Files in Sandbox:**
-- `UserList.jsx`
+### Acceptance Criteria
+1. Changing the category filter sets `page` to 1.
+2. Filtered results render starting from the first page.
+3. Pagination controls recalculate total pages accurately.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Uses stable user.id as key**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: When changing dataset filters, the current page number must be reset to prevent pointing past the end of the new result set.
+- **Level 2 (Directional)**: Examine `handleFilterChange`: it only updates the category state.
+- **Level 3 (Root Cause)**: Add `setPage(1);` inside `handleFilterChange` right after `setCategory(newCategory);`.
 
 ---
 
-### Challenge 96: [FE-M01] Rapid Search Requests Overwrite Newer Results
+##### Challenge 101: SVG Dashboard Widget Accumulates Leaked Window Resize Listeners
+- **Difficulty**: `Medium` | **Points**: `200 XP` | **Estimated Time**: `15 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Medium` | **Technology**: `React` | **Category**: `Asynchronous UI`
-- **Points**: `200 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `React`, `Async`, `Race Conditions`, `useEffect`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `fetchResults(query).then(data => {
-      setResults(data);`
-- **Suspected Component**: `LiveSearch.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An enterprise documentation portal provides a live typeahead search across thousands of API endpoints.
+### Incident Report
+Performance monitoring flagged client memory leaks in the operational analytics dashboard. Users who left the browser tab open throughout their work shift experienced severe browser tab lag and eventual tab crashes. Profiling showed tens of thousands of duplicate `resize` listeners accumulated on `window`.
 
 ### Bug Report
-When typing quickly (e.g. searching for "users" by typing "u", "us", "use", "user", "users"), the query for "us" took 350ms while "users" took 80ms. The earlier slow response arrived last and overwrote the results, leaving stale results for "us" visible on the screen even though the input displays "users".
+In `ResizeListener.jsx`, `window.addEventListener('resize', handleResize)` is registered in `useEffect`. However, the effect omits a cleanup function. Every time the component mounts or unmounts, a new listener is permanently attached to `window`.
 
 ### Steps to Reproduce
-1. Open `LiveSearch.jsx`.
-2. Type query rapidly into the search field.
-3. Observe race condition where network latency differences cause out-of-order state updates.
+1. Mount and unmount `ResizeListener.jsx` repeatedly across tab switches.
+2. Inspect the `window` event listeners using Chrome DevTools.
+3. Observe that resize event listeners continuously accumulate without being removed.
 
-### Expected Behavior
-The search component must ignore responses from stale queries or abort previous in-flight requests using an `active` flag or `AbortController`.
+### Expected Behaviour
+The effect must return a cleanup callback that invokes `window.removeEventListener('resize', handleResize)` to detach the listener on unmount.
 
-### Actual Behavior
-Component unconditionally calls `setResults(data)` in the `.then()` callback regardless of whether the query is still the latest one.
+### Actual Behaviour
+The effect has no cleanup return statement, causing memory leaks.
 
-### Impact
-Users see irrelevant search results that do not match the text in the search input, causing confusion and incorrect navigation.
+### Starter Files
+- `ResizeListener.jsx`: Dimension tracking component omitting event listener cleanup.
 
-### Requirements
-- Implement a request cancellation flag or controller to ignore responses from stale or superseded search requests.
-- Only update state if the request is still current.
+### Task
+Update `ResizeListener.jsx` to detach its window resize event listener when the component unmounts.
 
-**Files in Sandbox:**
-- `LiveSearch.jsx`
+### Acceptance Criteria
+1. A cleanup function removes the window resize listener when unmounting.
+2. Event listener references match between registration and deregistration.
+3. Memory leaks from lingering event listeners are eliminated.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Uses cancellation flag or AbortController to prevent race conditions**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Global event listeners (`keydown`, `resize`, event bus subscriptions) must be detached in the `useEffect` cleanup return callback.
+- Viewport layouts must scale responsively across mobile (`375px`) and desktop (`1440px`) breakpoints without horizontal overflow.
+- Keyboard interactions (such as Escape key dismissal) must close open overlays reliably.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Global event listeners attached to `window` or `document` inside effects must be cleaned up to avoid memory leaks.
+- **Level 2 (Directional)**: React `useEffect` supports returning a cleanup callback function that executes when the component unmounts.
+- **Level 3 (Root Cause)**: Return `() => window.removeEventListener("resize", handleResize);` from the effect function.
 
 ---
 
-### Challenge 97: [FE-M02] React State Updates Lose Changes During Batched Operations
+##### Challenge 102: Settings Route Guard Triggers Infinite Login Redirect on Cold Refresh
+- **Difficulty**: `Medium` | **Points**: `200 XP` | **Estimated Time**: `15 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Medium` | **Technology**: `React` | **Category**: `State Management`
-- **Points**: `200 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `React`, `State`, `Batching`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `setCount(count + 1);
-    setCount(count + 1);
-    setCount(count + 1);`
-- **Suspected Component**: `CounterBatch.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An inventory ticketing application allows warehouse workers to quickly increment box counts by +3 using a shortcut button.
+### Incident Report
+Logged-in users reloading their account settings page (`/settings`) reported being abruptly redirected to `/login`. Upon reaching `/login`, the session hydration completed and immediately redirected them back to `/settings`, triggering an infinite redirect loop that made the application unusable.
 
 ### Bug Report
-Clicking "+3" only increments the box count by 1 instead of 3.
+In `ProtectedRoute.jsx`, the guard immediately evaluates `if (!user) return <Navigate to="/login" />`. On application launch or page reload, `user` is initially `null` while `isLoading` is `true`. The guard fails to verify `isLoading` first, mistakenly kicking valid sessions out before auth initialization completes.
 
 ### Steps to Reproduce
-1. In `CounterBatch.jsx`, click the "+3" button.
-2. The button calls `incrementByThree()`, which invokes `setCount(count + 1)` three times in a row.
-3. Box count changes from 0 to 1 instead of 0 to 3.
+1. Render `ProtectedRoute.jsx` with `user = null` and `isLoading = true`.
+2. Observe that the component renders `<Navigate to="/login" />` instead of waiting for loading to finish.
+3. The premature redirection creates an authentication loop.
 
-### Expected Behavior
-Each sequential update must incorporate the latest queued state transition so the counter increments by the full expected amount.
+### Expected Behaviour
+If `isLoading` is true, the route guard must display a loading spinner `<LoadingSpinner />` and defer redirect decisions until auth state resolves.
 
-### Actual Behavior
-All three `setCount(count + 1)` calls read the same snapshot value of `count` from the current render closure.
+### Actual Behaviour
+The guard assumes uninitialized auth state represents an unauthenticated visitor.
 
-### Impact
-Warehouse staff submit incorrect inventory counts, leading to stock discrepancies.
+### Starter Files
+- `ProtectedRoute.jsx`: Authentication wrapper component lacking initial loading check.
 
-### Requirements
-- Use functional state updates to ensure all increments are applied correctly during batched state transitions.
+### Task
+Update `ProtectedRoute.jsx` to check `if (isLoading) return <LoadingSpinner />;` before checking `if (!user)`.
 
-**Files in Sandbox:**
-- `CounterBatch.jsx`
+### Acceptance Criteria
+1. The component checks `isLoading` before checking `user`.
+2. When `isLoading` is true, `<LoadingSpinner />` is returned.
+3. Unauthenticated requests (`!user && !isLoading`) redirect to `/login`.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Uses functional state updater prev => prev + 1**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Asynchronous authentication systems take time to hydrate session tokens from storage or backend endpoints.
+- **Level 2 (Directional)**: A protected route should never redirect until session verification is finished.
+- **Level 3 (Root Cause)**: Add `if (isLoading) return <LoadingSpinner />;` prior to the `if (!user)` check.
 
 ---
 
-### Challenge 98: [FE-M03] useEffect Dependency Causes Stale Values or Missing Updates
+##### Challenge 103: Reimbursement Receipt Uploader Locks Up on Network Disruption
+- **Difficulty**: `Medium` | **Points**: `200 XP` | **Estimated Time**: `15 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Medium` | **Technology**: `React` | **Category**: `React Hooks`
-- **Points**: `200 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `React`, `Hooks`, `useEffect`, `Dependencies`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `}, []);`
-- **Suspected Component**: `UserProfileLoader.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A customer support portal displays user details in a sidebar drawer. As support agents click different ticket owners, `userId` changes.
+### Incident Report
+Employees filing travel expense reports reported that when an upload failed due to a spotty Wi-Fi connection, the file uploader widget stayed permanently frozen showing `"Uploading... 20%"`. The submit button remained disabled, and no error message appeared, preventing employees from retrying without reloading the entire page.
 
 ### Bug Report
-When an agent clicks between User A and User B, the drawer continues to show User A's details because the effect dependency array is empty `[]`.
+In `FileUploader.jsx`, the `handleUpload` asynchronous function handles errors with `catch (err) { console.error('Upload failed', err); }`. It forgets to reset `setIsUploading(false)` or populate `setError(err.message || 'Upload failed')`. As a result, the component remains permanently locked in uploading mode.
 
 ### Steps to Reproduce
-1. Mount `UserProfileLoader.jsx` with `userId = "usr_101"`. Profile loads.
-2. Parent changes prop to `userId = "usr_202"`.
-3. Profile does not reload and keeps showing data for `usr_101`.
+1. Render `FileUploader.jsx` with a mock `uploadApi` that throws an error.
+2. Click the "Upload Document" button.
+3. Observe that after the error occurs, the UI remains permanently stuck on "Uploading... 20%" with no error banner.
 
-### Expected Behavior
-Effect must re-run whenever `userId` changes by declaring `userId` in the dependency array: `[userId, fetchUser]`.
+### Expected Behaviour
+When an upload error occurs, `isUploading` must be reset to `false` and `error` must be set so the user is informed and can retry.
 
-### Actual Behavior
-Dependency array is `[]`, closing over initial `userId` and never refetching.
+### Actual Behaviour
+The `catch` block logs to console without clearing loading state or updating user-facing error state.
 
-### Impact
-Agents take actions on wrong customer accounts due to stale profile displays.
+### Starter Files
+- `FileUploader.jsx`: File upload component with incomplete error state handling.
 
-### Requirements
-- Add `userId` (and `fetchUser`) to the `useEffect` dependency array.
+### Task
+Update the `catch` block in `FileUploader.jsx` to call `setIsUploading(false)` and set `setError(err.message || 'Upload failed')`.
 
-**Files in Sandbox:**
-- `UserProfileLoader.jsx`
+### Acceptance Criteria
+1. On failure, `setIsUploading(false)` is invoked.
+2. `setError` is set with an informative error string.
+3. The upload button becomes re-enabled so the user can attempt another upload.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Declares userId in dependency array**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Error handlers in async UI components must restore interactive state so users can retry failed actions.
+- **Level 2 (Directional)**: Inspect the `catch (err)` block in `handleUpload`.
+- **Level 3 (Root Cause)**: Add `setIsUploading(false);` and `setError(err.message || "Upload failed");` inside the catch handler.
 
 ---
 
-### Challenge 99: [FE-M04] Shopping Cart Calculates Totals Incorrectly After Mutation
+##### Challenge 104: Multi-Step Onboarding Form Clears Inputs on Previous Step Navigation
+- **Difficulty**: `Medium` | **Points**: `200 XP` | **Estimated Time**: `15 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Medium` | **Technology**: `React` | **Category**: `State Immutability`
-- **Points**: `200 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `React`, `Immutability`, `State`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `items[index].qty = newQty;
-      setItems(items);`
-- **Suspected Component**: `ShoppingCart.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An online grocery checkout component allows customers to update item quantities.
+### Incident Report
+Prospective insurance policy buyers abandoned an onboarding questionnaire in high numbers. Users reported that after filling out Step 1 with their personal information and moving to Step 2, clicking "Back" to correct their address cleared all input fields in Step 1, forcing them to re-type everything.
 
 ### Bug Report
-Modifying item quantity directly mutates the state array object `items[index].qty = newQty`. React fails to trigger re-renders reliably because the array reference remains identical, and cart total calculation falls out of sync.
+In `WizardForm.jsx`, child component `Step1` initializes local state `const [name, setName] = useState('')` without reading from the passed `formData` prop. When moving to Step 2, `Step1` unmounts and its local state is destroyed. When returning to Step 1, it re-mounts with an empty string.
 
 ### Steps to Reproduce
-1. In `ShoppingCart.jsx`, call `updateQuantity(itemId, 5)`.
-2. The code mutates the existing item in place: `items[index].qty = newQty; setItems(items);`.
-3. Component doesn't re-render or produces stale totals.
+1. In `WizardForm.jsx`, type a name into Step 1.
+2. Click "Next" to navigate to Step 2.
+3. Click "Back" to return to Step 1.
+4. Notice the name input field is blank.
 
-### Expected Behavior
-State must be updated immutably using `.map()` to return a new array with newly created item objects.
+### Expected Behaviour
+Step 1 inputs must initialize with and display values from `formData.name` so that navigating backward preserves previously entered values.
 
-### Actual Behavior
-Mutates item in place and passes identical array reference to `setItems`.
+### Actual Behaviour
+Step 1 uses uninitialized local state, losing user data upon unmount.
 
-### Impact
-Shoppers see incorrect order totals and get charged mismatched amounts.
+### Starter Files
+- `WizardForm.jsx`: Multi-step form component whose child steps do not initialize from parent state.
 
-### Requirements
-- Use immutable state update: `setItems(items.map(item => item.id === id ? { ...item, qty: newQty } : item));`.
+### Task
+Update `Step1` in `WizardForm.jsx` so its state initializes from `formData.name || ''` (or reads controlled values directly from `formData.name`).
 
-**Files in Sandbox:**
-- `ShoppingCart.jsx`
+### Acceptance Criteria
+1. `Step1` initializes its input state from `formData.name`.
+2. Navigating back and forth between steps retains entered text.
+3. Changes propagate cleanly to the parent `formData` container.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Immutably maps items using object spread**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Form submissions containing empty or whitespace-only inputs must be rejected with appropriate field errors.
+- In-flight submissions must lock the submission trigger to prevent duplicate submissions.
+- Inputs must maintain controlled component state across multi-step flows.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In multi-step wizards, child steps that unmount must receive their initial state from a lifted parent state object.
+- **Level 2 (Directional)**: Look at `Step1`: it receives `formData` as a prop but ignores it in its `useState` declaration.
+- **Level 3 (Root Cause)**: Initialize state with `useState(formData.name || "")`.
 
 ---
 
-### Challenge 100: [FE-M05] Paginated List Does Not Reset Page When Filter Changes
+##### Challenge 105: Executive Overview Dashboard Crashes Entirely on Minor Health Check Timeout
+- **Difficulty**: `Medium` | **Points**: `200 XP` | **Estimated Time**: `15 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Medium` | **Technology**: `React` | **Category**: `Pagination`
-- **Points**: `200 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `React`, `Pagination`, `Filtering`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `const handleFilterChange = (newCategory) => {
-    setCategory(newCategory);
-  };`
-- **Suspected Component**: `FilterPagination.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An admin product catalog provides category filtering and pagination.
+### Incident Report
+During a brief database maintenance blip, the server health check endpoint returned an HTTP 503 while critical revenue systems remained fully operational. However, executive users viewing the overview dashboard saw a full red error screen with zero metrics displayed, completely obscuring their revenue numbers.
 
 ### Bug Report
-An admin navigates to Page 6 of "All Products". They then filter by "Furniture", which only has 2 pages of results. The view displays "No products found" because the table stayed on `page = 6`, which is out of range for the filtered results!
+In `MetricsDashboard.jsx`, the data loader uses `Promise.all([fetchRevenue(), fetchHealth()])`. Because `Promise.all` follows fail-fast semantics, if the secondary `fetchHealth()` promise rejects, the entire promise chain rejects immediately, hiding the successfully fetched revenue data.
 
 ### Steps to Reproduce
-1. In `FilterPagination.jsx`, navigate to page 5.
-2. Select a different category from the dropdown.
-3. The catalog displays an empty state because `page` remained 5 instead of resetting to 1.
+1. Render `MetricsDashboard.jsx` with a working `fetchRevenue` and a failing `fetchHealth`.
+2. Notice the `catch` handler runs and sets `error = "Failed to load dashboard metrics"`.
+3. The dashboard renders an error banner rather than displaying the available revenue card.
 
-### Expected Behavior
-Changing `category` must reset `page` back to 1.
+### Expected Behaviour
+The component should use `Promise.allSettled` to independently evaluate each endpoint, displaying revenue metrics even if health checks fail.
 
-### Actual Behavior
-`handleFilterChange` updates category without touching `page`.
+### Actual Behaviour
+A single endpoint failure causes all dashboard widgets to collapse into an error state, hiding data from healthy services.
 
-### Impact
-Users believe products are missing or deleted when changing search filters.
+### Starter Files
+- `MetricsDashboard.jsx`: Dashboard component using fail-fast `Promise.all` for parallel queries.
 
-### Requirements
-- Call `setPage(1)` whenever the filter changes.
+### Task
+Refactor `MetricsDashboard.jsx` to retrieve dashboard metrics independently so that healthy widgets display their data even if sibling endpoints fail.
 
-**Files in Sandbox:**
-- `FilterPagination.jsx`
+### Acceptance Criteria
+1. Available metrics render successfully even when some endpoints fail.
+2. Failing widgets display individual error notices without breaking the entire view.
+3. Partial system degradations preserve visible operational metrics.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Resets page to 1 on filter change**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: `Promise.all` rejects immediately if any single promise fails, which is inappropriate for dashboards composed of independent widgets.
+- **Level 2 (Directional)**: Use `Promise.allSettled` to inspect the settlement status (`status === "fulfilled"`) of each call independently.
+- **Level 3 (Root Cause)**: Replace `Promise.all` with `Promise.allSettled` and extract `results[0].value` and `results[1].value` when fulfilled.
 
 ---
 
-### Challenge 101: [FE-M06] Event Listener Registered Repeatedly Without Cleanup
+##### Challenge 106: Profile Settings Card Displays Cached Name Following Successful Save
+- **Difficulty**: `Medium` | **Points**: `200 XP` | **Estimated Time**: `15 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Medium` | **Technology**: `React` | **Category**: `Memory Leaks`
-- **Points**: `200 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `React`, `useEffect`, `Cleanup`, `DOM Events`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `window.addEventListener('resize', handleResize);
-    // BUG: Missing cleanup function to removeEventListener
-  }, []);`
-- **Suspected Component**: `ResizeListener.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A charting widget listens for browser window resize events to recalculate SVG canvas dimensions.
+### Incident Report
+Users changing their display name in account preferences reported that after seeing a green "Saved successfully" toast notification, their old name continued to appear whenever they navigated back to their profile overview. The stale name persisted until they performed a hard browser cache refresh.
 
 ### Bug Report
-Every time the user navigates between dashboard tabs, browser memory consumption increases steadily. Profiling reveals that thousands of `resize` listeners remain attached to `window`, leading to sluggish responsiveness.
+In `ProfileCache.jsx`, the component maintains an in-memory client `cache` map to minimize redundant HTTP fetches. In `handleUpdateName`, the API call updates the backend and local state, but fails to update or invalidate the cached entry in `cache`. When the component re-mounts, it reads the stale name from `cache.get(userId)`.
 
 ### Steps to Reproduce
-1. Inspect `ResizeListener.jsx`.
-2. Notice `window.addEventListener('resize', handleResize)` is registered in `useEffect`.
-3. No cleanup function is returned.
+1. Render `ProfileCache.jsx` with a populated cache entry for `userId`.
+2. Type a new name and click "Save".
+3. Notice that `cache.get(userId)` still returns the previous name because the cache was not updated.
 
-### Expected Behavior
-`useEffect` must return a cleanup function: `return () => window.removeEventListener('resize', handleResize);`.
+### Expected Behaviour
+Following a successful update, the client cache must be synchronized with the new profile data via `cache.set(userId, updated)`.
 
-### Actual Behavior
-Omits cleanup, leaking event listeners on every unmount and re-mount.
+### Actual Behaviour
+The component updates its local React state but leaves the stale entry in the shared cache.
 
-### Impact
-Severe memory leak causing browser tab crashes on long-lived sessions.
+### Starter Files
+- `ProfileCache.jsx`: Profile component utilizing a shared client-side cache without cache synchronization.
 
-### Requirements
-- Return `() => window.removeEventListener('resize', handleResize)` from `useEffect`.
+### Task
+Update `handleUpdateName` in `ProfileCache.jsx` to update the cache entry using `cache.set(userId, updated)` following a successful API call.
 
-**Files in Sandbox:**
-- `ResizeListener.jsx`
+### Acceptance Criteria
+1. The cache is updated with `cache.set(userId, updated)`.
+2. Subsequent cache reads return the newly saved profile data.
+3. Display state and cache remain in sync.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Cleans up event listener with removeEventListener**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Client-side caches must be updated or invalidated whenever mutation requests succeed.
+- **Level 2 (Directional)**: Inspect `handleUpdateName`: it updates local state `setProfile(updated)` but forgets to update the shared `cache` instance.
+- **Level 3 (Root Cause)**: Add `cache.set(userId, updated);` immediately after obtaining the updated profile from the API.
 
 ---
 
-### Challenge 102: [FE-M07] Authentication Refresh Request Creates Redirect Loops
+##### Challenge 107: Food Ordering Form Executes Duplicate Payments on Double Click
+- **Difficulty**: `Medium` | **Points**: `200 XP` | **Estimated Time**: `15 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Medium` | **Technology**: `React` | **Category**: `Authentication`
-- **Points**: `200 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `React`, `Authentication`, `Routing`, `Loading States`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `export default function ProtectedRoute({ user, isLoading, children }) {
-  if (!user) {`
-- **Suspected Component**: `ProtectedRoute.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A cloud dashboard implements route guarding to protect user settings and billing.
+### Incident Report
+A high-volume food delivery app received customer complaints regarding double billing. Impatient diners frequently double-clicked the "Place Order" button during checkout, causing two identical orders to be processed concurrently and billing the customer's credit card twice for the same meal.
 
 ### Bug Report
-When an authenticated user refreshes `/settings`, the page flickers and immediately redirects to `/login`. Upon arriving at `/login`, the auth provider finishes hydrating and redirects them back to `/settings`, causing an infinite redirect loop.
+In `SubmitButton.jsx`, the button element lacks a `disabled={isSubmitting}` attribute. Furthermore, `handleSubmit` does not check whether an existing submission is already in flight. Multiple rapid clicks initiate parallel network requests.
 
 ### Steps to Reproduce
-1. In `ProtectedRoute.jsx`, observe the auth check.
-2. When the app first boots, `isLoading` is `true` while the session token is validated, but `user` is initially `null`.
-3. `ProtectedRoute` immediately executes `if (!user) return <Navigate to="/login" />` before checking `isLoading`.
+1. In `SubmitButton.jsx`, click "Place Order" twice in rapid succession.
+2. Notice that the button remains clickable while `isSubmitting` is true.
+3. Observe that `onOrder` is invoked twice.
 
-### Expected Behavior
-If `isLoading` is true, render a loading spinner `<LoadingSpinner />` and wait until authentication state resolves before redirecting.
+### Expected Behaviour
+While an order submission is in progress, the button must be disabled (`disabled={isSubmitting}`) and `handleSubmit` must prevent re-entrant execution.
 
-### Actual Behavior
-Treats unhydrated state (`user === null` while `isLoading === true`) as unauthenticated and redirects immediately.
+### Actual Behaviour
+The button remains active throughout the network call, permitting duplicate submissions.
 
-### Impact
-Authenticated users cannot reload or deep-link to protected pages without getting kicked out.
+### Starter Files
+- `SubmitButton.jsx`: Order button component lacking disable attribute and submission guard.
 
-### Requirements
-- Add `if (isLoading) return <LoadingSpinner />;` before checking `if (!user)`.
+### Task
+Update `SubmitButton.jsx` to disable the button when `isSubmitting` is true (`disabled={isSubmitting}`) and add a guard `if (isSubmitting) return;` at the beginning of `handleSubmit`.
 
-**Files in Sandbox:**
-- `ProtectedRoute.jsx`
+### Acceptance Criteria
+1. The `<button>` element includes `disabled={isSubmitting}`.
+2. `handleSubmit` guards against re-entry if `isSubmitting` is already true.
+3. Double-clicking the button triggers only a single submission.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Checks isLoading before redirecting**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Form submissions containing empty or whitespace-only inputs must be rejected with appropriate field errors.
+- In-flight submissions must lock the submission trigger to prevent duplicate submissions.
+- Inputs must maintain controlled component state across multi-step flows.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Prevent duplicate form submissions by disabling buttons and checking pending state flags.
+- **Level 2 (Directional)**: Look at the `<button>` element props: it currently lacks a `disabled` attribute.
+- **Level 3 (Root Cause)**: Add `disabled={isSubmitting}` to `<button>` and prepend `if (isSubmitting) return;` inside `handleSubmit`.
 
 ---
 
-### Challenge 103: [FE-M08] File-Upload Component Mishandles Progress and Failed Requests
+##### Challenge 108: Hotel Reservation Calendar Shifts Selected Check-In Date Backwards
+- **Difficulty**: `Medium` | **Points**: `200 XP` | **Estimated Time**: `15 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Medium` | **Technology**: `React` | **Category**: `Error Handling`
-- **Points**: `200 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `React`, `Async`, `Error Handling`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `} catch (err) {
-      console.error('Upload failed', err);
-    }`
-- **Suspected Component**: `FileUploader.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A customer portal allows users to upload PDF receipts for reimbursement.
+### Incident Report
+Hotel guests booking vacation rooms from North and South America reported arriving at hotels to find their reservations were booked for the wrong day. A guest who explicitly clicked "October 15, 2026" on the calendar widget discovered that their confirmed booking showed "October 14, 2026", resulting in denied check-ins and angry guests.
 
 ### Bug Report
-If an upload fails (e.g. 500 server error or dropped connection), the UI remains stuck showing "Uploading 65%..." and the upload button stays disabled forever. The user is unable to retry without refreshing the entire page.
+In `DatePicker.jsx`, `handleDateChange` receives a string formatted as `"2026-10-15"`. It parses this string via `new Date(dateString)` and formats it using `d.toISOString().split('T')[0]`. In Western timezones (e.g. UTC-5), midnight local time parses as the previous day at 7:00 PM or 8:00 PM UTC, causing `toISOString()` to roll the calendar date backward by one full day.
 
 ### Steps to Reproduce
-1. In `FileUploader.jsx`, simulate an upload failure.
-2. The `try/catch` catches the error, but only calls `console.error`.
-3. `isUploading` remains `true` and `error` state is never populated.
+1. Render `DatePicker.jsx` in a browser configured with a negative UTC offset (e.g. US/Eastern).
+2. Select `"2026-10-15"`.
+3. Observe that `selectedDate` outputs `"2026-10-14"`.
 
-### Expected Behavior
-Inside the `catch` block, set `setIsUploading(false)` and `setError(err.message || 'Upload failed')`.
+### Expected Behaviour
+The selected calendar date string (`"YYYY-MM-DD"`) provided by the HTML5 date input must be used directly without passing through timezone-shifting UTC conversions.
 
-### Actual Behavior
-Leaves `isUploading: true` and does not set user-facing error message.
+### Actual Behaviour
+Constructing a `Date` object and converting back to ISO string shifts the date backward in negative timezones.
 
-### Impact
-Users assume their documents are still uploading and abandon their expense submissions.
+### Starter Files
+- `DatePicker.jsx`: Date picker component with erroneous Date constructor UTC serialization.
 
-### Requirements
-- Update `catch` block to set `setIsUploading(false)` and set `setError(...)`.
+### Task
+Update `handleDateChange` in `DatePicker.jsx` to directly pass and store the raw `dateString` (`setSelectedDate(dateString); onSelect(dateString);`) without constructing a timezone-sensitive `Date` object.
 
-**Files in Sandbox:**
-- `FileUploader.jsx`
+### Acceptance Criteria
+1. The raw `dateString` is stored and propagated directly.
+2. No timezone date shifting occurs across different client timezones.
+3. The selected date displays identically to the chosen calendar date.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Resets isUploading and sets error state on failure**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Native HTML date inputs (`<input type="date">`) already supply clean `"YYYY-MM-DD"` formatted date strings.
+- **Level 2 (Directional)**: Constructing `new Date("YYYY-MM-DD")` and converting to ISO string shifts dates backwards in timezones west of UTC.
+- **Level 3 (Root Cause)**: Directly use `setSelectedDate(dateString); onSelect(dateString);` without parsing into a `Date` object.
 
 ---
 
-### Challenge 104: [FE-M09] Multi-Step Form Loses User Values When Navigating Backward
+##### Challenge 109: Workspace Signup Form Conceals Field-Level Validation Errors
+- **Difficulty**: `Medium` | **Points**: `200 XP` | **Estimated Time**: `15 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Medium` | **Technology**: `React` | **Category**: `Form Architecture`
-- **Points**: `200 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `React`, `Lifting State`, `Forms`, `Multi-step`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `export function Step1({ formData = {}, onChange }) {
-  const [name, setName] = useState('');`
-- **Suspected Component**: `WizardForm.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An insurance quote onboarding flow consists of Step 1 (Personal Info) and Step 2 (Vehicle Details).
+### Incident Report
+Marketing and product teams identified a sharp drop in enterprise signup completions. When prospective clients attempted to create a workspace with an unavailable subdomain name, the backend responded with HTTP 422 and a detailed error message. However, the registration form wiped out all context and displayed only a vague "Submission failed" banner, leaving users unable to determine what went wrong.
 
 ### Bug Report
-A user fills out Step 1, proceeds to Step 2, and then clicks "Back" to fix a typo in their name. When Step 1 re-mounts, all previously entered fields are blank!
+In `ServerErrorForm.jsx`, the catch handler catches the submission error but only executes `setGeneralError('Submission failed')`. It ignores the field-level errors provided in `err.response.data.errors`, preventing the input-specific error message (`fieldErrors.subdomain`) from rendering.
 
 ### Steps to Reproduce
-1. In `WizardForm.jsx`, notice that `Step1` maintains local `useState` for `fullName` and `email` instead of lifting state to parent.
-2. Moving to Step 2 unmounts `Step1`, destroying its local state.
-3. Returning to Step 1 re-mounts with empty initial strings.
+1. Submit a taken subdomain in `ServerErrorForm.jsx` that rejects with `{ response: { data: { errors: { subdomain: 'Subdomain already in use' } } } }`.
+2. Observe that only the generic error "Submission failed" appears.
+3. The specific subdomain error text is never displayed beneath the input.
 
-### Expected Behavior
-Form data must be lifted up to parent `WizardForm` and passed down as props (`formData` and `onChange`) to persist between step transitions.
+### Expected Behaviour
+The catch handler must inspect `err.response?.data?.errors` and pass them to `setFieldErrors` so that specific validation messages appear next to invalid inputs.
 
-### Actual Behavior
-Child step component owns its own state, discarding it upon unmount.
+### Actual Behaviour
+Field-specific error structures are discarded in favor of a generic string message.
 
-### Impact
-High checkout abandonment rates due to users having to re-type form inputs.
+### Starter Files
+- `ServerErrorForm.jsx`: Form component discarding field-level API error responses.
 
-### Requirements
-- Lift state to `WizardForm` and pass `formData.fullName` and `formData.email` into `Step1`.
+### Task
+Update `handleSubmit` in `ServerErrorForm.jsx` to populate `setFieldErrors(err.response?.data?.errors || {})` inside the catch block.
 
-**Files in Sandbox:**
-- `WizardForm.jsx`
+### Acceptance Criteria
+1. The catch block extracts `err.response?.data?.errors`.
+2. `setFieldErrors` is populated with the field error map.
+3. The specific error message is displayed beneath the subdomain input field.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Step1 initializes with formData.name**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Form submissions containing empty or whitespace-only inputs must be rejected with appropriate field errors.
+- In-flight submissions must lock the submission trigger to prevent duplicate submissions.
+- Inputs must maintain controlled component state across multi-step flows.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: API validation errors (HTTP 422) provide structured per-field error maps that should be routed to their respective form inputs.
+- **Level 2 (Directional)**: Check `err.response?.data?.errors` inside the catch block.
+- **Level 3 (Root Cause)**: Add `if (err.response?.data?.errors) setFieldErrors(err.response.data.errors);`.
 
 ---
 
-### Challenge 105: [FE-M10] Dashboard Renders Inconsistent Data After Parallel API Calls
+##### Challenge 110: Accessible Selection Menu Traps Keyboard Focus by Ignoring Escape
+- **Difficulty**: `Medium` | **Points**: `200 XP` | **Estimated Time**: `15 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Medium` | **Technology**: `React` | **Category**: `Asynchronous Data`
-- **Points**: `200 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `React`, `Async`, `Promise.allSettled`, `Resilience`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `Promise.all([fetchRevenue(), fetchHealth()])`
-- **Suspected Component**: `MetricsDashboard.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An executive analytics dashboard fetches Revenue Metrics and Server Health in parallel.
+### Incident Report
+During a mandatory Section 508 and WCAG 2.1 compliance audit for a government contractor, the web application failed automated and manual accessibility testing. Keyboard-only users opening the custom dropdown menu were trapped inside the listbox because pressing the Escape key had no effect.
 
 ### Bug Report
-If the Server Health endpoint encounters a minor 503 outage, `Promise.all` fails immediately, causing the entire dashboard to crash and display an error screen—even though the critical Revenue Metrics were returned successfully!
+In `AccessibleDropdown.jsx`, the keyboard listener `handleKeyDown` handles `'Enter'` and `' '` (Space) to toggle the menu, but completely omits a handler for `e.key === 'Escape'`. When the dropdown is open, pressing Escape does not close it.
 
 ### Steps to Reproduce
-1. In `MetricsDashboard.jsx`, observe `Promise.all([fetchRevenue(), fetchHealth()])`.
-2. Rejecting `fetchHealth()` causes the entire try block to fail.
-3. No revenue numbers are shown to the executive.
-
-### Expected Behavior
-Use `Promise.allSettled` or individual try/catch blocks so successful metrics are displayed with an isolated fallback banner for the degraded service.
-
-### Actual Behavior
-All-or-nothing `Promise.all` fails completely on single endpoint errors.
-
-### Impact
-Total service interruption on dashboard when non-critical endpoints fail.
-
-### Requirements
-- Use `Promise.allSettled` to independently evaluate each endpoint result.
-
-**Files in Sandbox:**
-- `MetricsDashboard.jsx`
-
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Uses Promise.allSettled for resilient data fetching**
-
----
-
-### Challenge 106: [FE-M11] Frontend Cache Displays Outdated Profile Information
-
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Medium` | **Technology**: `React` | **Category**: `Caching`
-- **Points**: `200 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `React`, `Caching`, `Cache Invalidation`
-- **Skills Tested**: `React`, `Frontend`
-- **Suspected Component**: `ProfileCache.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A social networking platform caches user profile payloads in an in-memory map to reduce redundant API roundtrips.
-
-### Bug Report
-When a user updates their profile name and clicks "Save", the update API returns 200 OK. However, navigating back to their profile view still displays their old name until the page is hard refreshed.
-
-### Steps to Reproduce
-1. In `ProfileCache.jsx`, save an updated name via `handleUpdateName`.
-2. Notice the code calls `api.updateName(newName)`, but never invalidates or updates the `cache` entry for `userId`.
-3. Subsequent reads from `cache.get(userId)` return the old profile object.
-
-### Expected Behavior
-After a successful update, the cache entry must be invalidated or updated with the new profile data.
-
-### Actual Behavior
-The cache is not mutated or cleared, leading to stale reads.
-
-### Impact
-Users repeatedly submit duplicate update requests thinking their changes were lost.
-
-### Requirements
-- Update `cache.set(userId, updated)` or delete `cache.delete(userId)` after saving.
-
-**Files in Sandbox:**
-- `ProfileCache.jsx`
-
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Updates or deletes the cache entry on save**
-
----
-
-### Challenge 107: [FE-M12] Component Submits Duplicate Requests After Repeated Clicks
-
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Medium` | **Technology**: `React` | **Category**: `Form Submission`
-- **Points**: `200 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `React`, `Forms`, `Debounce`, `Double Submission`
-- **Skills Tested**: `React`, `Frontend`
-- **Suspected Component**: `SubmitButton.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A food delivery app features an "Order Now" checkout button.
-
-### Bug Report
-Impatient users double-click the "Place Order" button. The server receives two parallel order requests and charges the customer twice for the same meal!
-
-### Steps to Reproduce
-1. In `SubmitButton.jsx`, observe the `handleSubmit` click handler.
-2. The button lacks a `disabled` attribute tied to `isSubmitting`, and `handleSubmit` does not check if a submission is already pending.
-
-### Expected Behavior
-The button must be disabled when `isSubmitting` is true (`disabled={isSubmitting}`), and `handleSubmit` must guard against re-entry.
-
-### Actual Behavior
-Button stays clickable during the async network request.
-
-### Impact
-Duplicate financial transactions and customer chargeback disputes.
-
-### Requirements
-- Set `disabled={isSubmitting}` on `<button>`.
-- Check `if (isSubmitting) return;` at the start of `handleSubmit`.
-
-**Files in Sandbox:**
-- `SubmitButton.jsx`
-
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Disables button when isSubmitting is true**
-
----
-
-### Challenge 108: [FE-M13] Date Picker Displays Incorrect Date Due to Timezone Offset
-
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Medium` | **Technology**: `React` | **Category**: `Date & Time`
-- **Points**: `200 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `React`, `Dates`, `Timezones`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `const d = new Date(dateString);
-    const formatted = d.toISOString().split('T')[0];
-    setSelectedDate(formatted);`
-- **Suspected Component**: `DatePicker.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A hotel booking system displays selected check-in and check-out dates.
-
-### Bug Report
-Users in the Americas (e.g. UTC-5, UTC-8) select "October 15, 2026" on the calendar. After selecting, the confirmation text shows "October 14, 2026"—one day behind!
-
-### Steps to Reproduce
-1. In `DatePicker.jsx`, `new Date("2026-10-15")` parses the string at midnight UTC.
-2. In America/New_York (UTC-4), midnight UTC corresponds to 8:00 PM on October 14.
-3. Calling `date.getDate()` or `toISOString()` renders October 14 instead of October 15.
-
-### Expected Behavior
-Format dates using local components or parse without midnight UTC shifting (e.g. `dateString.split('-')` or `new Date(year, month - 1, day)`).
-
-### Actual Behavior
-Converts through `new Date(isoDateString).toISOString().split('T')[0]`, shifting timezone by negative UTC offset.
-
-### Impact
-Guests book rooms for the wrong night, causing booking errors and lost revenue.
-
-### Requirements
-- Parse date inputs using local calendar date parts to avoid unexpected timezone shifts.
-
-**Files in Sandbox:**
-- `DatePicker.jsx`
-
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Retains raw dateString without UTC shifting**
-
----
-
-### Challenge 109: [FE-M14] Form Does Not Preserve Field-Level Server Validation Errors
-
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Medium` | **Technology**: `React` | **Category**: `Form Validation`
-- **Points**: `200 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `React`, `Forms`, `Validation`, `Error Handling`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `} catch (err) {
-      setGeneralError('Submission failed');
-    }`
-- **Suspected Component**: `ServerErrorForm.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A SaaS account creation form validates workspace subdomain and company tax ID on the backend.
-
-### Bug Report
-When submitting with a taken subdomain, the backend returns HTTP 422: `{ errors: { subdomain: "Subdomain already in use" } }`. The frontend replaces the entire form with a generic message `"An error occurred"` rather than highlighting the `subdomain` field with its specific server error message.
-
-### Steps to Reproduce
-1. In `ServerErrorForm.jsx`, simulate a 422 response with `err.response.data.errors`.
-2. Notice `catch (err)` discards `err.response.data.errors` and sets a single string error.
-3. No field-specific error messages are rendered next to the offending input.
-
-### Expected Behavior
-Catch block must inspect `err.response?.data?.errors` and store them in `fieldErrors` state (`setFieldErrors(err.response.data.errors)`).
-
-### Actual Behavior
-Wipes out detailed field-level error messages in favor of a vague banner.
-
-### Impact
-Users cannot tell which field was invalid or how to fix it, abandoning signup.
-
-### Requirements
-- Set `setFieldErrors(err.response?.data?.errors || {})` inside the catch handler.
-
-**Files in Sandbox:**
-- `ServerErrorForm.jsx`
-
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Populates fieldErrors from server error response**
-
----
-
-### Challenge 110: [FE-M15] Accessible Dropdown Fails to Close on Escape Key
-
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Medium` | **Technology**: `React` | **Category**: `Accessibility`
-- **Points**: `200 XP` | **Time Estimate**: `15 mins`
-- **Topics**: `React`, `Accessibility`, `WCAG`, `Keyboard Events`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `const handleKeyDown = (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {`
-- **Suspected Component**: `AccessibleDropdown.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An enterprise banking application requires compliance with WCAG 2.1 AA accessibility guidelines.
-
-### Bug Report
-When a blind or motor-impaired user opens a custom dropdown menu using keyboard navigation, pressing the "Escape" key does not close the dropdown menu, trapping focus and violating accessibility standards.
-
-### Steps to Reproduce
-1. In `AccessibleDropdown.jsx`, open the dropdown.
+1. Render `AccessibleDropdown.jsx` and open the menu by pressing Space or clicking the button.
 2. Press the Escape key.
-3. The dropdown remains open because `handleKeyDown` ignores `e.key === 'Escape'`.
+3. Observe that the dropdown remains open and focus is trapped.
 
-### Expected Behavior
-When `e.key === 'Escape'` is pressed, `setIsOpen(false)` must be called to dismiss the dropdown.
+### Expected Behaviour
+Pressing the Escape key while the dropdown is open must dismiss the menu by calling `setIsOpen(false)`.
 
-### Actual Behavior
-`handleKeyDown` ignores the Escape key.
+### Actual Behaviour
+The keydown handler ignores the Escape key, leaving the menu open.
 
-### Impact
-Fails WCAG 2.1 AA audit, blocking users who rely on assistive technologies.
+### Starter Files
+- `AccessibleDropdown.jsx`: Custom dropdown component lacking Escape key handler.
 
-### Requirements
-- Add `if (e.key === 'Escape') setIsOpen(false);` in `handleKeyDown`.
+### Task
+Update `handleKeyDown` in `AccessibleDropdown.jsx` to check if `e.key === 'Escape'` and dismiss the dropdown with `setIsOpen(false)`.
 
-**Files in Sandbox:**
-- `AccessibleDropdown.jsx`
+### Acceptance Criteria
+1. `handleKeyDown` checks `if (e.key === 'Escape')`.
+2. When Escape is pressed, `setIsOpen(false)` is invoked.
+3. The menu closes cleanly without disturbing selection state.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Closes dropdown when Escape key is pressed**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Global event listeners (`keydown`, `resize`, event bus subscriptions) must be detached in the `useEffect` cleanup return callback.
+- Viewport layouts must scale responsively across mobile (`375px`) and desktop (`1440px`) breakpoints without horizontal overflow.
+- Keyboard interactions (such as Escape key dismissal) must close open overlays reliably.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: WCAG criteria require custom dropdowns and dialogs to be dismissable via the standard Escape key.
+- **Level 2 (Directional)**: Examine `handleKeyDown`: it currently only checks for Enter and Space.
+- **Level 3 (Root Cause)**: Add `if (e.key === "Escape") setIsOpen(false);` inside `handleKeyDown`.
 
 ---
 
-### Challenge 111: [FE-H01] Concurrent Frontend Requests Create Inconsistent Checkout State
+#### Tier: Hard (10 Challenges)
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Hard` | **Technology**: `React` | **Category**: `Concurrency`
-- **Points**: `300 XP` | **Time Estimate**: `20 mins`
-- **Topics**: `React`, `Concurrency`, `State Machine`, `E-commerce`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `const handleCheckout = async () => {
-    setStatus('processing');`
-- **Suspected Component**: `CheckoutFlow.jsx`
+##### Challenge 111: Concert Ticket Checkout Permits Overlapping Order Submissions
+- **Difficulty**: `Hard` | **Points**: `300 XP` | **Estimated Time**: `20 mins` | **Tech**: `React`
 
-**Scenario & Defect Overview:**
-### Company Scenario
-A high-volume ticket sales portal allows users to purchase concert tickets.
+### Incident Report
+During a high-demand concert ticket release, customer support and accounting were flooded with duplicate ticket purchases and split-billing disputes. Frustrated fans experiencing brief checkout latency clicked the "Confirm Checkout" button multiple times, causing two separate order creation requests to hit the payment gateway in parallel.
 
 ### Bug Report
-During flash sales, customers click "Checkout" while background cart inventory verification is still in flight. Because there is no atomic state lock or mutex, two concurrent checkout requests are dispatched with the same cart items, creating duplicate bookings and split billing charges.
+In `CheckoutFlow.jsx`, `handleCheckout` initiates an order request without checking if an authorization request is already pending. Furthermore, the button's disabled condition only checks `status === 'completed'`, leaving the action fully clickable while `status === 'processing'`.
 
 ### Steps to Reproduce
-1. In `CheckoutFlow.jsx`, click Checkout.
-2. Trigger a second checkout action before the first returns.
-3. Both proceed because state transition is not locked atomically.
+1. In `CheckoutFlow.jsx`, trigger `handleCheckout`.
+2. Before the asynchronous network call resolves, invoke `handleCheckout` a second time.
+3. Observe that both requests dispatch concurrently to the order creation endpoint.
 
-### Expected Behavior
-A checkout mutex/lock (`isProcessing` state or ref) must prevent any subsequent checkout attempt until the current one finishes or fails.
+### Expected Behaviour
+The checkout action must be protected by an execution lock (such as checking `if (status === 'processing') return;`) and disabling the submit button whenever `status === 'processing'`.
 
-### Actual Behavior
-Component allows overlapping checkout invocations, creating duplicate transactions.
+### Actual Behaviour
+The component allows overlapping order submissions, leading to duplicate transactions and inventory over-allocation.
 
-### Impact
-Overbooking of allocated seats and severe financial reconciliation overhead.
+### Starter Files
+- `CheckoutFlow.jsx`: Order authorization component lacking concurrency locks and pending state guards.
 
-### Requirements
-- Implement an execution guard or atomic lock to block concurrent overlapping checkout requests.
+### Task
+Update `CheckoutFlow.jsx` to guard against concurrent requests: check `if (status === 'processing') return;` at the beginning of `handleCheckout`, and disable the button while `status === 'processing'` or `status === 'completed'`.
 
-**Files in Sandbox:**
-- `CheckoutFlow.jsx`
+### Acceptance Criteria
+1. `handleCheckout` aborts immediately if `status === 'processing'`.
+2. The `<button>` is disabled when `status === 'processing'`.
+3. Overlapping checkout clicks dispatch exactly one authorization request.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Guards against concurrent checkout with processing lock**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Financial workflows must enforce an atomic mutex or lock preventing concurrent requests on user-facing controls.
+- **Level 2 (Directional)**: Inspect the entry point of `handleCheckout` and the button `disabled` condition.
+- **Level 3 (Root Cause)**: Add `if (status === "processing") return;` at the start of `handleCheckout` and disable the button when `status === "processing"`.
 
 ---
 
-### Challenge 112: [FE-H02] Memory Leak Develops After Repeated Mount/Unmount Cycles
+##### Challenge 112: Trading Dashboard Ticker Retains Zombie Listeners on Tab Switch
+- **Difficulty**: `Hard` | **Points**: `300 XP` | **Estimated Time**: `20 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Hard` | **Technology**: `React` | **Category**: `Memory Management`
-- **Points**: `300 XP` | **Time Estimate**: `20 mins`
-- **Topics**: `React`, `Memory Leaks`, `useEffect Cleanup`, `Event Bus`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `eventBus.subscribe(symbol, handleTick);
-  }, [symbol, eventBus]);`
-- **Suspected Component**: `SubscriptionWidget.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A financial trading platform streams real-time cryptocurrency price updates into dashboard widgets.
+### Incident Report
+Day traders using the cryptocurrency charting platform reported that after several hours of monitoring market movements and switching between different currency tabs, browser tabs became increasingly unresponsive and ultimately crashed with an "Out of Memory" error. Console logs showed continuous React warnings: `"Can't perform a React state update on an unmounted component"`.
 
 ### Bug Report
-When users switch between different coin tabs, browser memory continuously increases until the tab crashes with an "Out of Memory" error. The React DevTools console also outputs warnings: `"Can't perform a React state update on an unmounted component"`.
+In `SubscriptionWidget.jsx`, `eventBus.subscribe(symbol, handleTick)` is called inside `useEffect`. When the user navigates away or switches tabs, the component unmounts without calling `unsubscribe`. The singleton event bus retains a reference to `handleTick`, keeping the entire unmounted component tree alive in memory.
 
 ### Steps to Reproduce
-1. In `SubscriptionWidget.jsx`, `eventBus.subscribe(symbol, handleTick)` is called in `useEffect`.
-2. When the user navigates away, the component unmounts.
-3. No unsubscribe callback is registered. The event bus keeps a reference to `handleTick`, retaining the unmounted component in memory indefinitely.
+1. Mount `SubscriptionWidget.jsx` with a coin symbol.
+2. Unmount the widget by switching tabs or un-rendering it.
+3. Observe that the event bus still invokes `handleTick`, attempting state updates on the unmounted instance.
 
-### Expected Behavior
-The `useEffect` hook must return a cleanup function: `return () => eventBus.unsubscribe(symbol, handleTick);`.
+### Expected Behaviour
+The `useEffect` hook must return a cleanup callback that invokes `eventBus.unsubscribe(symbol, handleTick)` when the component unmounts or when dependencies change.
 
-### Actual Behavior
-Omits the unsubscribe call, creating a permanent memory leak and zombie callback listeners.
+### Actual Behaviour
+The effect omits the cleanup callback, leaving zombie callbacks permanently registered.
 
-### Impact
-Browser tab crashes on prolonged usage; multiple zombie listeners fire simultaneously.
+### Starter Files
+- `SubscriptionWidget.jsx`: Streaming price ticker component without event unsubscription logic.
 
-### Requirements
-- Return a cleanup function from `useEffect` invoking `eventBus.unsubscribe(symbol, handleTick)`.
+### Task
+Update `SubscriptionWidget.jsx` to unsubscribe from live market data streams when the component unmounts.
 
-**Files in Sandbox:**
-- `SubscriptionWidget.jsx`
+### Acceptance Criteria
+1. The event listener subscription is cancelled upon component unmount.
+2. Background ticker feeds stop delivering updates to detached components.
+3. Memory overhead remains stable across component lifecycles.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Cleans up subscription on unmount**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Components subscribing to global publish/subscribe buses must unsubscribe when unmounting to prevent memory leaks.
+- **Level 2 (Directional)**: React effects can return a cleanup function that runs before re-running the effect and when the component unmounts.
+- **Level 3 (Root Cause)**: Return `() => { eventBus.unsubscribe(symbol, handleTick); };` from the `useEffect` body.
 
 ---
 
-### Challenge 113: [FE-H03] Shared Client-Side Cache Exposes Data Between Sessions
+##### Challenge 113: Shared Kiosk Client Cache Exposes Preceding Patient Records
+- **Difficulty**: `Hard` | **Points**: `300 XP` | **Estimated Time**: `20 mins` | **Tech**: `JavaScript`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Hard` | **Technology**: `JavaScript` | **Category**: `Security`
-- **Points**: `300 XP` | **Time Estimate**: `20 mins`
-- **Topics**: `React`, `Security`, `Caching`, `Authentication`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `localStorage.removeItem('authToken');
-    // BUG: Leaves sensitive records in sessionCache across user logout`
-- **Suspected Component**: `SessionCache.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A hospital kiosk workstation allows doctors and nurses to access confidential patient health records.
+### Incident Report
+A critical HIPAA data breach incident was reported at a shared hospital ward kiosk. A nurse logged out of the terminal after charting patient vitals. When a doctor subsequently signed into the terminal to examine an unrelated patient, the application pulled cached diagnostic records from memory, displaying the previous patient's confidential health data under the doctor's session.
 
 ### Bug Report
-Nurse Sarah logs into the kiosk, reviews Patient X's records, and clicks "Log Out". When Doctor Robert logs in next on the same workstation, the app reads from the client-side session cache before network validation completes, displaying Patient X's confidential records under Doctor Robert's session!
+In `SessionCache.jsx`, the exported `sessionCache` map holds sensitive user-scoped records in memory. In `logoutUser`, the handler clears `localStorage` tokens and notifies the backend, but fails to purge `sessionCache`. Subsequent logins on the same client workstation read cached records left by the previous session.
 
 ### Steps to Reproduce
-1. In `SessionCache.jsx`, inspect the `logoutUser` implementation.
-2. `logoutUser` calls `authApi.logout()` and clears local tokens, but fails to invoke `sessionCache.clear()`.
-3. Subsequent logins reuse cached records belonging to the prior user.
+1. Populate `sessionCache` with patient records during user session 1.
+2. Call `logoutUser(authApi, onLoggedOut)`.
+3. Inspect `sessionCache.size`: observe that entries remain in memory.
 
-### Expected Behavior
-`logoutUser` must purge the client-side `sessionCache` completely (`sessionCache.clear()`) to prevent data leakage across sessions.
+### Expected Behaviour
+`logoutUser` must invalidate and purge all entries from `sessionCache` via `sessionCache.clear()` prior to concluding the sign-out flow.
 
-### Actual Behavior
-Cached data remains in memory across different user sessions.
+### Actual Behaviour
+The in-memory cache persists across logout transitions, causing cross-tenant data leakage.
 
-### Impact
-Critical HIPAA / privacy violation exposing patient medical data across user boundaries.
+### Starter Files
+- `SessionCache.jsx`: Client authentication and caching utility failing to clear in-memory cache on sign-out.
 
-### Requirements
-- Call `sessionCache.clear()` inside `logoutUser`.
+### Task
+Update user sign-out in `SessionCache.jsx` to purge cached in-memory user data upon logging out.
 
-**Files in Sandbox:**
-- `SessionCache.jsx`
+### Acceptance Criteria
+1. In-memory session caches are emptied when the user logs out.
+2. Sensitive customer data is not retained across user sessions.
+3. Subsequent logins begin with a fresh, unpolluted cache.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Clears sessionCache on logout**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Client session caches storing personal or confidential data must be purged on user logout to prevent session crossover.
+- **Level 2 (Directional)**: Look at `logoutUser`: it removes auth tokens from localStorage but does not clear `sessionCache`.
+- **Level 3 (Root Cause)**: Add `sessionCache.clear();` inside `logoutUser` alongside `localStorage.removeItem('authToken');`.
 
 ---
 
-### Challenge 114: [FE-H04] Optimistic UI Update Corrupts State After Failed Requests
+##### Challenge 114: Optimistic Feed Like Counter Decrements Below Zero on Network Drop
+- **Difficulty**: `Hard` | **Points**: `300 XP` | **Estimated Time**: `20 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Hard` | **Technology**: `React` | **Category**: `Optimistic UI`
-- **Points**: `300 XP` | **Time Estimate**: `20 mins`
-- **Topics**: `React`, `Optimistic UI`, `State Snapshots`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `setLikes(likes + 1);
-    setIsLiked(true);
-
-    try {
-      await api.likePost();
-    } catch (err) {
-      setLikes(likes - 1);`
-- **Suspected Component**: `OptimisticFeed.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A social media platform uses optimistic UI updates to instantly toggle "Like" counts.
+### Incident Report
+Social feed users browsing in areas with intermittent connectivity noticed post like counters turning negative (`-1 Likes`). When users tapped like while walking through cellular dead zones, the network call failed, but the UI rollback logic subtracted from a mutated count, corrupting the feed statistics.
 
 ### Bug Report
-A user clicks "Like" twice quickly under poor network conditions. The first request fails on the server. The rollback logic blindly subtracts 1 from the *current* count, but because the user had already clicked again, the like count drops below zero (`likes: -1`), permanently corrupting the counter.
+In `OptimisticFeed.jsx`, `handleToggleLike` optimistically applies `setLikes(likes + 1)`. If the network request fails, the catch block blindly executes `setLikes(likes - 1)`. If the user tapped the button again or if `likes` changed in the interim, subtracting 1 from the stale or altered count drives the metric below zero.
 
 ### Steps to Reproduce
-1. In `OptimisticFeed.jsx`, click like.
-2. State is optimistically incremented: `setLikes(likes + 1)`.
-3. Server returns an error. The catch block blindly calls `setLikes(likes - 1)` or decrements from stale closure, corrupting the counter.
+1. Render `OptimisticFeed.jsx` with `initialLikes = 0`.
+2. Click the like button.
+3. Simulate an API rejection in `api.likePost()`.
+4. Observe that the rollback math calculates `0 - 1 = -1` or desynchronizes state.
 
-### Expected Behavior
-Capture a snapshot of the previous state before the optimistic mutation, and revert to that exact snapshot if the request fails.
+### Expected Behaviour
+Before applying an optimistic state mutation, capture exact snapshots of the current state (`previousLikes = likes`, `previousIsLiked = isLiked`), and revert strictly to those snapshots if the API fails.
 
-### Actual Behavior
-Reverts by subtracting from a stale or mutated counter value.
+### Actual Behaviour
+The error handler relies on blind arithmetic rollback (`likes - 1`), causing desynchronized state.
 
-### Impact
-Incorrect like counters and desynchronized like states across users.
+### Starter Files
+- `OptimisticFeed.jsx`: Like toggle component with brittle arithmetic rollback.
 
-### Requirements
-- Snapshot previous state prior to optimistic updates and revert accurately to the snapshot if the network request fails.
+### Task
+Update `handleToggleLike` in `OptimisticFeed.jsx` to capture snapshot variables (`previousLikes` and `previousIsLiked`) before the optimistic update, and restore those snapshot values in the `catch` block.
 
-**Files in Sandbox:**
-- `OptimisticFeed.jsx`
+### Acceptance Criteria
+1. Snapshots of `likes` and `isLiked` are stored before the state update.
+2. On API error, `setLikes(previousLikes)` and `setIsLiked(previousIsLiked)` are invoked.
+3. The counter never drops below the baseline state on failed requests.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Captures previousLikes snapshot and restores on error**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- State transitions must be strictly immutable; array mutations and in-place object property assignments are prohibited.
+- Rendered list items must use stable entity identifiers as keys rather than transient array indices.
+- Dependent state values must remain synchronized without stale closures or intermediate rendering lag.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Optimistic mutations should save an immutable snapshot of state before changing it, rather than computing inverse arithmetic.
+- **Level 2 (Directional)**: Store `const previousLikes = likes;` and `const previousIsLiked = isLiked;` prior to the optimistic update.
+- **Level 3 (Root Cause)**: In the `catch` block, revert with `setLikes(previousLikes); setIsLiked(previousIsLiked);`.
 
 ---
 
-### Challenge 115: [FE-H05] Complex Dashboard Produces Inconsistent Derived State
+##### Challenge 115: Executive KPI Summary Freezes on Outdated Monthly Revenue Filter
+- **Difficulty**: `Hard` | **Points**: `300 XP` | **Estimated Time**: `20 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Hard` | **Technology**: `React` | **Category**: `Performance & Memoization`
-- **Points**: `300 XP` | **Time Estimate**: `20 mins`
-- **Topics**: `React`, `useMemo`, `Derived State`, `Performance`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `return { totalMRR, avgMRR, count: filtered.length };
-  }, []);`
-- **Suspected Component**: `AnalyticsHub.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An executive KPI dashboard computes Monthly Recurring Revenue (MRR) and Average Revenue Per User (ARPU) based on transactions and active tier filter.
+### Incident Report
+C-suite executives reviewing company revenue performance reported a discrepancies bug in their quarterly KPI portal. When switching tier filters from "Enterprise" to "Starter", the underlying transaction table updated, but the main Monthly Recurring Revenue (MRR) headline metrics remained frozen on the Enterprise numbers, leading to skewed financial analyses.
 
 ### Bug Report
-When an executive switches the tier filter from "Enterprise" to "Starter", the transaction table updates, but the KPI Summary cards continue to display Enterprise MRR! Profiling shows `useMemo` closed over an empty dependency array `[]`.
+In `AnalyticsHub.jsx`, the `metrics` calculation is wrapped in `useMemo`. However, its dependency array is declared as `[]` (empty). As a result, the memoized metrics are computed only once during initial mount and never recompute when `tierFilter` or `transactions` change.
 
 ### Steps to Reproduce
-1. In `AnalyticsHub.jsx`, view the `mrr` computation.
-2. `useMemo` is declared with `[]` instead of `[transactions, tierFilter]`.
-3. Changing filters does not recalculate the summary metrics.
+1. Render `AnalyticsHub.jsx` with transactions spanning multiple tiers.
+2. Select a different tier from the dropdown (e.g. "Enterprise").
+3. Observe that Total MRR and Transaction count remain unchanged from the initial view.
 
-### Expected Behavior
-`useMemo` must include `[transactions, tierFilter]` in its dependencies so derived metrics update when data or filters change.
+### Expected Behaviour
+The `useMemo` hook must declare `[transactions, tierFilter]` in its dependencies, recalculating metrics whenever transactions or active filters change.
 
-### Actual Behavior
-Derived metrics stay frozen on initial calculation due to missing dependencies.
+### Actual Behaviour
+The empty dependency array prevents memoization recalculation, presenting stale metrics.
 
-### Impact
-Executives make strategic pricing decisions based on incorrect and outdated metrics.
+### Starter Files
+- `AnalyticsHub.jsx`: Analytics summary component with missing memoization dependencies.
 
-### Requirements
-- Add `[transactions, tierFilter]` to the `useMemo` dependency array.
+### Task
+Update the memoized calculation in `AnalyticsHub.jsx` so that metrics recompute whenever transaction lists or filter criteria change.
 
-**Files in Sandbox:**
-- `AnalyticsHub.jsx`
+### Acceptance Criteria
+1. Analytics metrics recompute automatically when filter criteria change.
+2. Updated transaction data triggers fresh metric aggregation.
+3. Summary values accurately reflect the selected tier filter.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Includes transactions and tierFilter in useMemo dependencies**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Form submissions containing empty or whitespace-only inputs must be rejected with appropriate field errors.
+- In-flight submissions must lock the submission trigger to prevent duplicate submissions.
+- Inputs must maintain controlled component state across multi-step flows.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Values computed with `useMemo` must specify all outer variables referenced inside the calculation function in their dependency array.
+- **Level 2 (Directional)**: Inspect the dependencies of `useMemo`: the empty array `[]` tells React never to recompute the value after initial render.
+- **Level 3 (Root Cause)**: Change `useMemo(..., [])` to `useMemo(..., [transactions, tierFilter])`.
 
 ---
 
-### Challenge 116: [FE-H06] Concurrent API Calls Trigger Multiple Token Refreshes
+##### Challenge 116: Concurrent Dashboard Requests Trigger Replay-Flagged Token Rotation
+- **Difficulty**: `Hard` | **Points**: `300 XP` | **Estimated Time**: `20 mins` | **Tech**: `JavaScript`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Hard` | **Technology**: `JavaScript` | **Category**: `Authentication Architecture`
-- **Points**: `300 XP` | **Time Estimate**: `20 mins`
-- **Topics**: `JavaScript`, `Authentication`, `Token Refresh`, `Concurrency`
-- **Skills Tested**: `JavaScript`, `Frontend Architecture`
-- **Bug Signature**: `if (err.status === 401) {
-      const newTokens = await refreshApi();`
-- **Suspected Component**: `AuthManager.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A Single Page Application initiates multiple parallel API calls when loading the dashboard (user profile, notifications, metrics, and alerts).
+### Incident Report
+Users logging into the cloud dashboard were unexpectedly logged out within minutes. Security logs revealed that when access tokens expired, the client dashboard fired multiple simultaneous API requests (user profile, notifications, billing status). Each request received an HTTP 401 and independently initiated a refresh token exchange. Because the backend enforces refresh token rotation (one-time use), subsequent parallel requests sent invalidated refresh tokens, triggering security alarms and terminating the session.
 
 ### Bug Report
-When the user's access token expires, all 4 concurrent requests return 401 Unauthorized simultaneously. Each response interceptor independently calls `refreshTokenApi()`. The backend implements refresh token rotation (one-time use per refresh token). The first refresh succeeds, but the subsequent 3 requests arrive with the now-invalidated old refresh token, causing the backend to flag a replay attack and terminate the user's session!
+In `AuthManager.jsx`, `requestWithAuth` handles 401 errors by directly awaiting `refreshApi()`. It does not coordinate concurrent requests using a shared `refreshPromise`. When four requests fail simultaneously with 401, four separate token refreshes are executed in parallel.
 
 ### Steps to Reproduce
-1. In `AuthManager.jsx`, four concurrent requests fail with 401.
-2. `refreshToken()` is executed 4 separate times instead of reusing a single in-flight refresh promise.
-3. User gets abruptly logged out.
+1. Execute multiple concurrent calls to `requestWithAuth` with an expired token.
+2. Observe that each 401 handler calls `refreshApi()` independently.
+3. The multiple refresh attempts trigger backend replay detection.
 
-### Expected Behavior
-Implement refresh token deduplication: if a refresh is already in flight, all subsequent 401 interceptors must await the same shared promise (`refreshPromise`).
+### Expected Behaviour
+If a token refresh is already in progress, subsequent 401 requests must await the existing shared `refreshPromise` rather than creating new ones.
 
-### Actual Behavior
-Fires uncoordinated parallel refresh requests.
+### Actual Behaviour
+Every 401 response executes an uncoordinated token refresh call.
 
-### Impact
-Users get randomly logged out whenever tokens expire during dashboard navigation.
+### Starter Files
+- `AuthManager.jsx`: HTTP client interceptor lacking refresh request deduplication.
 
-### Requirements
-- Share an in-flight token refresh promise across concurrent requests to avoid duplicate refresh calls.
+### Task
+Refactor token refresh in `AuthManager.jsx` so that concurrent requests share a single in-flight refresh promise rather than initiating duplicate refresh calls.
 
-**Files in Sandbox:**
-- `AuthManager.jsx`
+### Acceptance Criteria
+1. Concurrent 401 responses share a single in-flight `refreshPromise`.
+2. When the refresh completes, all pending requests use the new access token.
+3. `refreshPromise` is cleared upon completion.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Shares single in-flight refreshPromise across calls**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Token refresh calls must be deduplicated across concurrent HTTP interceptors to support refresh token rotation.
+- **Level 2 (Directional)**: Check if a module-level `refreshPromise` already exists before starting a new refresh request.
+- **Level 3 (Root Cause)**: Assign `refreshPromise = refreshApi().finally(() => { refreshPromise = null; });` if null, then `await refreshPromise`.
 
 ---
 
-### Challenge 117: [FE-H07] Virtualized List Renders Incorrect Items After Filtering
+##### Challenge 117: Virtualized Log Viewer Reassigns Log Messages on Severity Filter
+- **Difficulty**: `Hard` | **Points**: `300 XP` | **Estimated Time**: `20 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Hard` | **Technology**: `React` | **Category**: `Virtualization`
-- **Points**: `300 XP` | **Time Estimate**: `20 mins`
-- **Topics**: `React`, `Virtualization`, `Keys`, `Reconciliation`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `key={startIndex + index}`
-- **Suspected Component**: `VirtualList.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A server log monitoring tool uses a virtualized list to render 50,000 log lines with high performance.
+### Incident Report
+DevOps engineers investigating a critical production incident were misled by the server log viewer. When filtering from "ALL" logs to "ERROR" logs, the virtualized list retained cached DOM nodes with old warning messages or assigned wrong log timestamps to error traces, wasting hours of debugging time.
 
 ### Bug Report
-When filtering logs from "ALL" to "ERROR", log messages from other levels stay visible in the viewport or jump to wrong rows. Inspecting the DOM reveals the virtual list mapped array index `index` as the React `key`, confusing React's reconciliation engine.
+In `VirtualList.jsx`, the virtual slice maps visible items using `key={startIndex + index}`. Because keys represent the window offset index rather than the identity of the log entity, filtering or reordering logs causes React to reuse old DOM nodes and their internal state for entirely different log records.
 
 ### Steps to Reproduce
-1. In `VirtualList.jsx`, inspect the rendered rows.
-2. The virtual slice maps items using `key={startIndex + index}` instead of unique entity id `item.id`.
-3. Filter or reorder items; DOM node recycling displays incorrect contents.
+1. Render `VirtualList.jsx` with a list of log items containing unique `id` properties.
+2. Filter the items list.
+3. Observe that React's virtual DOM reconciliation reuses previous element nodes because keys correspond to array offsets rather than entity IDs.
 
-### Expected Behavior
-Rows must be keyed by stable unique entity identifier: `key={item.id}`.
+### Expected Behaviour
+Virtualized list items must use stable, unique entity identifiers (`key={item.id}`) to guarantee that elements are correctly mapped during filtering, sorting, and dynamic slicing.
 
-### Actual Behavior
-Uses calculated row index as key.
+### Actual Behaviour
+The list uses computed window row indices as keys (`startIndex + index`), causing reconciliation mismatches.
 
-### Impact
-Engineers read wrong error timestamps and corrupted stack traces during production outages.
+### Starter Files
+- `VirtualList.jsx`: Virtualized list component using index-based window keys.
 
-### Requirements
-- Ensure virtualized list items use unique stable entity keys rather than computed window offsets.
+### Task
+Update the virtualization list in `VirtualList.jsx` to assign persistent unique item identifiers to rendered list rows rather than virtual index offsets.
 
-**Files in Sandbox:**
-- `VirtualList.jsx`
+### Acceptance Criteria
+1. Virtualized list elements use stable item identifiers for element keys.
+2. Scrolling and filtering operations maintain correct element-to-data mapping.
+3. Visual jumpiness and mismatched row attributes are resolved.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Uses stable item.id for virtualized row key**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: In virtualized lists, using computed index offsets as keys leads to rendering glitches when the underlying data is filtered or sorted.
+- **Level 2 (Directional)**: React keys must identify the underlying entity, not its temporary position inside the viewport window.
+- **Level 3 (Root Cause)**: Replace `key={startIndex + index}` with `key={item.id}` on the rendered row container.
 
 ---
 
-### Challenge 118: [FE-H08] Multi-Step Checkout Loses Consistency on Partial Failure
+##### Challenge 118: Flight Reservation Abort Leaves Locked Seats Unreleased
+- **Difficulty**: `Hard` | **Points**: `300 XP` | **Estimated Time**: `20 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Hard` | **Technology**: `React` | **Category**: `Compensating Transactions`
-- **Points**: `300 XP` | **Time Estimate**: `20 mins`
-- **Topics**: `React`, `Compensating Transactions`, `Error Recovery`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `} catch (err) {
-      setError(err.message || 'Payment failed');`
-- **Suspected Component**: `MultiStepCheckout.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-An airline ticket booking engine executes two sequential transactions:
-1. `reserveSeat(flightId, seatNumber)` - holds seat for 10 minutes.
-2. `processPayment(paymentDetails)` - charges credit card.
+### Incident Report
+An airline reservation platform experienced a surge in abandoned seats and customer complaints. Passengers whose credit cards were declined during checkout discovered that the system kept their selected seat locked for fifteen minutes, preventing them from immediately retrying with an alternate payment card and blocking other flyers from booking the seat.
 
 ### Bug Report
-If the credit card fails (e.g. insufficient funds), the checkout displays an error, but never releases the held seat (`releaseSeat(reservationId)`). The seat remains locked for 10 minutes, preventing the passenger from retrying with another card and blocking other customers from booking that seat.
+In `MultiStepCheckout.jsx`, the booking sequence first calls `api.reserveSeat(flightId, seatNumber)` and then `api.processPayment(...)`. If payment processing fails, the catch block sets the error message but never initiates a compensating transaction to release the seat reservation (`api.releaseSeat(reservation.id)`).
 
 ### Steps to Reproduce
-1. In `MultiStepCheckout.jsx`, simulate payment failure after seat reservation succeeds.
-2. In the catch block, error message is set, but no compensating rollback request is sent to release the reserved seat.
+1. In `MultiStepCheckout.jsx`, simulate a successful seat reservation followed by a rejected payment.
+2. Observe that `api.releaseSeat` is never invoked in the error handler.
+3. The reserved seat remains held on the backend inventory.
 
-### Expected Behavior
-If step 2 fails, invoke compensating rollback `await api.releaseSeat(reservation.id)` before showing the error.
+### Expected Behaviour
+If payment fails after a reservation has been successfully acquired, the catch handler must invoke a compensating action: `await api.releaseSeat(reservation.id)` before presenting the error.
 
-### Actual Behavior
-Leaves reserved inventory orphaned and locked in the backend.
+### Actual Behaviour
+The seat remains held in pending state without cancellation.
 
-### Impact
-Lost flight bookings and stranded seat reservations.
+### Starter Files
+- `MultiStepCheckout.jsx`: Multi-phase transaction component lacking compensating rollback logic.
 
-### Requirements
-- Call `await api.releaseSeat(reservation.id)` in the catch block if `reservation` exists.
+### Task
+Update `handleBook` in `MultiStepCheckout.jsx` to verify if `reservation` exists inside the `catch` block and invoke `await api.releaseSeat(reservation.id)`.
 
-**Files in Sandbox:**
-- `MultiStepCheckout.jsx`
+### Acceptance Criteria
+1. The catch handler checks `if (reservation)`.
+2. When present, `await api.releaseSeat(reservation.id)` is executed.
+3. The user is informed of the payment failure and the seat is released for re-selection.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Releases reserved seat on payment failure**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Multi-step workflows that acquire distributed resources must execute compensating actions if downstream steps fail.
+- **Level 2 (Directional)**: Check whether `reservation` was successfully established prior to the payment exception.
+- **Level 3 (Root Cause)**: Inside `catch (err)`, add `if (reservation) { await api.releaseSeat(reservation.id); }` before setting error state.
 
 ---
 
-### Challenge 119: [FE-H09] Real-Time Interface Applies Out-Of-Order Events
+##### Challenge 119: Collaborative Document Buffer Reverts Recent Edits on Out-Of-Order Packets
+- **Difficulty**: `Hard` | **Points**: `300 XP` | **Estimated Time**: `20 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Hard` | **Technology**: `React` | **Category**: `Real-Time State`
-- **Points**: `300 XP` | **Time Estimate**: `20 mins`
-- **Topics**: `React`, `WebSockets`, `Sequence Numbers`, `Event Ordering`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `const handleIncomingMessage = (event) => {
-      setContent(event.text);`
-- **Suspected Component**: `RealtimeChat.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A collaborative live document editor receives character edit events over WebSockets from multiple peers.
+### Incident Report
+Content editors working together in the real-time collaborative workspace reported erratic cursor jumps and disappearing paragraphs. When editing over cellular or high-jitter network connections, older text revisions frequently overwrote newer sentences, causing content loss and confusion among collaborating writers.
 
 ### Bug Report
-Under spotty cellular network connections, packets arrive out of sequence. An older event packet with `seq: 14` arrives after a newer packet with `seq: 15`. The editor blindly sets document content from the arriving payload, reverting recent changes and causing text to jump backwards.
+In `RealtimeChat.jsx`, the WebSocket listener `handleIncomingMessage` updates document content with `setContent(event.text)` for every packet received. Because UDP/network jitter can deliver packets out of order, an older packet with sequence number 14 arriving after packet 15 overwrites the latest state.
 
 ### Steps to Reproduce
-1. In `RealtimeChat.jsx`, notice `handleIncomingMessage(event)`.
-2. Component receives `event = { seq: 15, text: "Hello World" }`, then later receives delayed `event = { seq: 14, text: "Hello" }`.
-3. The editor renders "Hello", overwriting newer text.
+1. In `RealtimeChat.jsx`, dispatch event `{ seq: 15, text: 'Final Title' }`.
+2. Dispatch a delayed event `{ seq: 14, text: 'Draft Title' }`.
+3. Notice that the editor displays `'Draft Title'`, discarding the newer edit.
 
-### Expected Behavior
-Maintain a sequence tracker (`lastSeqRef.current`). Ignore any incoming event where `event.seq <= lastSeqRef.current`.
+### Expected Behaviour
+The component must track the highest sequence number processed (`lastSeq.current`). If an incoming event has `event.seq <= lastSeq.current`, it must be ignored.
 
-### Actual Behavior
-Applies all incoming events regardless of sequence numbers.
+### Actual Behaviour
+Every incoming event is applied unconditionally without sequence validation.
 
-### Impact
-Content loss and confusing cursor jumping during collaborative editing sessions.
+### Starter Files
+- `RealtimeChat.jsx`: Real-time text component applying events without monotonic sequence verification.
 
-### Requirements
-- Track `lastSeqRef` and discard packets if `event.seq <= lastSeqRef.current`.
+### Task
+Update `handleIncomingMessage` in `RealtimeChat.jsx` to discard events if `event.seq <= lastSeq.current` before updating state and updating `lastSeq.current`.
 
-**Files in Sandbox:**
-- `RealtimeChat.jsx`
+### Acceptance Criteria
+1. The message handler checks `if (event.seq <= lastSeq.current) return;`.
+2. Out-of-order delayed packets are rejected.
+3. The editor strictly maintains monotonically increasing sequence state.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Rejects out-of-order events using sequence comparison**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- State transitions must be strictly immutable; array mutations and in-place object property assignments are prohibited.
+- Rendered list items must use stable entity identifiers as keys rather than transient array indices.
+- Dependent state values must remain synchronized without stale closures or intermediate rendering lag.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Real-time streaming event handlers must enforce sequence ordering to prevent late-arriving packets from overwriting newer state.
+- **Level 2 (Directional)**: Examine `handleIncomingMessage`: it immediately updates `content` without comparing `event.seq` against `lastSeq.current`.
+- **Level 3 (Root Cause)**: Add `if (event.seq <= lastSeq.current) return;` before calling `setContent(event.text)`.
 
 ---
 
-### Challenge 120: [FE-H10] Frontend Fails to Gracefully Handle 403 Forbidden Responses
+##### Challenge 120: Revoked Admin Session Triggers White-Screen Crash on Account Action
+- **Difficulty**: `Hard` | **Points**: `300 XP` | **Estimated Time**: `20 mins` | **Tech**: `React`
 
-- **Arena Domain**: Frontend Studio
-- **Difficulty**: `Hard` | **Technology**: `React` | **Category**: `Security & Error Handling`
-- **Points**: `300 XP` | **Time Estimate**: `20 mins`
-- **Topics**: `React`, `Security`, `Error Boundaries`, `HTTP 403`
-- **Skills Tested**: `React`, `Frontend`
-- **Bug Signature**: `const handleDelete = async () => {
-    setIsDeleting(true);
-    setErrorMessage('');
-    await api.deleteAccount(user.id);
-    setIsDeleting(false);
-  };`
-- **Suspected Component**: `AdminPanel.jsx`
-
-**Scenario & Defect Overview:**
-### Company Scenario
-A multi-tenant enterprise administration dashboard manages user permissions.
+### Incident Report
+An enterprise IT administrator logged into a management portal had their elevated privileges revoked by an organization owner in a different browser tab. When the administrator attempted to click "Delete Account", the backend responded with HTTP 403 Forbidden. Instead of displaying a polite "Access Denied" notice, the entire frontend crashed into a blank white screen due to an uncaught promise rejection.
 
 ### Bug Report
-If an organization's billing plan expires or an admin's session permissions are revoked in another tab, clicking "Delete Account" returns HTTP 403 Forbidden. Because `handleDelete` lacks a catch handler for 403, an uncaught rejection bubbles up, triggering React's unhandled rejection boundary and crashing the entire application into a blank white screen!
+In `AdminPanel.jsx`, `handleDelete` calls `await api.deleteAccount(user.id)` without a `try/catch` wrapper. When the API returns a 403 error, the unhandled rejection bubbles to the root React error boundary, tearing down the UI.
 
 ### Steps to Reproduce
-1. In `AdminPanel.jsx`, trigger `handleDelete`.
-2. Mock an HTTP 403 response (`{ status: 403, message: "Forbidden" }`).
-3. Application crashes with unhandled promise error instead of showing an access-denied toast.
+1. In `AdminPanel.jsx`, invoke `handleDelete` while mocking an HTTP 403 response.
+2. Observe that the uncaught rejection causes a complete application crash.
+3. No user-friendly error message is displayed.
 
-### Expected Behavior
-Catch the error, check `err.status === 403`, and set `setErrorMessage("Access Denied: You do not have permission to perform this action.")` while keeping the interface intact.
+### Expected Behaviour
+The API call must be wrapped in `try/catch`. On an HTTP 403 error, set `setErrorMessage('Access Denied: You do not have permission to perform this action.')` while keeping the interface intact.
 
-### Actual Behavior
-Unhandled error crashes the page.
+### Actual Behaviour
+The API call runs unguarded, crashing the application on unauthorized access.
 
-### Impact
-Total UI crash forcing users to perform a hard refresh and lose unsaved workspace data.
+### Starter Files
+- `AdminPanel.jsx`: Administration panel component lacking exception handling for unauthorized actions.
 
-### Requirements
-- Wrap `api.deleteAccount()` in `try/catch` and gracefully handle 403 status with appropriate user feedback.
+### Task
+Wrap the `api.deleteAccount` call in `AdminPanel.jsx` in a `try/catch` block, setting `errorMessage` and resetting `isDeleting` gracefully.
 
-**Files in Sandbox:**
-- `AdminPanel.jsx`
+### Acceptance Criteria
+1. `api.deleteAccount` is enclosed in a `try/catch` statement.
+2. In the catch block, an informative error message is stored in state.
+3. `isDeleting` is reset to `false` and the UI remains responsive without crashing.
 
-**Verification Criteria (1 Test Case):**
-- [Visible Sample Test] **Visible: Handles 403 Forbidden with try/catch and error message**
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
+
+**Progressive AI Hints:**
+- **Level 1 (Conceptual)**: Privileged UI actions must anticipate HTTP 403 authorization failures gracefully rather than letting unhandled rejections crash the view.
+- **Level 2 (Directional)**: Enclose the asynchronous `api.deleteAccount(user.id)` call within a `try/catch` structure.
+- **Level 3 (Root Cause)**: Inside `catch (err)`, update `setErrorMessage(err.message || "Access Denied")` and reset `setIsDeleting(false)`.
 
 ---
-
-## 5. Master Index Table (All 120 Challenges)
-
-| ID | Title | Arena | Difficulty | Technology | Category | Points |
-|---|---|---|---|---|---|---|
-| 1 | [CODE-E01] API Pagination Skips the Final Record | Code | Easy | Python | API & Web | 100 |
-| 2 | [CODE-E02] Base64 Cursor Encoding Breaks for Unicode Input | Code | Easy | Python | API & Web | 100 |
-| 3 | [CODE-E03] Empty API Responses Cause a Runtime Error | Code | Easy | Python | Error Handling | 100 |
-| 4 | [CODE-E04] Incorrect Date Parsing Shifts Records to the Wrong Day | Code | Easy | Python | Data & Processing | 100 |
-| 5 | [CODE-E05] A Retry Counter Stops One Attempt Too Early | Code | Easy | Python | Backend | 100 |
-| 6 | [CODE-E06] Duplicate IDs Cause Incorrect Deduplication | Code | Easy | Python | Data & Processing | 100 |
-| 7 | [CODE-E07] An Environment Variable Fallback Ignores Valid Configuration | Code | Easy | Python | Backend | 100 |
-| 8 | [CODE-E08] An Incorrect Cache Key Returns Another Request's Result | Code | Easy | Python | Caching | 100 |
-| 9 | [CODE-E09] Input Validation Rejects Valid Zero Values | Code | Easy | Python | Validation | 100 |
-| 10 | [CODE-E10] A CSV Parser Mishandles Quoted Fields | Code | Easy | Python | Data & Processing | 100 |
-| 11 | [CODE-E11] Sorting Produces Incorrect Results for Numeric Strings | Code | Easy | Python | Data & Processing | 100 |
-| 12 | [CODE-E12] A Response Serializer Omits a Required Field | Code | Easy | Python | API & Web | 100 |
-| 13 | [CODE-E13] An Incorrect Timeout Conversion Causes Premature Expiration | Code | Easy | Python | Backend | 100 |
-| 14 | [CODE-E14] An Empty List Causes an Indexing Error | Code | Easy | Python | Error Handling | 100 |
-| 15 | [CODE-E15] Incorrect Rounding Produces Wrong Invoice Totals | Code | Easy | Python | Data & Processing | 100 |
-| 16 | [CODE-M01] API Retries Accidentally Repeat a Non-Idempotent Operation | Code | Medium | Python | API & Web | 150 |
-| 17 | [CODE-M02] Cache Invalidation Leaves Stale Product Prices | Code | Medium | Python | Caching | 150 |
-| 18 | [CODE-M03] Pagination Produces Duplicates When Sorting is Applied | Code | Medium | Python | Data & Processing | 150 |
-| 19 | [CODE-M04] A Webhook Handler Processes the Same Event More Than Once | Code | Medium | Python | API & Web | 150 |
-| 20 | [CODE-M05] Concurrent Updates Overwrite Newer User Preferences | Code | Medium | Python | Concurrency | 150 |
-| 21 | [CODE-M06] Timezone Conversion Breaks Scheduled Notifications | Code | Medium | Python | Data & Processing | 150 |
-| 22 | [CODE-M07] An API Client Incorrectly Handles HTTP 429 Responses | Code | Medium | Python | API & Web | 150 |
-| 23 | [CODE-M08] A File-Processing Pipeline Silently Drops Malformed Records | Code | Medium | Python | Data & Processing | 150 |
-| 24 | [CODE-M09] A Background Worker Loses Failed Jobs | Code | Medium | Python | Backend | 150 |
-| 25 | [CODE-M10] A Database Transaction Partially Updates Related Records | Code | Medium | Python | Transactions | 150 |
-| 26 | [CODE-M11] An Asynchronous Request Returns Stale Data | Code | Medium | Python | Concurrency | 150 |
-| 27 | [CODE-M12] A Token Refresh Process Creates Intermittent Authentication Failures | Code | Medium | Python | Authentication | 150 |
-| 28 | [CODE-M13] An Incorrect Merge Algorithm Loses Configuration Fields | Code | Medium | Python | Data & Processing | 150 |
-| 29 | [CODE-M14] An Inventory Update Produces Incorrect Stock Totals | Code | Medium | Python | Backend | 150 |
-| 30 | [CODE-M15] A CSV Export Corrupts Embedded Commas and Newlines | Code | Medium | Python | Data & Processing | 150 |
-| 31 | [CODE-M16] A Batch Processor Mishandles Partial Failures | Code | Medium | Python | Backend | 150 |
-| 32 | [CODE-M17] Incorrect Pagination Cursors Produce Infinite Loops | Code | Medium | Python | API & Web | 150 |
-| 33 | [CODE-M18] A Data Transformation Fails for Optional Nested Properties | Code | Medium | Python | Data & Processing | 150 |
-| 34 | [CODE-M19] A Rate Limiter Resets Counters Incorrectly | Code | Medium | Python | Rate Limiting | 150 |
-| 35 | [CODE-M20] An Exception Handler Hides a Meaningful Application Failure | Code | Medium | Python | Error Handling | 150 |
-| 36 | [CODE-H01] Concurrent Payment Requests Cause Duplicate Charges | Code | Hard | Python | Concurrency | 250 |
-| 37 | [CODE-H02] A Distributed Job Processor Executes Non-Idempotent Jobs Twice | Code | Hard | Python | Backend | 250 |
-| 38 | [CODE-H03] Incorrect Transaction Isolation Causes Inconsistent Inventory | Code | Hard | Python | Concurrency | 250 |
-| 39 | [CODE-H04] Cache Invalidation Races with Concurrent Database Updates | Code | Hard | Python | Caching | 250 |
-| 40 | [CODE-H05] A Distributed Lock is Released by the Wrong Request | Code | Hard | Python | Concurrency | 250 |
-| 41 | [CODE-H06] A Retry Mechanism Causes a Request Storm During an Outage | Code | Hard | Python | API & Web | 250 |
-| 42 | [CODE-H07] Concurrent File Writes Corrupt Generated Reports | Code | Hard | Python | Data & Processing | 250 |
-| 43 | [CODE-H08] An Asynchronous Task Deadlocks Under Concurrent Execution | Code | Hard | Python | Concurrency | 250 |
-| 44 | [CODE-H09] A Permission Check Occurs After a Sensitive State Change | Code | Hard | Python | Security | 250 |
-| 45 | [CODE-H10] A Batch Migration Loses Records After a Partial Failure | Code | Hard | Python | Data & Processing | 250 |
-| 46 | [CODE-H11] An Event-Processing Pipeline Reorders Dependent Events | Code | Hard | Python | Concurrency | 250 |
-| 47 | [CODE-H12] Incorrect Rollback Logic Leaves Related Resources Inconsistent | Code | Hard | Python | Transactions | 250 |
-| 48 | [CODE-H13] A Streaming Parser Leaks Memory for Large Inputs | Code | Hard | Python | Performance | 250 |
-| 49 | [CODE-H14] A Multi-Step Account Update Leaves Partially Modified State | Code | Hard | Python | Transactions | 250 |
-| 50 | [CODE-H15] A Concurrent Reservation System Oversells Limited Inventory | Code | Hard | Python | Concurrency | 250 |
-| 51 | [SQL-E01] Customer Report Excludes Records Containing NULL Values | SQL Lab | Easy | SQL | Filtering | 100 |
-| 52 | [SQL-E02] Monthly Revenue Report Uses the Wrong Date Boundary | SQL Lab | Easy | SQL | Filtering | 100 |
-| 53 | [SQL-E03] Product Search Filters the Wrong Status | SQL Lab | Easy | SQL | Filtering | 100 |
-| 54 | [SQL-E04] An INNER JOIN Removes Customers Without Orders | SQL Lab | Easy | SQL | Joins | 100 |
-| 55 | [SQL-E05] A GROUP BY Query Calculates the Wrong Average | SQL Lab | Easy | SQL | Aggregation | 100 |
-| 56 | [SQL-E06] Duplicate Email Records Are Not Detected Correctly | SQL Lab | Easy | SQL | Aggregation | 100 |
-| 57 | [SQL-E07] An Invoice Query Incorrectly Rounds Monetary Totals | SQL Lab | Easy | SQL | Aggregation | 100 |
-| 58 | [SQL-E08] A Report Includes Cancelled Orders | SQL Lab | Easy | SQL | Filtering | 100 |
-| 59 | [SQL-E09] A Query Orders Numeric Values Stored as Text Incorrectly | SQL Lab | Easy | SQL | Sorting | 100 |
-| 60 | [SQL-E10] A Query Returns the Wrong Top-Selling Product Because of Incorrect Sorting | SQL Lab | Easy | SQL | Sorting | 100 |
-| 61 | [SQL-M01] A JOIN Duplicates Revenue Because of Multiple Order Items | SQL Lab | Medium | SQL | Joins | 150 |
-| 62 | [SQL-M02] Customer Lifetime Value is Inflated by an Incorrect Aggregation | SQL Lab | Medium | SQL | Aggregation | 150 |
-| 63 | [SQL-M03] Pagination Skips or Duplicates Rows When Ordering is Not Deterministic | SQL Lab | Medium | SQL | Sorting | 150 |
-| 64 | [SQL-M04] A Window Function Uses the Wrong Partition | SQL Lab | Medium | SQL | Window Functions | 150 |
-| 65 | [SQL-M05] A Monthly Report Mishandles Timezone Boundaries | SQL Lab | Medium | SQL | Aggregation | 150 |
-| 66 | [SQL-M06] A LEFT JOIN Becomes an Accidental INNER JOIN | SQL Lab | Medium | SQL | Joins | 150 |
-| 67 | [SQL-M07] An Inventory Report Calculates Incorrect Available Stock | SQL Lab | Medium | SQL | Aggregation | 150 |
-| 68 | [SQL-M08] A Query Incorrectly Handles NULL Values in Conditional Aggregation | SQL Lab | Medium | SQL | Aggregation | 150 |
-| 69 | [SQL-M09] A CTE Filters Records Before Aggregation When Filtering Should Occur Afterward | SQL Lab | Medium | SQL | CTE | 150 |
-| 70 | [SQL-M10] A Duplicate-Detection Query Flags Valid Records | SQL Lab | Medium | SQL | Aggregation | 150 |
-| 71 | [SQL-M11] A Ranking Query Assigns Incorrect Positions to Tied Values | SQL Lab | Medium | SQL | Window Functions | 150 |
-| 72 | [SQL-M12] A Subquery Returns Multiple Rows Unexpectedly | SQL Lab | Medium | SQL | Subqueries | 150 |
-| 73 | [SQL-M13] A Report Combines Historical and Current Prices Incorrectly | SQL Lab | Medium | SQL | Joins | 150 |
-| 74 | [SQL-M14] A Query Counts Orders Instead of Distinct Customers | SQL Lab | Medium | SQL | Aggregation | 150 |
-| 75 | [SQL-M15] A Recursive Query Omits Part of an Organizational Hierarchy | SQL Lab | Medium | SQL | CTE | 150 |
-| 76 | [SQL-H01] Concurrent Inventory Reservations Oversell Stock | SQL Lab | Hard | SQL | Concurrency | 250 |
-| 77 | [SQL-H02] A Payment Transaction Updates Balances Without Maintaining Consistency | SQL Lab | Hard | SQL | Transactions | 250 |
-| 78 | [SQL-H03] A Multi-Table JOIN Multiplies Aggregates Across Independent Relationships | SQL Lab | Hard | SQL | Joins | 250 |
-| 79 | [SQL-H04] A Transaction Failure Leaves Related Financial Records Inconsistent | SQL Lab | Hard | SQL | Transactions | 250 |
-| 80 | [SQL-H05] A Database Migration Incorrectly Handles Existing NULL and Duplicate Values | SQL Lab | Hard | SQL | Schema | 250 |
-| 81 | [SQL-H06] A Running-Total Query Produces Incorrect Results for Tied Timestamps | SQL Lab | Hard | SQL | Window Functions | 250 |
-| 82 | [SQL-H07] A Reporting Query Uses Incorrect Isolation Assumptions During Concurrent Updates | SQL Lab | Hard | SQL | Transactions | 250 |
-| 83 | [SQL-H08] A Soft-Delete Implementation Leaks Logically Deleted Records | SQL Lab | Hard | SQL | Filtering | 250 |
-| 84 | [SQL-H09] A Recursive Hierarchy Query Mishandles Cycles | SQL Lab | Hard | SQL | CTE | 250 |
-| 85 | [SQL-H10] An Analytics Query Becomes Extremely Slow Because of Incorrect Query Structure and Indexing Assumptions | SQL Lab | Hard | SQL | Performance | 250 |
-| 86 | [FE-E01] A Form Submits Even When Required Fields Are Empty | Frontend | Easy | React | Forms | 100 |
-| 87 | [FE-E02] A React Component Displays Stale or Incorrect Conditional Content | Frontend | Easy | React | Conditional Rendering | 100 |
-| 88 | [FE-E03] A Product Card Shows the Wrong Price After a State Update | Frontend | Easy | React | React State | 100 |
-| 89 | [FE-E04] A Button Fires the Wrong Event Handler | Frontend | Easy | React | DOM & Events | 100 |
-| 90 | [FE-E05] A Search Field Ignores Uppercase/Lowercase Normalization | Frontend | Easy | React | Validation | 100 |
-| 91 | [FE-E06] A Loading Indicator Never Disappears After an API Error | Frontend | Easy | React | React State | 100 |
-| 92 | [FE-E07] A Responsive Layout Overflows on Mobile | Frontend | Easy | CSS | CSS & Styling | 100 |
-| 93 | [FE-E08] A Form Displays an Incorrect Validation Message | Frontend | Easy | React | Validation | 100 |
-| 94 | [FE-E09] A Modal Cannot Be Closed Using the Escape Key | Frontend | Easy | React | Accessibility | 100 |
-| 95 | [FE-E10] A List Uses an Unstable or Incorrect React Key, Causing UI Inconsistencies | Frontend | Easy | React | DOM & Events | 100 |
-| 96 | [FE-M01] Rapid Search Requests Overwrite Newer Results | Frontend | Medium | React | Asynchronous UI | 200 |
-| 97 | [FE-M02] React State Updates Lose Changes During Batched Operations | Frontend | Medium | React | State Management | 200 |
-| 98 | [FE-M03] useEffect Dependency Causes Stale Values or Missing Updates | Frontend | Medium | React | React Hooks | 200 |
-| 99 | [FE-M04] Shopping Cart Calculates Totals Incorrectly After Mutation | Frontend | Medium | React | State Immutability | 200 |
-| 100 | [FE-M05] Paginated List Does Not Reset Page When Filter Changes | Frontend | Medium | React | Pagination | 200 |
-| 101 | [FE-M06] Event Listener Registered Repeatedly Without Cleanup | Frontend | Medium | React | Memory Leaks | 200 |
-| 102 | [FE-M07] Authentication Refresh Request Creates Redirect Loops | Frontend | Medium | React | Authentication | 200 |
-| 103 | [FE-M08] File-Upload Component Mishandles Progress and Failed Requests | Frontend | Medium | React | Error Handling | 200 |
-| 104 | [FE-M09] Multi-Step Form Loses User Values When Navigating Backward | Frontend | Medium | React | Form Architecture | 200 |
-| 105 | [FE-M10] Dashboard Renders Inconsistent Data After Parallel API Calls | Frontend | Medium | React | Asynchronous Data | 200 |
-| 106 | [FE-M11] Frontend Cache Displays Outdated Profile Information | Frontend | Medium | React | Caching | 200 |
-| 107 | [FE-M12] Component Submits Duplicate Requests After Repeated Clicks | Frontend | Medium | React | Form Submission | 200 |
-| 108 | [FE-M13] Date Picker Displays Incorrect Date Due to Timezone Offset | Frontend | Medium | React | Date & Time | 200 |
-| 109 | [FE-M14] Form Does Not Preserve Field-Level Server Validation Errors | Frontend | Medium | React | Form Validation | 200 |
-| 110 | [FE-M15] Accessible Dropdown Fails to Close on Escape Key | Frontend | Medium | React | Accessibility | 200 |
-| 111 | [FE-H01] Concurrent Frontend Requests Create Inconsistent Checkout State | Frontend | Hard | React | Concurrency | 300 |
-| 112 | [FE-H02] Memory Leak Develops After Repeated Mount/Unmount Cycles | Frontend | Hard | React | Memory Management | 300 |
-| 113 | [FE-H03] Shared Client-Side Cache Exposes Data Between Sessions | Frontend | Hard | JavaScript | Security | 300 |
-| 114 | [FE-H04] Optimistic UI Update Corrupts State After Failed Requests | Frontend | Hard | React | Optimistic UI | 300 |
-| 115 | [FE-H05] Complex Dashboard Produces Inconsistent Derived State | Frontend | Hard | React | Performance & Memoization | 300 |
-| 116 | [FE-H06] Concurrent API Calls Trigger Multiple Token Refreshes | Frontend | Hard | JavaScript | Authentication Architecture | 300 |
-| 117 | [FE-H07] Virtualized List Renders Incorrect Items After Filtering | Frontend | Hard | React | Virtualization | 300 |
-| 118 | [FE-H08] Multi-Step Checkout Loses Consistency on Partial Failure | Frontend | Hard | React | Compensating Transactions | 300 |
-| 119 | [FE-H09] Real-Time Interface Applies Out-Of-Order Events | Frontend | Hard | React | Real-Time State | 300 |
-| 120 | [FE-H10] Frontend Fails to Gracefully Handle 403 Forbidden Responses | Frontend | Hard | React | Security & Error Handling | 300 |

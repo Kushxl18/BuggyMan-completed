@@ -197,8 +197,8 @@ class EvaluationEngine:
                 'passed': is_passed,
                 'hidden': is_hidden,
                 'input': tr.get('input', '') if not is_hidden else '',
-                'expected': None,
-                'actual': None,
+                'expected': tr.get('expected') if not is_hidden else None,
+                'actual': tr.get('actual') if not is_hidden else None,
                 'error': hint if not is_passed else None,
                 'hint': hint if not is_passed else None
             })

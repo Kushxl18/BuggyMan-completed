@@ -1,5 +1,6 @@
 """
 Frontend Studio: Medium Challenges (96 to 110)
+Standardized into realistic production incident debugging tickets.
 """
 
 def get_frontend_medium():
@@ -8,35 +9,46 @@ def get_frontend_medium():
     # 96. Rapid search requests overwrite newer results
     challenges.append({
         'id': 96,
-        'title': '[FE-M01] Rapid Search Requests Overwrite Newer Results',
+        'title': 'Documentation Typeahead Discards Newest Query Results on Latency Spikes',
         'difficulty': 'Medium',
         'technology': 'React',
         'category': 'Asynchronous UI',
         'time_estimate': '15 mins',
         'points': 200,
-        'description': """### Company Scenario
-An enterprise documentation portal provides a live typeahead search across thousands of API endpoints.
+        'description': """### Incident Report
+Developers searching the enterprise documentation portal reported that live typeahead search was frequently displaying completely wrong search results. For example, after typing `"users"` quickly, the results list showed matches for `"us"` while the input field clearly showed `"users"`. The discrepancy caused developers to navigate into incorrect documentation sections.
 
 ### Bug Report
-When typing quickly (e.g. searching for "users" by typing "u", "us", "use", "user", "users"), the query for "us" took 350ms while "users" took 80ms. The earlier slow response arrived last and overwrote the results, leaving stale results for "us" visible on the screen even though the input displays "users".
+In `LiveSearch.jsx`, an asynchronous race condition occurs when subsequent keystrokes dispatch concurrent network requests. If an earlier request (e.g., for `"us"`) takes longer to resolve than a later request (e.g., for `"users"`), the older slow response resolves last and overwrites the newer search results unconditionally.
 
 ### Steps to Reproduce
-1. Open `LiveSearch.jsx`.
-2. Type query rapidly into the search field.
-3. Observe race condition where network latency differences cause out-of-order state updates.
+1. Render `LiveSearch.jsx` with a mock search function that simulates variable network latency.
+2. Type a multi-character search term quickly into the search input.
+3. Observe that when the slower preliminary request resolves after the latest request, the preliminary results overwrite the current results list.
 
-### Expected Behavior
-The search component must ignore responses from stale queries or abort previous in-flight requests using an `active` flag or `AbortController`.
+### Expected Behaviour
+The search effect must track active request status or use an abort mechanism so that responses from outdated or superseded queries are ignored.
 
-### Actual Behavior
-Component unconditionally calls `setResults(data)` in the `.then()` callback regardless of whether the query is still the latest one.
+### Actual Behaviour
+Every resolved promise unconditionally invokes `setResults(data)` regardless of whether the query that initiated it is still the latest user input.
 
-### Impact
-Users see irrelevant search results that do not match the text in the search input, causing confusion and incorrect navigation.
+### Starter Files
+- `LiveSearch.jsx`: Search typeahead component vulnerable to asynchronous race conditions.
 
-### Requirements
-- Implement a request cancellation flag or controller to ignore responses from stale or superseded search requests.
-- Only update state if the request is still current.
+### Task
+Refactor `LiveSearch.jsx` to prevent race conditions from out-of-order asynchronous responses overwriting newer search results.
+
+### Acceptance Criteria
+1. Fast-typing queries discard stale responses from previously initiated slower requests.
+2. Only the results for the most recent search query are displayed.
+3. In-flight requests are properly ignored when new queries are submitted.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
 """,
         'files': [{
             'name': 'LiveSearch.jsx',
@@ -76,13 +88,14 @@ export default function LiveSearch({ fetchResults }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Uses cancellation flag or AbortController to prevent race conditions', 'input': '', 'expected': 'active'}
+            {'id': 1, 'name': 'Uses cancellation flag or AbortController to prevent race conditions', 'input': '', 'expected': 'active'}
         ],
         'bug_signature': 'fetchResults(query).then(data => {\n      setResults(data);',
         'suspected_component': 'LiveSearch.jsx',
         'ai_suggestions': [
-            'Introduce a boolean flag `let active = true;` inside the `useEffect`.',
-            'Check `if (active) setResults(data);` before updating state, and return a cleanup function `() => { active = false; };`.'
+            'Asynchronous network requests initiated inside `useEffect` must be guarded against out-of-order resolution race conditions.',
+            'Maintain a boolean flag (such as `let active = true;`) scoped inside the effect that gets flipped to `false` in the effect cleanup return function.',
+            'Verify `if (active)` before calling `setResults(data)`, and return `() => { active = false; };` from the effect.'
         ],
         'topics': ['React', 'Async', 'Race Conditions', 'useEffect'],
         'skills_tested': ['React', 'Frontend'],
@@ -93,34 +106,45 @@ export default function LiveSearch({ fetchResults }) {
     # 97. React state updates lose changes during batched operations
     challenges.append({
         'id': 97,
-        'title': '[FE-M02] React State Updates Lose Changes During Batched Operations',
+        'title': 'Warehouse Quick-Add Action Discards Batched Inventory Increments',
         'difficulty': 'Medium',
         'technology': 'React',
         'category': 'State Management',
         'time_estimate': '15 mins',
         'points': 200,
-        'description': """### Company Scenario
-An inventory ticketing application allows warehouse workers to quickly increment box counts by +3 using a shortcut button.
+        'description': """### Incident Report
+Warehouse floor operators packing outgoing shipments noticed that clicking the "+3 Quick Add" shortcut button on inventory terminals only increased the item box count by 1 instead of 3. Operators were forced to repeatedly click the button, resulting in incorrect box counts and packaging delays.
 
 ### Bug Report
-Clicking "+3" only increments the box count by 1 instead of 3.
+In `CounterBatch.jsx`, the `incrementByThree` handler calls `setCount(count + 1)` three times sequentially. Because each call closes over the same render's snapshot value of `count`, React batches all three updates and evaluates `setCount(0 + 1)` three times, resulting in a net increase of only 1.
 
 ### Steps to Reproduce
-1. In `CounterBatch.jsx`, click the "+3" button.
-2. The button calls `incrementByThree()`, which invokes `setCount(count + 1)` three times in a row.
-3. Box count changes from 0 to 1 instead of 0 to 3.
+1. Render `CounterBatch.jsx` with an initial count of 0.
+2. Click the "+3 Quick Add" button.
+3. Observe that the displayed box count increments to 1 instead of 3.
 
-### Expected Behavior
-Each sequential update must incorporate the latest queued state transition so the counter increments by the full expected amount.
+### Expected Behaviour
+Each sequential update in a batch must receive and operate on the previous queued state value, properly incrementing the count by 3.
 
-### Actual Behavior
-All three `setCount(count + 1)` calls read the same snapshot value of `count` from the current render closure.
+### Actual Behaviour
+All three state updates read the stale closure variable `count`, overwriting one another.
 
-### Impact
-Warehouse staff submit incorrect inventory counts, leading to stock discrepancies.
+### Starter Files
+- `CounterBatch.jsx`: Counter component using repeated direct state updates.
 
-### Requirements
-- Use functional state updates to ensure all increments are applied correctly during batched state transitions.
+### Task
+Refactor `incrementByThree` in `CounterBatch.jsx` so that consecutive queued state updates build upon the most recent state value.
+
+### Acceptance Criteria
+1. State updates use updater functions to avoid reading stale closure state.
+2. Triggering the batch increment increases the counter by exactly 3.
+3. The displayed count accurately reflects all queued modifications.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- State transitions must be strictly immutable; array mutations and in-place object property assignments are prohibited.
+- Rendered list items must use stable entity identifiers as keys rather than transient array indices.
+- Dependent state values must remain synchronized without stale closures or intermediate rendering lag.
 """,
         'files': [{
             'name': 'CounterBatch.jsx',
@@ -149,12 +173,14 @@ export default function CounterBatch() {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Uses functional state updater prev => prev + 1', 'input': '', 'expected': 'prev =>'}
+            {'id': 1, 'name': 'Uses functional state updater prev => prev + 1', 'input': '', 'expected': 'prev =>'}
         ],
         'bug_signature': 'setCount(count + 1);\n    setCount(count + 1);\n    setCount(count + 1);',
         'suspected_component': 'CounterBatch.jsx',
         'ai_suggestions': [
-            'Use functional updates: `setCount(prev => prev + 1)` instead of reading `count` from closure.'
+            'Multiple consecutive state updates within the same event execution read from the same render closure unless updater functions are used.',
+            'React queues updater functions and passes the pending state as the first argument to each subsequent updater.',
+            'Replace `setCount(count + 1)` with `setCount(prev => prev + 1)` across all three calls.'
         ],
         'topics': ['React', 'State', 'Batching'],
         'skills_tested': ['React', 'Frontend'],
@@ -165,34 +191,46 @@ export default function CounterBatch() {
     # 98. useEffect dependency causes stale values or repeated requests
     challenges.append({
         'id': 98,
-        'title': '[FE-M03] useEffect Dependency Causes Stale Values or Missing Updates',
+        'title': 'Customer Support Drawer Retains Prior User Profile Across Ticket Switches',
         'difficulty': 'Medium',
         'technology': 'React',
         'category': 'React Hooks',
         'time_estimate': '15 mins',
         'points': 200,
-        'description': """### Company Scenario
-A customer support portal displays user details in a sidebar drawer. As support agents click different ticket owners, `userId` changes.
+        'description': """### Incident Report
+Customer support agents reported an urgent security and privacy issue: while triaging support tickets, clicking from Customer A's ticket to Customer B's ticket left Customer A's contact info, email address, and billing details displayed in the profile sidebar drawer. An agent inadvertently emailed Customer A regarding Customer B's ticket.
 
 ### Bug Report
-When an agent clicks between User A and User B, the drawer continues to show User A's details because the effect dependency array is empty `[]`.
+In `UserProfileLoader.jsx`, the `useEffect` hook that fetches profile information specifies an empty dependency array `[]`. Because `userId` is omitted from dependencies, the effect runs only once when mounted and never refetches when the parent component passes a new `userId` prop.
 
 ### Steps to Reproduce
-1. Mount `UserProfileLoader.jsx` with `userId = "usr_101"`. Profile loads.
-2. Parent changes prop to `userId = "usr_202"`.
-3. Profile does not reload and keeps showing data for `usr_101`.
+1. Render `UserProfileLoader.jsx` with `userId = "usr_101"`. Profile loads.
+2. Change the incoming prop to `userId = "usr_202"`.
+3. Observe that no network request is dispatched and the component continues to display data for `usr_101`.
 
-### Expected Behavior
-Effect must re-run whenever `userId` changes by declaring `userId` in the dependency array: `[userId, fetchUser]`.
+### Expected Behaviour
+The component must fetch and display the updated profile whenever the `userId` prop changes.
 
-### Actual Behavior
-Dependency array is `[]`, closing over initial `userId` and never refetching.
+### Actual Behaviour
+The effect ignores prop changes due to an empty dependency array, closing over stale profile data.
 
-### Impact
-Agents take actions on wrong customer accounts due to stale profile displays.
+### Starter Files
+- `UserProfileLoader.jsx`: Profile loader component with omitted hook dependencies.
 
-### Requirements
-- Add `userId` (and `fetchUser`) to the `useEffect` dependency array.
+### Task
+Update `UserProfileLoader.jsx` so that changing the active user prop re-fetches and displays the selected user's profile.
+
+### Acceptance Criteria
+1. The dependency array includes `userId`.
+2. Changing `userId` re-triggers loading and retrieves the correct profile.
+3. Component cleanup remains intact to prevent state updates on unmounted instances.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
 """,
         'files': [{
             'name': 'UserProfileLoader.jsx',
@@ -228,12 +266,14 @@ export default function UserProfileLoader({ userId, fetchUser }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Declares userId in dependency array', 'input': '', 'expected': '[userId'}
+            {'id': 1, 'name': 'Declares userId in dependency array', 'input': '', 'expected': '[userId'}
         ],
         'bug_signature': '}, []);',
         'suspected_component': 'UserProfileLoader.jsx',
         'ai_suggestions': [
-            'Add `userId` to the `useEffect` dependency array: `[userId, fetchUser]` or `[userId]`.'
+            'All props and variables referenced inside a `useEffect` must be specified in its dependency array.',
+            'Look at the empty dependency array `[]` at the bottom of the effect: it prevents the effect from executing when props change.',
+            'Change the dependency array from `[]` to `[userId, fetchUser]` or `[userId]`.'
         ],
         'topics': ['React', 'Hooks', 'useEffect', 'Dependencies'],
         'skills_tested': ['React', 'Frontend'],
@@ -244,34 +284,45 @@ export default function UserProfileLoader({ userId, fetchUser }) {
     # 99. Shopping cart calculates totals incorrectly after quantity updates
     challenges.append({
         'id': 99,
-        'title': '[FE-M04] Shopping Cart Calculates Totals Incorrectly After Mutation',
+        'title': 'Checkout Cart Subtotal Freezes on In-Place Item Mutation',
         'difficulty': 'Medium',
         'technology': 'React',
         'category': 'State Immutability',
         'time_estimate': '15 mins',
         'points': 200,
-        'description': """### Company Scenario
-An online grocery checkout component allows customers to update item quantities.
+        'description': """### Incident Report
+Online shoppers complained that altering product quantities in the grocery checkout cart left the overall subtotal stuck on the initial balance. Only after navigating back and forth between different checkout steps did the price refresh, leading shoppers to believe discounts or items were missing.
 
 ### Bug Report
-Modifying item quantity directly mutates the state array object `items[index].qty = newQty`. React fails to trigger re-renders reliably because the array reference remains identical, and cart total calculation falls out of sync.
+In `ShoppingCart.jsx`, `updateQuantity` mutates the existing state array in place via `items[index].qty = newQty` and then calls `setItems(items)`. Because the array reference has not changed, React's shallow comparison treats the state as unchanged, failing to trigger a re-render.
 
 ### Steps to Reproduce
-1. In `ShoppingCart.jsx`, call `updateQuantity(itemId, 5)`.
-2. The code mutates the existing item in place: `items[index].qty = newQty; setItems(items);`.
-3. Component doesn't re-render or produces stale totals.
+1. Render `ShoppingCart.jsx` with sample line items.
+2. Modify the quantity of an item using the number input.
+3. Observe that the subtotal does not recalculate immediately because React skipped re-rendering the mutated array.
 
-### Expected Behavior
-State must be updated immutably using `.map()` to return a new array with newly created item objects.
+### Expected Behaviour
+Updating an item's quantity must produce a new array containing a new item object, preserving state immutability and triggering immediate re-render.
 
-### Actual Behavior
-Mutates item in place and passes identical array reference to `setItems`.
+### Actual Behaviour
+The handler directly mutates `items[index].qty` and passes the existing reference back to `setItems`.
 
-### Impact
-Shoppers see incorrect order totals and get charged mismatched amounts.
+### Starter Files
+- `ShoppingCart.jsx`: Cart component with direct in-place state mutation.
 
-### Requirements
-- Use immutable state update: `setItems(items.map(item => item.id === id ? { ...item, qty: newQty } : item));`.
+### Task
+Refactor `updateQuantity` in `ShoppingCart.jsx` to treat state immutably when modifying item quantities.
+
+### Acceptance Criteria
+1. The update creates a new array reference without modifying the previous array.
+2. The modified item is cloned with the updated `qty`.
+3. The cart subtotal updates immediately upon quantity changes.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- State transitions must be strictly immutable; array mutations and in-place object property assignments are prohibited.
+- Rendered list items must use stable entity identifiers as keys rather than transient array indices.
+- Dependent state values must remain synchronized without stale closures or intermediate rendering lag.
 """,
         'files': [{
             'name': 'ShoppingCart.jsx',
@@ -309,12 +360,13 @@ export default function ShoppingCart({ initialItems = [] }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Immutably maps items using object spread', 'input': '', 'expected': 'items.map'}
+            {'id': 1, 'name': 'Immutably maps items using object spread', 'input': '', 'expected': 'items.map'}
         ],
         'bug_signature': 'items[index].qty = newQty;\n      setItems(items);',
         'suspected_component': 'ShoppingCart.jsx',
         'ai_suggestions': [
-            'Avoid mutating `items[index]`.',
+            'Direct mutation of React state structures prevents re-renders because React relies on reference equality.',
+            'Do not assign properties directly onto objects inside state arrays like `items[index].qty = ...`.',
             'Use `setItems(items.map(item => item.id === id ? { ...item, qty: newQty } : item))`.'
         ],
         'topics': ['React', 'Immutability', 'State'],
@@ -326,34 +378,46 @@ export default function ShoppingCart({ initialItems = [] }) {
     # 100. Paginated list resets unexpectedly when filters change
     challenges.append({
         'id': 100,
-        'title': '[FE-M05] Paginated List Does Not Reset Page When Filter Changes',
+        'title': 'Catalog Pagination Leaves Filtered Views Trapped on Nonexistent Page',
         'difficulty': 'Medium',
         'technology': 'React',
         'category': 'Pagination',
         'time_estimate': '15 mins',
         'points': 200,
-        'description': """### Company Scenario
-An admin product catalog provides category filtering and pagination.
+        'description': """### Incident Report
+Store managers managing product inventory reported that category filters were returning "No products found" even for categories with dozens of items. Investigation showed that if a manager was on page 5 of "All Categories" and then clicked "Furniture" (which only has 1 page of items), the view remained stuck on page 5, which had zero items.
 
 ### Bug Report
-An admin navigates to Page 6 of "All Products". They then filter by "Furniture", which only has 2 pages of results. The view displays "No products found" because the table stayed on `page = 6`, which is out of range for the filtered results!
+In `FilterPagination.jsx`, `handleFilterChange` updates `category` via `setCategory(newCategory)`. However, it neglects to reset `page` back to `1`. If the filtered category has fewer total pages than the current page index, the user is stranded on an out-of-range empty page.
 
 ### Steps to Reproduce
-1. In `FilterPagination.jsx`, navigate to page 5.
-2. Select a different category from the dropdown.
-3. The catalog displays an empty state because `page` remained 5 instead of resetting to 1.
+1. Navigate to page 3 or higher under "All Categories".
+2. Select a category with few items (e.g. "Furniture").
+3. Notice that the catalog displays "No products found" because `page` is still set to 3.
 
-### Expected Behavior
-Changing `category` must reset `page` back to 1.
+### Expected Behaviour
+Whenever the user changes the filter category, `page` must reset to `1`.
 
-### Actual Behavior
-`handleFilterChange` updates category without touching `page`.
+### Actual Behaviour
+The page index persists across filter changes, causing out-of-bounds pagination errors.
 
-### Impact
-Users believe products are missing or deleted when changing search filters.
+### Starter Files
+- `FilterPagination.jsx`: Filterable paginated catalog component without page reset logic.
 
-### Requirements
-- Call `setPage(1)` whenever the filter changes.
+### Task
+Update `handleFilterChange` in `FilterPagination.jsx` to call `setPage(1)` whenever `newCategory` is selected.
+
+### Acceptance Criteria
+1. Changing the category filter sets `page` to 1.
+2. Filtered results render starting from the first page.
+3. Pagination controls recalculate total pages accurately.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
 """,
         'files': [{
             'name': 'FilterPagination.jsx',
@@ -405,12 +469,14 @@ export default function FilterPagination({ products = [] }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Resets page to 1 on filter change', 'input': '', 'expected': 'setPage(1)'}
+            {'id': 1, 'name': 'Resets page to 1 on filter change', 'input': '', 'expected': 'setPage(1)'}
         ],
         'bug_signature': 'const handleFilterChange = (newCategory) => {\n    setCategory(newCategory);\n  };',
         'suspected_component': 'FilterPagination.jsx',
         'ai_suggestions': [
-            'Inside `handleFilterChange`, add `setPage(1);` alongside `setCategory(newCategory);`.'
+            'When changing dataset filters, the current page number must be reset to prevent pointing past the end of the new result set.',
+            'Examine `handleFilterChange`: it only updates the category state.',
+            'Add `setPage(1);` inside `handleFilterChange` right after `setCategory(newCategory);`.'
         ],
         'topics': ['React', 'Pagination', 'Filtering'],
         'skills_tested': ['React', 'Frontend'],
@@ -421,34 +487,45 @@ export default function FilterPagination({ products = [] }) {
     # 101. Event listener registered repeatedly and not cleaned up
     challenges.append({
         'id': 101,
-        'title': '[FE-M06] Event Listener Registered Repeatedly Without Cleanup',
+        'title': 'SVG Dashboard Widget Accumulates Leaked Window Resize Listeners',
         'difficulty': 'Medium',
         'technology': 'React',
         'category': 'Memory Leaks',
         'time_estimate': '15 mins',
         'points': 200,
-        'description': """### Company Scenario
-A charting widget listens for browser window resize events to recalculate SVG canvas dimensions.
+        'description': """### Incident Report
+Performance monitoring flagged client memory leaks in the operational analytics dashboard. Users who left the browser tab open throughout their work shift experienced severe browser tab lag and eventual tab crashes. Profiling showed tens of thousands of duplicate `resize` listeners accumulated on `window`.
 
 ### Bug Report
-Every time the user navigates between dashboard tabs, browser memory consumption increases steadily. Profiling reveals that thousands of `resize` listeners remain attached to `window`, leading to sluggish responsiveness.
+In `ResizeListener.jsx`, `window.addEventListener('resize', handleResize)` is registered in `useEffect`. However, the effect omits a cleanup function. Every time the component mounts or unmounts, a new listener is permanently attached to `window`.
 
 ### Steps to Reproduce
-1. Inspect `ResizeListener.jsx`.
-2. Notice `window.addEventListener('resize', handleResize)` is registered in `useEffect`.
-3. No cleanup function is returned.
+1. Mount and unmount `ResizeListener.jsx` repeatedly across tab switches.
+2. Inspect the `window` event listeners using Chrome DevTools.
+3. Observe that resize event listeners continuously accumulate without being removed.
 
-### Expected Behavior
-`useEffect` must return a cleanup function: `return () => window.removeEventListener('resize', handleResize);`.
+### Expected Behaviour
+The effect must return a cleanup callback that invokes `window.removeEventListener('resize', handleResize)` to detach the listener on unmount.
 
-### Actual Behavior
-Omits cleanup, leaking event listeners on every unmount and re-mount.
+### Actual Behaviour
+The effect has no cleanup return statement, causing memory leaks.
 
-### Impact
-Severe memory leak causing browser tab crashes on long-lived sessions.
+### Starter Files
+- `ResizeListener.jsx`: Dimension tracking component omitting event listener cleanup.
 
-### Requirements
-- Return `() => window.removeEventListener('resize', handleResize)` from `useEffect`.
+### Task
+Update `ResizeListener.jsx` to detach its window resize event listener when the component unmounts.
+
+### Acceptance Criteria
+1. A cleanup function removes the window resize listener when unmounting.
+2. Event listener references match between registration and deregistration.
+3. Memory leaks from lingering event listeners are eliminated.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Global event listeners (`keydown`, `resize`, event bus subscriptions) must be detached in the `useEffect` cleanup return callback.
+- Viewport layouts must scale responsively across mobile (`375px`) and desktop (`1440px`) breakpoints without horizontal overflow.
+- Keyboard interactions (such as Escape key dismissal) must close open overlays reliably.
 """,
         'files': [{
             'name': 'ResizeListener.jsx',
@@ -473,12 +550,14 @@ export default function ResizeListener() {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Cleans up event listener with removeEventListener', 'input': '', 'expected': 'removeEventListener'}
+            {'id': 1, 'name': 'Cleans up event listener with removeEventListener', 'input': '', 'expected': 'removeEventListener'}
         ],
-        'bug_signature': 'window.addEventListener(\'resize\', handleResize);\n    // BUG: Missing cleanup function to removeEventListener\n  }, []);',
+        'bug_signature': 'window.addEventListener(\'resize\', handleResize);\n  }, []);',
         'suspected_component': 'ResizeListener.jsx',
         'ai_suggestions': [
-            'Return a cleanup callback from `useEffect`: `return () => window.removeEventListener("resize", handleResize);`.'
+            'Global event listeners attached to `window` or `document` inside effects must be cleaned up to avoid memory leaks.',
+            'React `useEffect` supports returning a cleanup callback function that executes when the component unmounts.',
+            'Return `() => window.removeEventListener("resize", handleResize);` from the effect function.'
         ],
         'topics': ['React', 'useEffect', 'Cleanup', 'DOM Events'],
         'skills_tested': ['React', 'Frontend'],
@@ -489,34 +568,46 @@ export default function ResizeListener() {
     # 102. Authentication refresh request creates redirect loops
     challenges.append({
         'id': 102,
-        'title': '[FE-M07] Authentication Refresh Request Creates Redirect Loops',
+        'title': 'Settings Route Guard Triggers Infinite Login Redirect on Cold Refresh',
         'difficulty': 'Medium',
         'technology': 'React',
         'category': 'Authentication',
         'time_estimate': '15 mins',
         'points': 200,
-        'description': """### Company Scenario
-A cloud dashboard implements route guarding to protect user settings and billing.
+        'description': """### Incident Report
+Logged-in users reloading their account settings page (`/settings`) reported being abruptly redirected to `/login`. Upon reaching `/login`, the session hydration completed and immediately redirected them back to `/settings`, triggering an infinite redirect loop that made the application unusable.
 
 ### Bug Report
-When an authenticated user refreshes `/settings`, the page flickers and immediately redirects to `/login`. Upon arriving at `/login`, the auth provider finishes hydrating and redirects them back to `/settings`, causing an infinite redirect loop.
+In `ProtectedRoute.jsx`, the guard immediately evaluates `if (!user) return <Navigate to="/login" />`. On application launch or page reload, `user` is initially `null` while `isLoading` is `true`. The guard fails to verify `isLoading` first, mistakenly kicking valid sessions out before auth initialization completes.
 
 ### Steps to Reproduce
-1. In `ProtectedRoute.jsx`, observe the auth check.
-2. When the app first boots, `isLoading` is `true` while the session token is validated, but `user` is initially `null`.
-3. `ProtectedRoute` immediately executes `if (!user) return <Navigate to="/login" />` before checking `isLoading`.
+1. Render `ProtectedRoute.jsx` with `user = null` and `isLoading = true`.
+2. Observe that the component renders `<Navigate to="/login" />` instead of waiting for loading to finish.
+3. The premature redirection creates an authentication loop.
 
-### Expected Behavior
-If `isLoading` is true, render a loading spinner `<LoadingSpinner />` and wait until authentication state resolves before redirecting.
+### Expected Behaviour
+If `isLoading` is true, the route guard must display a loading spinner `<LoadingSpinner />` and defer redirect decisions until auth state resolves.
 
-### Actual Behavior
-Treats unhydrated state (`user === null` while `isLoading === true`) as unauthenticated and redirects immediately.
+### Actual Behaviour
+The guard assumes uninitialized auth state represents an unauthenticated visitor.
 
-### Impact
-Authenticated users cannot reload or deep-link to protected pages without getting kicked out.
+### Starter Files
+- `ProtectedRoute.jsx`: Authentication wrapper component lacking initial loading check.
 
-### Requirements
-- Add `if (isLoading) return <LoadingSpinner />;` before checking `if (!user)`.
+### Task
+Update `ProtectedRoute.jsx` to check `if (isLoading) return <LoadingSpinner />;` before checking `if (!user)`.
+
+### Acceptance Criteria
+1. The component checks `isLoading` before checking `user`.
+2. When `isLoading` is true, `<LoadingSpinner />` is returned.
+3. Unauthenticated requests (`!user && !isLoading`) redirect to `/login`.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
 """,
         'files': [{
             'name': 'ProtectedRoute.jsx',
@@ -539,12 +630,14 @@ export default function ProtectedRoute({ user, isLoading, children }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Checks isLoading before redirecting', 'input': '', 'expected': 'isLoading'}
+            {'id': 1, 'name': 'Checks isLoading before redirecting', 'input': '', 'expected': 'isLoading'}
         ],
         'bug_signature': 'export default function ProtectedRoute({ user, isLoading, children }) {\n  if (!user) {',
         'suspected_component': 'ProtectedRoute.jsx',
         'ai_suggestions': [
-            'Add `if (isLoading) return <LoadingSpinner />;` at the beginning of `ProtectedRoute` before `if (!user)`.'
+            'Asynchronous authentication systems take time to hydrate session tokens from storage or backend endpoints.',
+            'A protected route should never redirect until session verification is finished.',
+            'Add `if (isLoading) return <LoadingSpinner />;` prior to the `if (!user)` check.'
         ],
         'topics': ['React', 'Authentication', 'Routing', 'Loading States'],
         'skills_tested': ['React', 'Frontend'],
@@ -555,34 +648,46 @@ export default function ProtectedRoute({ user, isLoading, children }) {
     # 103. File-upload component mishandles progress and failed requests
     challenges.append({
         'id': 103,
-        'title': '[FE-M08] File-Upload Component Mishandles Progress and Failed Requests',
+        'title': 'Reimbursement Receipt Uploader Locks Up on Network Disruption',
         'difficulty': 'Medium',
         'technology': 'React',
         'category': 'Error Handling',
         'time_estimate': '15 mins',
         'points': 200,
-        'description': """### Company Scenario
-A customer portal allows users to upload PDF receipts for reimbursement.
+        'description': """### Incident Report
+Employees filing travel expense reports reported that when an upload failed due to a spotty Wi-Fi connection, the file uploader widget stayed permanently frozen showing `"Uploading... 20%"`. The submit button remained disabled, and no error message appeared, preventing employees from retrying without reloading the entire page.
 
 ### Bug Report
-If an upload fails (e.g. 500 server error or dropped connection), the UI remains stuck showing "Uploading 65%..." and the upload button stays disabled forever. The user is unable to retry without refreshing the entire page.
+In `FileUploader.jsx`, the `handleUpload` asynchronous function handles errors with `catch (err) { console.error('Upload failed', err); }`. It forgets to reset `setIsUploading(false)` or populate `setError(err.message || 'Upload failed')`. As a result, the component remains permanently locked in uploading mode.
 
 ### Steps to Reproduce
-1. In `FileUploader.jsx`, simulate an upload failure.
-2. The `try/catch` catches the error, but only calls `console.error`.
-3. `isUploading` remains `true` and `error` state is never populated.
+1. Render `FileUploader.jsx` with a mock `uploadApi` that throws an error.
+2. Click the "Upload Document" button.
+3. Observe that after the error occurs, the UI remains permanently stuck on "Uploading... 20%" with no error banner.
 
-### Expected Behavior
-Inside the `catch` block, set `setIsUploading(false)` and `setError(err.message || 'Upload failed')`.
+### Expected Behaviour
+When an upload error occurs, `isUploading` must be reset to `false` and `error` must be set so the user is informed and can retry.
 
-### Actual Behavior
-Leaves `isUploading: true` and does not set user-facing error message.
+### Actual Behaviour
+The `catch` block logs to console without clearing loading state or updating user-facing error state.
 
-### Impact
-Users assume their documents are still uploading and abandon their expense submissions.
+### Starter Files
+- `FileUploader.jsx`: File upload component with incomplete error state handling.
 
-### Requirements
-- Update `catch` block to set `setIsUploading(false)` and set `setError(...)`.
+### Task
+Update the `catch` block in `FileUploader.jsx` to call `setIsUploading(false)` and set `setError(err.message || 'Upload failed')`.
+
+### Acceptance Criteria
+1. On failure, `setIsUploading(false)` is invoked.
+2. `setError` is set with an informative error string.
+3. The upload button becomes re-enabled so the user can attempt another upload.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
 """,
         'files': [{
             'name': 'FileUploader.jsx',
@@ -625,12 +730,14 @@ export default function FileUploader({ uploadApi }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Resets isUploading and sets error state on failure', 'input': '', 'expected': 'setIsUploading(false)'}
+            {'id': 1, 'name': 'Resets isUploading and sets error state on failure', 'input': '', 'expected': 'setIsUploading(false)'}
         ],
         'bug_signature': '} catch (err) {\n      console.error(\'Upload failed\', err);\n    }',
         'suspected_component': 'FileUploader.jsx',
         'ai_suggestions': [
-            'In the `catch` block, call `setIsUploading(false);` and `setError(err.message || "Upload failed");`.'
+            'Error handlers in async UI components must restore interactive state so users can retry failed actions.',
+            'Inspect the `catch (err)` block in `handleUpload`.',
+            'Add `setIsUploading(false);` and `setError(err.message || "Upload failed");` inside the catch handler.'
         ],
         'topics': ['React', 'Async', 'Error Handling'],
         'skills_tested': ['React', 'Frontend'],
@@ -641,34 +748,46 @@ export default function FileUploader({ uploadApi }) {
     # 104. Multi-step form loses user-entered values when navigating backward
     challenges.append({
         'id': 104,
-        'title': '[FE-M09] Multi-Step Form Loses User Values When Navigating Backward',
+        'title': 'Multi-Step Onboarding Form Clears Inputs on Previous Step Navigation',
         'difficulty': 'Medium',
         'technology': 'React',
         'category': 'Form Architecture',
         'time_estimate': '15 mins',
         'points': 200,
-        'description': """### Company Scenario
-An insurance quote onboarding flow consists of Step 1 (Personal Info) and Step 2 (Vehicle Details).
+        'description': """### Incident Report
+Prospective insurance policy buyers abandoned an onboarding questionnaire in high numbers. Users reported that after filling out Step 1 with their personal information and moving to Step 2, clicking "Back" to correct their address cleared all input fields in Step 1, forcing them to re-type everything.
 
 ### Bug Report
-A user fills out Step 1, proceeds to Step 2, and then clicks "Back" to fix a typo in their name. When Step 1 re-mounts, all previously entered fields are blank!
+In `WizardForm.jsx`, child component `Step1` initializes local state `const [name, setName] = useState('')` without reading from the passed `formData` prop. When moving to Step 2, `Step1` unmounts and its local state is destroyed. When returning to Step 1, it re-mounts with an empty string.
 
 ### Steps to Reproduce
-1. In `WizardForm.jsx`, notice that `Step1` maintains local `useState` for `fullName` and `email` instead of lifting state to parent.
-2. Moving to Step 2 unmounts `Step1`, destroying its local state.
-3. Returning to Step 1 re-mounts with empty initial strings.
+1. In `WizardForm.jsx`, type a name into Step 1.
+2. Click "Next" to navigate to Step 2.
+3. Click "Back" to return to Step 1.
+4. Notice the name input field is blank.
 
-### Expected Behavior
-Form data must be lifted up to parent `WizardForm` and passed down as props (`formData` and `onChange`) to persist between step transitions.
+### Expected Behaviour
+Step 1 inputs must initialize with and display values from `formData.name` so that navigating backward preserves previously entered values.
 
-### Actual Behavior
-Child step component owns its own state, discarding it upon unmount.
+### Actual Behaviour
+Step 1 uses uninitialized local state, losing user data upon unmount.
 
-### Impact
-High checkout abandonment rates due to users having to re-type form inputs.
+### Starter Files
+- `WizardForm.jsx`: Multi-step form component whose child steps do not initialize from parent state.
 
-### Requirements
-- Lift state to `WizardForm` and pass `formData.fullName` and `formData.email` into `Step1`.
+### Task
+Update `Step1` in `WizardForm.jsx` so its state initializes from `formData.name || ''` (or reads controlled values directly from `formData.name`).
+
+### Acceptance Criteria
+1. `Step1` initializes its input state from `formData.name`.
+2. Navigating back and forth between steps retains entered text.
+3. Changes propagate cleanly to the parent `formData` container.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Form submissions containing empty or whitespace-only inputs must be rejected with appropriate field errors.
+- In-flight submissions must lock the submission trigger to prevent duplicate submissions.
+- Inputs must maintain controlled component state across multi-step flows.
 """,
         'files': [{
             'name': 'WizardForm.jsx',
@@ -714,12 +833,14 @@ export default function WizardForm() {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Step1 initializes with formData.name', 'input': '', 'expected': 'formData.name'}
+            {'id': 1, 'name': 'Step1 initializes with formData.name', 'input': '', 'expected': 'formData.name'}
         ],
         'bug_signature': 'export function Step1({ formData = {}, onChange }) {\n  const [name, setName] = useState(\'\');',
         'suspected_component': 'WizardForm.jsx',
         'ai_suggestions': [
-            'Initialize `Step1` name state from `formData.name || ""` or use controlled inputs directly from `formData`.'
+            'In multi-step wizards, child steps that unmount must receive their initial state from a lifted parent state object.',
+            'Look at `Step1`: it receives `formData` as a prop but ignores it in its `useState` declaration.',
+            'Initialize state with `useState(formData.name || "")`.'
         ],
         'topics': ['React', 'Lifting State', 'Forms', 'Multi-step'],
         'skills_tested': ['React', 'Frontend'],
@@ -730,34 +851,46 @@ export default function WizardForm() {
     # 105. Dashboard renders inconsistent data after parallel API calls
     challenges.append({
         'id': 105,
-        'title': '[FE-M10] Dashboard Renders Inconsistent Data After Parallel API Calls',
+        'title': 'Executive Overview Dashboard Crashes Entirely on Minor Health Check Timeout',
         'difficulty': 'Medium',
         'technology': 'React',
         'category': 'Asynchronous Data',
         'time_estimate': '15 mins',
         'points': 200,
-        'description': """### Company Scenario
-An executive analytics dashboard fetches Revenue Metrics and Server Health in parallel.
+        'description': """### Incident Report
+During a brief database maintenance blip, the server health check endpoint returned an HTTP 503 while critical revenue systems remained fully operational. However, executive users viewing the overview dashboard saw a full red error screen with zero metrics displayed, completely obscuring their revenue numbers.
 
 ### Bug Report
-If the Server Health endpoint encounters a minor 503 outage, `Promise.all` fails immediately, causing the entire dashboard to crash and display an error screen—even though the critical Revenue Metrics were returned successfully!
+In `MetricsDashboard.jsx`, the data loader uses `Promise.all([fetchRevenue(), fetchHealth()])`. Because `Promise.all` follows fail-fast semantics, if the secondary `fetchHealth()` promise rejects, the entire promise chain rejects immediately, hiding the successfully fetched revenue data.
 
 ### Steps to Reproduce
-1. In `MetricsDashboard.jsx`, observe `Promise.all([fetchRevenue(), fetchHealth()])`.
-2. Rejecting `fetchHealth()` causes the entire try block to fail.
-3. No revenue numbers are shown to the executive.
+1. Render `MetricsDashboard.jsx` with a working `fetchRevenue` and a failing `fetchHealth`.
+2. Notice the `catch` handler runs and sets `error = "Failed to load dashboard metrics"`.
+3. The dashboard renders an error banner rather than displaying the available revenue card.
 
-### Expected Behavior
-Use `Promise.allSettled` or individual try/catch blocks so successful metrics are displayed with an isolated fallback banner for the degraded service.
+### Expected Behaviour
+The component should use `Promise.allSettled` to independently evaluate each endpoint, displaying revenue metrics even if health checks fail.
 
-### Actual Behavior
-All-or-nothing `Promise.all` fails completely on single endpoint errors.
+### Actual Behaviour
+A single endpoint failure causes all dashboard widgets to collapse into an error state, hiding data from healthy services.
 
-### Impact
-Total service interruption on dashboard when non-critical endpoints fail.
+### Starter Files
+- `MetricsDashboard.jsx`: Dashboard component using fail-fast `Promise.all` for parallel queries.
 
-### Requirements
-- Use `Promise.allSettled` to independently evaluate each endpoint result.
+### Task
+Refactor `MetricsDashboard.jsx` to retrieve dashboard metrics independently so that healthy widgets display their data even if sibling endpoints fail.
+
+### Acceptance Criteria
+1. Available metrics render successfully even when some endpoints fail.
+2. Failing widgets display individual error notices without breaking the entire view.
+3. Partial system degradations preserve visible operational metrics.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
 """,
         'files': [{
             'name': 'MetricsDashboard.jsx',
@@ -794,12 +927,14 @@ export default function MetricsDashboard({ fetchRevenue, fetchHealth }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Uses Promise.allSettled for resilient data fetching', 'input': '', 'expected': 'Promise.allSettled'}
+            {'id': 1, 'name': 'Uses Promise.allSettled for resilient data fetching', 'input': '', 'expected': 'Promise.allSettled'}
         ],
         'bug_signature': 'Promise.all([fetchRevenue(), fetchHealth()])',
         'suspected_component': 'MetricsDashboard.jsx',
         'ai_suggestions': [
-            'Handle partial API failures gracefully by allowing independent endpoints to settle without aborting sibling data.'
+            '`Promise.all` rejects immediately if any single promise fails, which is inappropriate for dashboards composed of independent widgets.',
+            'Use `Promise.allSettled` to inspect the settlement status (`status === "fulfilled"`) of each call independently.',
+            'Replace `Promise.all` with `Promise.allSettled` and extract `results[0].value` and `results[1].value` when fulfilled.'
         ],
         'topics': ['React', 'Async', 'Promise.allSettled', 'Resilience'],
         'skills_tested': ['React', 'Frontend'],
@@ -810,34 +945,46 @@ export default function MetricsDashboard({ fetchRevenue, fetchHealth }) {
     # 106. Frontend cache displays outdated profile information
     challenges.append({
         'id': 106,
-        'title': '[FE-M11] Frontend Cache Displays Outdated Profile Information',
+        'title': 'Profile Settings Card Displays Cached Name Following Successful Save',
         'difficulty': 'Medium',
         'technology': 'React',
         'category': 'Caching',
         'time_estimate': '15 mins',
         'points': 200,
-        'description': """### Company Scenario
-A social networking platform caches user profile payloads in an in-memory map to reduce redundant API roundtrips.
+        'description': """### Incident Report
+Users changing their display name in account preferences reported that after seeing a green "Saved successfully" toast notification, their old name continued to appear whenever they navigated back to their profile overview. The stale name persisted until they performed a hard browser cache refresh.
 
 ### Bug Report
-When a user updates their profile name and clicks "Save", the update API returns 200 OK. However, navigating back to their profile view still displays their old name until the page is hard refreshed.
+In `ProfileCache.jsx`, the component maintains an in-memory client `cache` map to minimize redundant HTTP fetches. In `handleUpdateName`, the API call updates the backend and local state, but fails to update or invalidate the cached entry in `cache`. When the component re-mounts, it reads the stale name from `cache.get(userId)`.
 
 ### Steps to Reproduce
-1. In `ProfileCache.jsx`, save an updated name via `handleUpdateName`.
-2. Notice the code calls `api.updateName(newName)`, but never invalidates or updates the `cache` entry for `userId`.
-3. Subsequent reads from `cache.get(userId)` return the old profile object.
+1. Render `ProfileCache.jsx` with a populated cache entry for `userId`.
+2. Type a new name and click "Save".
+3. Notice that `cache.get(userId)` still returns the previous name because the cache was not updated.
 
-### Expected Behavior
-After a successful update, the cache entry must be invalidated or updated with the new profile data.
+### Expected Behaviour
+Following a successful update, the client cache must be synchronized with the new profile data via `cache.set(userId, updated)`.
 
-### Actual Behavior
-The cache is not mutated or cleared, leading to stale reads.
+### Actual Behaviour
+The component updates its local React state but leaves the stale entry in the shared cache.
 
-### Impact
-Users repeatedly submit duplicate update requests thinking their changes were lost.
+### Starter Files
+- `ProfileCache.jsx`: Profile component utilizing a shared client-side cache without cache synchronization.
 
-### Requirements
-- Update `cache.set(userId, updated)` or delete `cache.delete(userId)` after saving.
+### Task
+Update `handleUpdateName` in `ProfileCache.jsx` to update the cache entry using `cache.set(userId, updated)` following a successful API call.
+
+### Acceptance Criteria
+1. The cache is updated with `cache.set(userId, updated)`.
+2. Subsequent cache reads return the newly saved profile data.
+3. Display state and cache remain in sync.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
 """,
         'files': [{
             'name': 'ProfileCache.jsx',
@@ -870,12 +1017,14 @@ export default function ProfileCache({ userId, api, cache }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Updates or deletes the cache entry on save', 'input': '', 'expected': 'cache.set(userId'}
+            {'id': 1, 'name': 'Updates or deletes the cache entry on save', 'input': '', 'expected': 'cache.set(userId'}
         ],
         'bug_signature': '',
         'suspected_component': 'ProfileCache.jsx',
         'ai_suggestions': [
-            'Add `cache.set(userId, updated);` after updating the profile state.'
+            'Client-side caches must be updated or invalidated whenever mutation requests succeed.',
+            'Inspect `handleUpdateName`: it updates local state `setProfile(updated)` but forgets to update the shared `cache` instance.',
+            'Add `cache.set(userId, updated);` immediately after obtaining the updated profile from the API.'
         ],
         'topics': ['React', 'Caching', 'Cache Invalidation'],
         'skills_tested': ['React', 'Frontend'],
@@ -886,34 +1035,45 @@ export default function ProfileCache({ userId, api, cache }) {
     # 107. Component submits duplicate requests after repeated clicks
     challenges.append({
         'id': 107,
-        'title': '[FE-M12] Component Submits Duplicate Requests After Repeated Clicks',
+        'title': 'Food Ordering Form Executes Duplicate Payments on Double Click',
         'difficulty': 'Medium',
         'technology': 'React',
         'category': 'Form Submission',
         'time_estimate': '15 mins',
         'points': 200,
-        'description': """### Company Scenario
-A food delivery app features an "Order Now" checkout button.
+        'description': """### Incident Report
+A high-volume food delivery app received customer complaints regarding double billing. Impatient diners frequently double-clicked the "Place Order" button during checkout, causing two identical orders to be processed concurrently and billing the customer's credit card twice for the same meal.
 
 ### Bug Report
-Impatient users double-click the "Place Order" button. The server receives two parallel order requests and charges the customer twice for the same meal!
+In `SubmitButton.jsx`, the button element lacks a `disabled={isSubmitting}` attribute. Furthermore, `handleSubmit` does not check whether an existing submission is already in flight. Multiple rapid clicks initiate parallel network requests.
 
 ### Steps to Reproduce
-1. In `SubmitButton.jsx`, observe the `handleSubmit` click handler.
-2. The button lacks a `disabled` attribute tied to `isSubmitting`, and `handleSubmit` does not check if a submission is already pending.
+1. In `SubmitButton.jsx`, click "Place Order" twice in rapid succession.
+2. Notice that the button remains clickable while `isSubmitting` is true.
+3. Observe that `onOrder` is invoked twice.
 
-### Expected Behavior
-The button must be disabled when `isSubmitting` is true (`disabled={isSubmitting}`), and `handleSubmit` must guard against re-entry.
+### Expected Behaviour
+While an order submission is in progress, the button must be disabled (`disabled={isSubmitting}`) and `handleSubmit` must prevent re-entrant execution.
 
-### Actual Behavior
-Button stays clickable during the async network request.
+### Actual Behaviour
+The button remains active throughout the network call, permitting duplicate submissions.
 
-### Impact
-Duplicate financial transactions and customer chargeback disputes.
+### Starter Files
+- `SubmitButton.jsx`: Order button component lacking disable attribute and submission guard.
 
-### Requirements
-- Set `disabled={isSubmitting}` on `<button>`.
-- Check `if (isSubmitting) return;` at the start of `handleSubmit`.
+### Task
+Update `SubmitButton.jsx` to disable the button when `isSubmitting` is true (`disabled={isSubmitting}`) and add a guard `if (isSubmitting) return;` at the beginning of `handleSubmit`.
+
+### Acceptance Criteria
+1. The `<button>` element includes `disabled={isSubmitting}`.
+2. `handleSubmit` guards against re-entry if `isSubmitting` is already true.
+3. Double-clicking the button triggers only a single submission.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Form submissions containing empty or whitespace-only inputs must be rejected with appropriate field errors.
+- In-flight submissions must lock the submission trigger to prevent duplicate submissions.
+- Inputs must maintain controlled component state across multi-step flows.
 """,
         'files': [{
             'name': 'SubmitButton.jsx',
@@ -944,13 +1104,14 @@ export default function SubmitButton({ onOrder }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Disables button when isSubmitting is true', 'input': '', 'expected': 'disabled={isSubmitting}'}
+            {'id': 1, 'name': 'Disables button when isSubmitting is true', 'input': '', 'expected': 'disabled={isSubmitting}'}
         ],
         'bug_signature': '',
         'suspected_component': 'SubmitButton.jsx',
         'ai_suggestions': [
-            'Inspect button attributes during pending states: prevent double submissions by disabling the action element.',
-            'Add `if (isSubmitting) return;` at the start of `handleSubmit`.'
+            'Prevent duplicate form submissions by disabling buttons and checking pending state flags.',
+            'Look at the `<button>` element props: it currently lacks a `disabled` attribute.',
+            'Add `disabled={isSubmitting}` to `<button>` and prepend `if (isSubmitting) return;` inside `handleSubmit`.'
         ],
         'topics': ['React', 'Forms', 'Debounce', 'Double Submission'],
         'skills_tested': ['React', 'Frontend'],
@@ -961,34 +1122,46 @@ export default function SubmitButton({ onOrder }) {
     # 108. Date picker displays incorrect date due to timezone conversion
     challenges.append({
         'id': 108,
-        'title': '[FE-M13] Date Picker Displays Incorrect Date Due to Timezone Offset',
+        'title': 'Hotel Reservation Calendar Shifts Selected Check-In Date Backwards',
         'difficulty': 'Medium',
         'technology': 'React',
         'category': 'Date & Time',
         'time_estimate': '15 mins',
         'points': 200,
-        'description': """### Company Scenario
-A hotel booking system displays selected check-in and check-out dates.
+        'description': """### Incident Report
+Hotel guests booking vacation rooms from North and South America reported arriving at hotels to find their reservations were booked for the wrong day. A guest who explicitly clicked "October 15, 2026" on the calendar widget discovered that their confirmed booking showed "October 14, 2026", resulting in denied check-ins and angry guests.
 
 ### Bug Report
-Users in the Americas (e.g. UTC-5, UTC-8) select "October 15, 2026" on the calendar. After selecting, the confirmation text shows "October 14, 2026"—one day behind!
+In `DatePicker.jsx`, `handleDateChange` receives a string formatted as `"2026-10-15"`. It parses this string via `new Date(dateString)` and formats it using `d.toISOString().split('T')[0]`. In Western timezones (e.g. UTC-5), midnight local time parses as the previous day at 7:00 PM or 8:00 PM UTC, causing `toISOString()` to roll the calendar date backward by one full day.
 
 ### Steps to Reproduce
-1. In `DatePicker.jsx`, `new Date("2026-10-15")` parses the string at midnight UTC.
-2. In America/New_York (UTC-4), midnight UTC corresponds to 8:00 PM on October 14.
-3. Calling `date.getDate()` or `toISOString()` renders October 14 instead of October 15.
+1. Render `DatePicker.jsx` in a browser configured with a negative UTC offset (e.g. US/Eastern).
+2. Select `"2026-10-15"`.
+3. Observe that `selectedDate` outputs `"2026-10-14"`.
 
-### Expected Behavior
-Format dates using local components or parse without midnight UTC shifting (e.g. `dateString.split('-')` or `new Date(year, month - 1, day)`).
+### Expected Behaviour
+The selected calendar date string (`"YYYY-MM-DD"`) provided by the HTML5 date input must be used directly without passing through timezone-shifting UTC conversions.
 
-### Actual Behavior
-Converts through `new Date(isoDateString).toISOString().split('T')[0]`, shifting timezone by negative UTC offset.
+### Actual Behaviour
+Constructing a `Date` object and converting back to ISO string shifts the date backward in negative timezones.
 
-### Impact
-Guests book rooms for the wrong night, causing booking errors and lost revenue.
+### Starter Files
+- `DatePicker.jsx`: Date picker component with erroneous Date constructor UTC serialization.
 
-### Requirements
-- Parse date inputs using local calendar date parts to avoid unexpected timezone shifts.
+### Task
+Update `handleDateChange` in `DatePicker.jsx` to directly pass and store the raw `dateString` (`setSelectedDate(dateString); onSelect(dateString);`) without constructing a timezone-sensitive `Date` object.
+
+### Acceptance Criteria
+1. The raw `dateString` is stored and propagated directly.
+2. No timezone date shifting occurs across different client timezones.
+3. The selected date displays identically to the chosen calendar date.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
 """,
         'files': [{
             'name': 'DatePicker.jsx',
@@ -1017,12 +1190,14 @@ export default function DatePicker({ onSelect }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Retains raw dateString without UTC shifting', 'input': '', 'expected': 'setSelectedDate(dateString)'}
+            {'id': 1, 'name': 'Retains raw dateString without UTC shifting', 'input': '', 'expected': 'setSelectedDate(dateString)'}
         ],
         'bug_signature': 'const d = new Date(dateString);\n    const formatted = d.toISOString().split(\'T\')[0];\n    setSelectedDate(formatted);',
         'suspected_component': 'DatePicker.jsx',
         'ai_suggestions': [
-            'Directly use `setSelectedDate(dateString); onSelect(dateString);` since `<input type="date">` already provides `YYYY-MM-DD`.'
+            'Native HTML date inputs (`<input type="date">`) already supply clean `"YYYY-MM-DD"` formatted date strings.',
+            'Constructing `new Date("YYYY-MM-DD")` and converting to ISO string shifts dates backwards in timezones west of UTC.',
+            'Directly use `setSelectedDate(dateString); onSelect(dateString);` without parsing into a `Date` object.'
         ],
         'topics': ['React', 'Dates', 'Timezones'],
         'skills_tested': ['React', 'Frontend'],
@@ -1033,34 +1208,45 @@ export default function DatePicker({ onSelect }) {
     # 109. Form does not preserve server validation errors
     challenges.append({
         'id': 109,
-        'title': '[FE-M14] Form Does Not Preserve Field-Level Server Validation Errors',
+        'title': 'Workspace Signup Form Conceals Field-Level Validation Errors',
         'difficulty': 'Medium',
         'technology': 'React',
         'category': 'Form Validation',
         'time_estimate': '15 mins',
         'points': 200,
-        'description': """### Company Scenario
-A SaaS account creation form validates workspace subdomain and company tax ID on the backend.
+        'description': """### Incident Report
+Marketing and product teams identified a sharp drop in enterprise signup completions. When prospective clients attempted to create a workspace with an unavailable subdomain name, the backend responded with HTTP 422 and a detailed error message. However, the registration form wiped out all context and displayed only a vague "Submission failed" banner, leaving users unable to determine what went wrong.
 
 ### Bug Report
-When submitting with a taken subdomain, the backend returns HTTP 422: `{ errors: { subdomain: "Subdomain already in use" } }`. The frontend replaces the entire form with a generic message `"An error occurred"` rather than highlighting the `subdomain` field with its specific server error message.
+In `ServerErrorForm.jsx`, the catch handler catches the submission error but only executes `setGeneralError('Submission failed')`. It ignores the field-level errors provided in `err.response.data.errors`, preventing the input-specific error message (`fieldErrors.subdomain`) from rendering.
 
 ### Steps to Reproduce
-1. In `ServerErrorForm.jsx`, simulate a 422 response with `err.response.data.errors`.
-2. Notice `catch (err)` discards `err.response.data.errors` and sets a single string error.
-3. No field-specific error messages are rendered next to the offending input.
+1. Submit a taken subdomain in `ServerErrorForm.jsx` that rejects with `{ response: { data: { errors: { subdomain: 'Subdomain already in use' } } } }`.
+2. Observe that only the generic error "Submission failed" appears.
+3. The specific subdomain error text is never displayed beneath the input.
 
-### Expected Behavior
-Catch block must inspect `err.response?.data?.errors` and store them in `fieldErrors` state (`setFieldErrors(err.response.data.errors)`).
+### Expected Behaviour
+The catch handler must inspect `err.response?.data?.errors` and pass them to `setFieldErrors` so that specific validation messages appear next to invalid inputs.
 
-### Actual Behavior
-Wipes out detailed field-level error messages in favor of a vague banner.
+### Actual Behaviour
+Field-specific error structures are discarded in favor of a generic string message.
 
-### Impact
-Users cannot tell which field was invalid or how to fix it, abandoning signup.
+### Starter Files
+- `ServerErrorForm.jsx`: Form component discarding field-level API error responses.
 
-### Requirements
-- Set `setFieldErrors(err.response?.data?.errors || {})` inside the catch handler.
+### Task
+Update `handleSubmit` in `ServerErrorForm.jsx` to populate `setFieldErrors(err.response?.data?.errors || {})` inside the catch block.
+
+### Acceptance Criteria
+1. The catch block extracts `err.response?.data?.errors`.
+2. `setFieldErrors` is populated with the field error map.
+3. The specific error message is displayed beneath the subdomain input field.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Form submissions containing empty or whitespace-only inputs must be rejected with appropriate field errors.
+- In-flight submissions must lock the submission trigger to prevent duplicate submissions.
+- Inputs must maintain controlled component state across multi-step flows.
 """,
         'files': [{
             'name': 'ServerErrorForm.jsx',
@@ -1106,12 +1292,14 @@ export default function ServerErrorForm({ onSubmit }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Populates fieldErrors from server error response', 'input': '', 'expected': 'setFieldErrors(err.response'}
+            {'id': 1, 'name': 'Populates fieldErrors from server error response', 'input': '', 'expected': 'setFieldErrors(err.response'}
         ],
         'bug_signature': '} catch (err) {\n      setGeneralError(\'Submission failed\');\n    }',
         'suspected_component': 'ServerErrorForm.jsx',
         'ai_suggestions': [
-            'In the `catch` block, add `if (err.response?.data?.errors) setFieldErrors(err.response.data.errors);`.'
+            'API validation errors (HTTP 422) provide structured per-field error maps that should be routed to their respective form inputs.',
+            'Check `err.response?.data?.errors` inside the catch block.',
+            'Add `if (err.response?.data?.errors) setFieldErrors(err.response.data.errors);`.'
         ],
         'topics': ['React', 'Forms', 'Validation', 'Error Handling'],
         'skills_tested': ['React', 'Frontend'],
@@ -1122,34 +1310,45 @@ export default function ServerErrorForm({ onSubmit }) {
     # 110. Accessible dropdown fails to manage keyboard navigation correctly
     challenges.append({
         'id': 110,
-        'title': '[FE-M15] Accessible Dropdown Fails to Close on Escape Key',
+        'title': 'Accessible Selection Menu Traps Keyboard Focus by Ignoring Escape',
         'difficulty': 'Medium',
         'technology': 'React',
         'category': 'Accessibility',
         'time_estimate': '15 mins',
         'points': 200,
-        'description': """### Company Scenario
-An enterprise banking application requires compliance with WCAG 2.1 AA accessibility guidelines.
+        'description': """### Incident Report
+During a mandatory Section 508 and WCAG 2.1 compliance audit for a government contractor, the web application failed automated and manual accessibility testing. Keyboard-only users opening the custom dropdown menu were trapped inside the listbox because pressing the Escape key had no effect.
 
 ### Bug Report
-When a blind or motor-impaired user opens a custom dropdown menu using keyboard navigation, pressing the "Escape" key does not close the dropdown menu, trapping focus and violating accessibility standards.
+In `AccessibleDropdown.jsx`, the keyboard listener `handleKeyDown` handles `'Enter'` and `' '` (Space) to toggle the menu, but completely omits a handler for `e.key === 'Escape'`. When the dropdown is open, pressing Escape does not close it.
 
 ### Steps to Reproduce
-1. In `AccessibleDropdown.jsx`, open the dropdown.
+1. Render `AccessibleDropdown.jsx` and open the menu by pressing Space or clicking the button.
 2. Press the Escape key.
-3. The dropdown remains open because `handleKeyDown` ignores `e.key === 'Escape'`.
+3. Observe that the dropdown remains open and focus is trapped.
 
-### Expected Behavior
-When `e.key === 'Escape'` is pressed, `setIsOpen(false)` must be called to dismiss the dropdown.
+### Expected Behaviour
+Pressing the Escape key while the dropdown is open must dismiss the menu by calling `setIsOpen(false)`.
 
-### Actual Behavior
-`handleKeyDown` ignores the Escape key.
+### Actual Behaviour
+The keydown handler ignores the Escape key, leaving the menu open.
 
-### Impact
-Fails WCAG 2.1 AA audit, blocking users who rely on assistive technologies.
+### Starter Files
+- `AccessibleDropdown.jsx`: Custom dropdown component lacking Escape key handler.
 
-### Requirements
-- Add `if (e.key === 'Escape') setIsOpen(false);` in `handleKeyDown`.
+### Task
+Update `handleKeyDown` in `AccessibleDropdown.jsx` to check if `e.key === 'Escape'` and dismiss the dropdown with `setIsOpen(false)`.
+
+### Acceptance Criteria
+1. `handleKeyDown` checks `if (e.key === 'Escape')`.
+2. When Escape is pressed, `setIsOpen(false)` is invoked.
+3. The menu closes cleanly without disturbing selection state.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Global event listeners (`keydown`, `resize`, event bus subscriptions) must be detached in the `useEffect` cleanup return callback.
+- Viewport layouts must scale responsively across mobile (`375px`) and desktop (`1440px`) breakpoints without horizontal overflow.
+- Keyboard interactions (such as Escape key dismissal) must close open overlays reliably.
 """,
         'files': [{
             'name': 'AccessibleDropdown.jsx',
@@ -1199,12 +1398,14 @@ export default function AccessibleDropdown({ options = [], onSelect }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Closes dropdown when Escape key is pressed', 'input': '', 'expected': "e.key === 'Escape'"}
+            {'id': 1, 'name': 'Closes dropdown when Escape key is pressed', 'input': '', 'expected': "e.key === 'Escape'"}
         ],
         'bug_signature': 'const handleKeyDown = (e) => {\n    if (e.key === \'Enter\' || e.key === \' \') {',
         'suspected_component': 'AccessibleDropdown.jsx',
         'ai_suggestions': [
-            'Add `if (e.key === "Escape") { setIsOpen(false); }` inside `handleKeyDown`.'
+            'WCAG criteria require custom dropdowns and dialogs to be dismissable via the standard Escape key.',
+            'Examine `handleKeyDown`: it currently only checks for Enter and Space.',
+            'Add `if (e.key === "Escape") setIsOpen(false);` inside `handleKeyDown`.'
         ],
         'topics': ['React', 'Accessibility', 'WCAG', 'Keyboard Events'],
         'skills_tested': ['React', 'Frontend'],

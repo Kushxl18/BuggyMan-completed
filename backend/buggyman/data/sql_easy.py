@@ -5,39 +5,48 @@ SQL Lab: Easy Challenges (51 to 60)
 def get_sql_easy():
     challenges = []
 
-    # 51. Customer report excludes records containing NULL values
+    # 51. Marketing contact export omits customers with unset preferences
     challenges.append({
         'id': 51,
-        'title': '[SQL-E01] Customer Report Excludes Records Containing NULL Values',
+        'title': 'Marketing Contact Export Omits Customers With Unset Preferences',
         'difficulty': 'Easy',
         'technology': 'SQL',
         'category': 'Filtering',
         'time_estimate': '10 mins',
         'points': 100,
-        'description': """### Company Scenario
-A customer success team generates a contact list of all registered clients who have not opted out of marketing updates (`opt_out = 0` or NULL).
+        'description': """### Incident Report
+"Marketing operations reported that nearly half of their customer contact list vanished from automated email campaign exports after a database migration introduced optional preference fields."
 
 ### Bug Report
-Customers whose opt-out preference is unset (stored as `NULL` in the database) are completely missing from the campaign export.
+The contact export query fails to include customers whose marketing communication preferences have not been explicitly populated in the database.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Observe only customers with explicit `opt_out = 0` are returned.
-3. Customers with `opt_out IS NULL` are omitted.
+1. Inspect the contact table containing active customers with both explicit opt-out flags and unset preferences.
+2. Execute `query.sql`.
+3. Compare the number of exported contacts against eligible customer accounts.
+4. Observe that customers with unset preferences are absent from the export results.
 
-### Expected Behavior
-Include both `opt_out = 0` and `opt_out IS NULL`.
+### Expected Behaviour
+Return all customers who have not opted out (i.e. those where `opt_out` is `0` or unset/null), including `id`, `name`, and `email`, ordered by `id`.
 
-### Actual Behavior
-Clients whose opt-out preference is unset evaluate to UNKNOWN under direct inequality comparisons and are omitted.
+### Actual Behaviour
+Customers with unpopulated preference values are excluded from the exported query results.
 
-### Impact
-Over 40% of the customer base is omitted from critical service announcements.
+### Starter Files
+`query.sql` - Extracts eligible marketing contact records from the customer table.
+`schema.sql` - Table definitions and seed data for customer communication preferences.
 
-### Requirements
-- Update `query.sql` to select `id`, `name`, and `email` for all clients who have not explicitly chosen to opt out of marketing updates.
-- Clients whose preference is unset (NULL) must be included in the export.
-""",
+### Task
+Modify `query.sql` to include customers who have not explicitly opted out.
+
+### Acceptance Criteria
+1. Returns `id`, `name`, and `email` for all customers whose opt-out status is not `1`.
+2. Results are ordered by `id` ascending.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Handles `NULL` attribute values according to standard SQL three-valued logic.
+- Column projections must match: `id`, `name`, `email`.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -60,13 +69,14 @@ INSERT INTO customers VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Includes NULL and 0 opt-out records', 'input': '', 'expected': 'Customers including opt_out=0 and opt_out IS NULL'}
+            {'id': 1, 'name': 'Includes NULL and 0 opt-out records', 'input': '', 'expected': 'Customers including opt_out=0 and opt_out IS NULL'}
         ],
         'bug_signature': 'WHERE opt_out != 1',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'In SQL, `NULL != 1` evaluates to UNKNOWN, not TRUE.',
-            'Change to `WHERE opt_out = 0 OR opt_out IS NULL` or `WHERE COALESCE(opt_out, 0) != 1`.'
+            'In SQL three-valued logic, comparing NULL against any value using `=` or `!=` evaluates to UNKNOWN rather than TRUE.',
+            'Examine the WHERE clause in `query.sql` and consider how unset database values behave under standard inequality.',
+            'Use an explicit `IS NULL` check (e.g. `opt_out = 0 OR opt_out IS NULL`) or `COALESCE` to handle missing values.'
         ],
         'topics': ['SQL', 'NULL Handling', 'Three-Valued Logic'],
         'skills_tested': ['SQL', 'Database'],
@@ -75,38 +85,48 @@ INSERT INTO customers VALUES
         'expected_query': 'SELECT id, name, email FROM customers WHERE opt_out = 0 OR opt_out IS NULL ORDER BY id;'
     })
 
-    # 52. Monthly revenue report uses the wrong date boundary
+    # 52. Monthly revenue report truncates final day orders
     challenges.append({
         'id': 52,
-        'title': '[SQL-E02] Monthly Revenue Report Uses the Wrong Date Boundary',
+        'title': 'Monthly Revenue Report Truncates Final Day Orders',
         'difficulty': 'Easy',
         'technology': 'SQL',
         'category': 'Filtering',
         'time_estimate': '10 mins',
         'points': 100,
-        'description': """### Company Scenario
-A finance team generates the October 2026 revenue statement.
+        'description': """### Incident Report
+"Finance reported an accounting discrepancy where October revenue was under-reported by thousands of dollars compared to bank merchant statements."
 
 ### Bug Report
-Transactions processed on October 31st at 18:30 are missing from the report, under-reporting monthly revenue by $15,000!
+The monthly revenue calculation excludes transactions executed during the afternoon and evening hours of the month's final day.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `WHERE order_date BETWEEN '2026-10-01' AND '2026-10-31'`.
-3. Datetime values on October 31st (e.g. `'2026-10-31 18:30:00'`) are excluded because `'2026-10-31'` evaluates to `'2026-10-31 00:00:00'`.
+1. Ingest orders placed throughout the month of October, including afternoon transactions on October 31st.
+2. Execute `query.sql`.
+3. Compare the calculated revenue against total order amounts recorded for October.
+4. Observe that late-day transactions on October 31st are omitted from the calculated sum.
 
-### Expected Behavior
-Include all transactions belonging to the calendar month of October 2026, including orders placed on October 31st with non-zero timestamps.
+### Expected Behaviour
+Aggregate all order amounts falling between the start of October 1st and the start of November 1st: `SELECT SUM(amount) AS total_revenue ...`.
 
-### Actual Behavior
-BETWEEN with date-only string cuts off the final day at midnight.
+### Actual Behaviour
+Date range filtering truncates transactions placed on the final calendar day of the reporting period.
 
-### Impact
-Incorrect revenue reported to investors and fiscal regulators.
+### Starter Files
+`query.sql` - Calculates monthly revenue totals from the orders table.
+`schema.sql` - Schema definitions and seed transactions.
 
-### Requirements
-- Ensure query.sql includes all orders placed within the calendar month of October 2026, capturing transactions through the end of October 31st.
-""",
+### Task
+Update the date boundary filter in `query.sql` to capture all transactions through the entire month.
+
+### Acceptance Criteria
+1. Calculates total revenue across all October orders.
+2. Output column is aliased as `total_revenue`.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Timestamps include ISO date and time components (`YYYY-MM-DD HH:MM:SS`).
+- Output column alias must be `total_revenue`.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -128,13 +148,14 @@ INSERT INTO orders VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Total includes October 31st afternoon order', 'input': '', 'expected': 'Total revenue sum including October 31st afternoon transactions'}
+            {'id': 1, 'name': 'Total includes October 31st afternoon order', 'input': '', 'expected': 'Total revenue sum including October 31st afternoon transactions'}
         ],
         'bug_signature': "BETWEEN '2026-10-01' AND '2026-10-31'",
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Avoid `BETWEEN` for datetimes.',
-            'Consider using half-open time intervals to ensure all timestamps on the terminal day are captured.'
+            'Using `BETWEEN` on datetime columns with date-only literals truncates the end date to midnight (00:00:00).',
+            'Consider how half-open intervals (`>= start` and `< next_period_start`) cleanly capture full time spans.',
+            'Filter with `order_date >= \'2026-10-01\' AND order_date < \'2026-11-01\'` to capture all timestamps throughout October 31st.'
         ],
         'topics': ['SQL', 'Dates', 'Half-Open Intervals'],
         'skills_tested': ['SQL', 'Database'],
@@ -143,38 +164,49 @@ INSERT INTO orders VALUES
         'expected_query': "SELECT SUM(amount) AS total_revenue FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01';"
     })
 
-    # 53. Product search filters the wrong status
+    # 53. Public storefront search displays obsolete archived products
     challenges.append({
         'id': 53,
-        'title': '[SQL-E03] Product Search Filters the Wrong Status',
+        'title': 'Public Storefront Search Displays Obsolete Archived Products',
         'difficulty': 'Easy',
         'technology': 'SQL',
         'category': 'Filtering',
         'time_estimate': '10 mins',
         'points': 100,
-        'description': """### Company Scenario
-An online catalog displays currently available products to customers.
+        'description': """### Incident Report
+"Store managers reported that customers were purchasing discontinued items that had been archived years ago, while current catalog items were missing from storefront search."
 
 ### Bug Report
-Items that are archived or pending approval appear in customer search, while in-stock active items are hidden.
+The catalog search query inverts inventory availability filters, returning obsolete and discontinued products instead of active store inventory.
 
 ### Steps to Reproduce
-1. Query in `query.sql` uses `WHERE status = 'archived'`.
-2. Active products are excluded.
+1. Inspect the product catalog containing active and archived items.
+2. Execute `query.sql`.
+3. Inspect the returned product records.
+4. Observe that archived items are displayed while active items are missing.
 
-### Expected Behavior
-Filter specifically for `status = 'active'`.
+### Expected Behaviour
+Return `id`, `name`, and `price` for all products whose status is `'active'`, ordered by `name` ascending.
 
-### Actual Behavior
-Filters for `status = 'archived'`.
+### Actual Behaviour
+The query selects products with archived status, exposing discontinued catalog items.
 
-### Impact
-Customers cannot purchase active inventory; archived obsolete items are erroneously ordered.
+### Starter Files
+`query.sql` - Searches and filters active merchandise catalog products.
+`schema.sql` - Product catalog schema and seed inventory items.
 
-### Requirements
-- Ensure query.sql filters exclusively for active catalog products.
-- Sort active products in ascending alphabetical order by product name.
-""",
+### Task
+Update `query.sql` to return active inventory products.
+
+### Acceptance Criteria
+1. Only products with `status = 'active'` are returned.
+2. Projected columns: `id`, `name`, `price`.
+3. Rows are ordered alphabetically by `name` ascending.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Price values preserve decimal precision.
+- Result ordering must be alphabetical by `name`.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -196,12 +228,14 @@ INSERT INTO products VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Returns active products ordered by name', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
+            {'id': 1, 'name': 'Returns active products ordered by name', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': "WHERE status = 'archived'",
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Verify the status predicate in the WHERE clause matches active products rather than archived inventory.'
+            'Database status flags distinguish between obsolete records and active inventory.',
+            'Examine the literal string checked in the WHERE clause of `query.sql`.',
+            'Update the predicate to `WHERE status = \'active\'`.'
         ],
         'topics': ['SQL', 'Filtering'],
         'skills_tested': ['SQL', 'Database'],
@@ -210,38 +244,49 @@ INSERT INTO products VALUES
         'expected_query': "SELECT id, name, price FROM products WHERE status = 'active' ORDER BY name ASC;"
     })
 
-    # 54. An INNER JOIN removes customers without orders
+    # 54. User roster omits newly registered customers without orders
     challenges.append({
         'id': 54,
-        'title': '[SQL-E04] An INNER JOIN Removes Customers Without Orders',
+        'title': 'User Roster Omits Newly Registered Customers Without Orders',
         'difficulty': 'Easy',
         'technology': 'SQL',
         'category': 'Joins',
         'time_estimate': '10 mins',
         'points': 100,
-        'description': """### Company Scenario
-A customer marketing team wants a complete user roster showing their order counts, including new users who haven't placed an order yet.
+        'description': """### Incident Report
+"The customer onboarding team noticed that new users who registered but had not yet made a purchase were completely missing from onboarding follow-up lists."
 
 ### Bug Report
-New users (0 orders) are completely omitted from the user roster!
+The customer roster query drops accounts that have no recorded order history, preventing customer success teams from reaching out to newly registered users.
 
 ### Steps to Reproduce
-1. Customer "Charlie" registered yesterday and has 0 orders.
-2. Query in `query.sql` uses `INNER JOIN orders`.
-3. Charlie is omitted from the result set.
+1. Ingest registered customers where some accounts have zero recorded purchase orders.
+2. Execute `query.sql`.
+3. Compare the returned customer list against the full user registration directory.
+4. Observe that registered customers with no order history are omitted.
 
-### Expected Behavior
-All customers must appear. Customers without orders should show `order_id = NULL` or `0` orders.
+### Expected Behaviour
+Return all registered customers alongside their associated order ID (or `NULL` if no orders exist), ordered by `id` ascending.
 
-### Actual Behavior
-`INNER JOIN` drops customers who have no matching rows in the `orders` table.
+### Actual Behaviour
+Registered customers without order transactions are excluded from the result set.
 
-### Impact
-Customer onboarding emails are not triggered for new signups who haven't bought yet.
+### Starter Files
+`query.sql` - Generates customer onboarding rosters joined with purchase orders.
+`schema.sql` - Customer accounts and order transaction tables.
 
-### Requirements
-- Change `INNER JOIN` to `LEFT JOIN` to preserve all customers.
-""",
+### Task
+Update table joins in `query.sql` to retain all registered customers regardless of order history.
+
+### Acceptance Criteria
+1. Projected columns: `c.id`, `c.name`, `order_id`.
+2. Customers without orders display `NULL` for `order_id`.
+3. Rows are ordered by `c.id` ascending.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Output preserves all primary customer records.
+- Column aliases: `c.id`, `c.name`, `order_id`.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -265,12 +310,14 @@ INSERT INTO orders VALUES (101, 1, 50.00), (102, 2, 75.00);"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: LEFT JOIN includes Charlie with NULL order_id', 'input': '', 'expected': 'All customers with order IDs or NULL if no orders'}
+            {'id': 1, 'name': 'LEFT JOIN includes Charlie with NULL order_id', 'input': '', 'expected': 'All customers with order IDs or NULL if no orders'}
         ],
         'bug_signature': 'INNER JOIN orders o',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Consider what join type preserves rows from the left table when no corresponding row exists in the right table.'
+            'An INNER JOIN requires matches on both sides of the join condition, omitting unmatched left-table rows.',
+            'Consider which relational join type preserves all rows from the primary table even when no foreign key match exists.',
+            'Change `INNER JOIN` to `LEFT JOIN` (or `LEFT OUTER JOIN`).'
         ],
         'topics': ['SQL', 'Joins', 'LEFT JOIN'],
         'skills_tested': ['SQL', 'Database'],
@@ -279,38 +326,49 @@ INSERT INTO orders VALUES (101, 1, 50.00), (102, 2, 75.00);"""
         'expected_query': 'SELECT c.id, c.name, o.id AS order_id FROM customers c LEFT JOIN orders o ON c.id = o.customer_id ORDER BY c.id;'
     })
 
-    # 55. A GROUP BY query calculates the wrong average
+    # 55. Department bonus metrics overstate average by excluding zero bonus staff
     challenges.append({
         'id': 55,
-        'title': '[SQL-E05] A GROUP BY Query Calculates the Wrong Average',
+        'title': 'Department Bonus Metrics Overstate Average by Excluding Zero Bonus Staff',
         'difficulty': 'Easy',
         'technology': 'SQL',
         'category': 'Aggregation',
         'time_estimate': '10 mins',
         'points': 100,
-        'description': """### Company Scenario
-An HR performance dashboard calculates the average bonus percentage awarded across departments.
+        'description': """### Incident Report
+"Executive HR leadership noticed departmental average bonus metrics were artificially inflated because employees receiving $0 bonuses were excluded from performance calculations."
 
 ### Bug Report
-Employees who received $0 bonus are omitted from the average, artificially inflating the department's bonus metric.
+The departmental bonus calculation filters out employees with zero bonus before computing averages, skewing compensation metrics upwards.
 
 ### Steps to Reproduce
-1. Department has 2 employees: Alice received 10%, Bob received 0% (or NULL).
-2. Query filters `WHERE bonus > 0` before running `AVG(bonus)`.
-3. Average returns 10% instead of true average 5%.
+1. Populate an employee table with departmental bonus data, including staff with zero bonus awards.
+2. Execute `query.sql`.
+3. Compare the reported departmental average against the true per-capita bonus average.
+4. Observe that departmental averages are overstated.
 
-### Expected Behavior
-Average must include all department employees, counting zero/missing bonus as 0.
+### Expected Behaviour
+Calculate the true average bonus across all employees in each department, ordered by department name.
 
-### Actual Behavior
-Filters out 0 values before aggregation.
+### Actual Behaviour
+Pre-filtering non-bonus recipients removes zero-value rows prior to average aggregation, biasing metrics.
 
-### Impact
-HR leadership relies on inflated compensation metrics during budget planning.
+### Starter Files
+`query.sql` - Computes departmental average compensation bonuses.
+`schema.sql` - Employee compensation and department records.
 
-### Requirements
-- Calculate the true department average bonus across all employees, accounting for employees with no bonus as 0.
-""",
+### Task
+Adjust aggregation in `query.sql` to include all departmental staff in the average bonus metric.
+
+### Acceptance Criteria
+1. Projected columns: `department`, `avg_bonus`.
+2. All staff in the department contribute to the average divisor.
+3. Results are ordered by `department` ascending.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- `avg_bonus` accurately computes arithmetic mean including zero values.
+- Grouped by `department`.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -332,12 +390,14 @@ INSERT INTO employees VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Department average includes 0% bonus', 'input': '', 'expected': 'Average metric correctly computed per group'}
+            {'id': 1, 'name': 'Department average includes 0% bonus', 'input': '', 'expected': 'Average metric correctly computed per group'}
         ],
         'bug_signature': 'WHERE bonus > 0 GROUP BY',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Remove `WHERE bonus > 0` so that employees with 0 bonus are included in the average.'
+            'Filtering rows in a WHERE clause removes them from consideration before aggregate functions like AVG are computed.',
+            'Review whether employees receiving zero bonus should be counted in the department average denominator.',
+            'Remove `WHERE bonus > 0` so that all department employees are included in `AVG(bonus)`.'
         ],
         'topics': ['SQL', 'Aggregation', 'AVG'],
         'skills_tested': ['SQL', 'Database'],
@@ -346,38 +406,49 @@ INSERT INTO employees VALUES
         'expected_query': 'SELECT department, AVG(bonus) AS avg_bonus FROM employees GROUP BY department ORDER BY department;'
     })
 
-    # 56. Duplicate email records are not detected correctly
+    # 56. Registration cleanup report flags unique accounts as duplicates
     challenges.append({
         'id': 56,
-        'title': '[SQL-E06] Duplicate Email Records Are Not Detected Correctly',
+        'title': 'Registration Cleanup Report Flags Unique Accounts as Duplicates',
         'difficulty': 'Easy',
         'technology': 'SQL',
         'category': 'Aggregation',
         'time_estimate': '10 mins',
         'points': 100,
-        'description': """### Company Scenario
-A data cleanup pipeline scans user registration databases to identify accounts sharing duplicate email addresses.
+        'description': """### Incident Report
+"Database administrators alerted that an automated cleanup script flagged every single user account in the system for duplicate account merging."
 
 ### Bug Report
-The duplicate detection script returns every single email address in the database, including unique ones!
+The duplicate account detection query identifies single-occurrence email addresses as duplicates, misclassifying unique accounts as redundant.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `HAVING COUNT(*) >= 1`.
-3. Unique accounts with count = 1 are incorrectly returned.
+1. Ingest user records containing unique email addresses alongside duplicate entries.
+2. Execute `query.sql`.
+3. Inspect the returned duplicate list.
+4. Observe that unique email addresses with count = 1 are present in the duplicate report.
 
-### Expected Behavior
-Only emails with `COUNT(*) > 1` (more than one occurrence) are duplicates.
+### Expected Behaviour
+Return only email addresses associated with more than one account record, along with their occurrence count, ordered by email.
 
-### Actual Behavior
-Uses `>= 1` which matches every single row.
+### Actual Behaviour
+Group filtering captures single-occurrence unique accounts alongside genuine duplicates.
 
-### Impact
-Unique accounts are incorrectly flagged for deletion or account merge.
+### Starter Files
+`query.sql` - Scans user records for duplicate email addresses.
+`schema.sql` - User registration table and sample accounts.
 
-### Requirements
-- Change condition to `HAVING COUNT(*) > 1`.
-""",
+### Task
+Correct the aggregation threshold in `query.sql` to isolate accounts with multiple occurrences.
+
+### Acceptance Criteria
+1. Projected columns: `email`, `count`.
+2. Only emails with `count > 1` are returned.
+3. Rows are ordered by `email` ascending.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Filter criteria evaluated post-aggregation.
+- Results sorted by `email` ascending.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -398,12 +469,14 @@ INSERT INTO users VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Only true duplicate emails returned', 'input': '', 'expected': 'Deduplicated groups satisfying having condition'}
+            {'id': 1, 'name': 'Only true duplicate emails returned', 'input': '', 'expected': 'Deduplicated groups satisfying having condition'}
         ],
         'bug_signature': 'HAVING COUNT(*) >= 1',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Review the HAVING threshold: a count >= 1 matches all records, whereas duplicates require a count strictly greater than 1.'
+            'A duplicate item in a relational table is defined by having a frequency count strictly greater than one.',
+            'Inspect the comparison operator in the `HAVING` clause of `query.sql`.',
+            'Change `COUNT(*) >= 1` to `COUNT(*) > 1`.'
         ],
         'topics': ['SQL', 'Duplicates', 'HAVING'],
         'skills_tested': ['SQL', 'Database'],
@@ -412,38 +485,48 @@ INSERT INTO users VALUES
         'expected_query': 'SELECT email, COUNT(*) AS count FROM users GROUP BY email HAVING COUNT(*) > 1 ORDER BY email;'
     })
 
-    # 57. An invoice query incorrectly rounds monetary totals
+    # 57. Customer invoice tax sum truncates fractional pennies
     challenges.append({
         'id': 57,
-        'title': '[SQL-E07] An Invoice Query Incorrectly Rounds Monetary Totals',
+        'title': 'Customer Invoice Tax Sum Truncates Fractional Pennies',
         'difficulty': 'Easy',
         'technology': 'SQL',
         'category': 'Aggregation',
         'time_estimate': '10 mins',
         'points': 100,
-        'description': """### Company Scenario
-An invoicing database computes tax totals across order line items.
+        'description': """### Incident Report
+"Billing accounting noted that customer sales tax invoices showed whole dollar integers instead of exact cents, failing automated sales tax compliance audits."
 
 ### Bug Report
-Invoices report fractional penny differences from bank statements because line items are rounded to integer dollars rather than 2 decimal places.
+The invoice sales tax calculation rounds the total tax to the nearest integer dollar, discarding fractional cents required for sales tax records.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `ROUND(SUM(subtotal * tax_rate))` without decimal argument.
-3. Totals are truncated to whole dollars.
+1. Ingest invoice items with standard decimal tax rates.
+2. Execute `query.sql`.
+3. Inspect the `total_tax` field value.
+4. Observe that decimal cent values are rounded away to zero decimal places.
 
-### Expected Behavior
-Round currency to exactly 2 decimal places: `ROUND(..., 2)`.
+### Expected Behaviour
+Aggregate line-item sales taxes rounded to two decimal places: `ROUND(SUM(subtotal * tax_rate), 2) AS total_tax`.
 
-### Actual Behavior
-Rounds to 0 decimal places.
+### Actual Behaviour
+Tax calculations are rounded without decimal precision, truncating cent values.
 
-### Impact
-Accounting ledger totals fail to reconcile with stripe merchant payouts.
+### Starter Files
+`query.sql` - Computes sales tax sums on customer invoice line items.
+`schema.sql` - Invoice items and taxation rate data.
 
-### Requirements
-- Update query to `ROUND(SUM(subtotal * tax_rate), 2) AS total_tax`.
-""",
+### Task
+Modify `ROUND()` in `query.sql` to preserve two decimal places.
+
+### Acceptance Criteria
+1. Projected column: `total_tax`.
+2. Tax total is rounded to exactly 2 decimal places.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Output column alias: `total_tax`.
+- Financial calculations must preserve 2 decimal places.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -463,12 +546,14 @@ INSERT INTO invoice_items VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Monetary total rounded to 2 decimal places', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
+            {'id': 1, 'name': 'Monetary total rounded to 2 decimal places', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': 'ROUND(SUM(subtotal * tax_rate))',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Add `, 2` to the `ROUND()` function: `ROUND(SUM(subtotal * tax_rate), 2)`.'
+            'In standard SQL, `ROUND(value)` without a second parameter rounds to the nearest integer.',
+            'Pass the desired scale as a second argument to `ROUND()` for monetary precision.',
+            'Change to `ROUND(SUM(subtotal * tax_rate), 2)`.'
         ],
         'topics': ['SQL', 'Math', 'ROUND'],
         'skills_tested': ['SQL', 'Database'],
@@ -477,37 +562,48 @@ INSERT INTO invoice_items VALUES
         'expected_query': 'SELECT ROUND(SUM(subtotal * tax_rate), 2) AS total_tax FROM invoice_items;'
     })
 
-    # 58. A report includes cancelled orders
+    # 58. Executive sales metric dashboard includes cancelled transactions
     challenges.append({
         'id': 58,
-        'title': '[SQL-E08] A Report Includes Cancelled Orders',
+        'title': 'Executive Sales Metric Dashboard Includes Cancelled Transactions',
         'difficulty': 'Easy',
         'technology': 'SQL',
         'category': 'Filtering',
         'time_estimate': '10 mins',
         'points': 100,
-        'description': """### Company Scenario
-An executive sales metric dashboard calculates daily net gross merchandise value (GMV).
+        'description': """### Incident Report
+"The CEO dashboard reported higher gross merchandise value (GMV) than actual settled revenue because orders canceled prior to fulfillment were included in total sales."
 
 ### Bug Report
-Cancelled and refunded orders are included in the sales GMV calculation, inflating daily performance numbers.
+The sales revenue query computes total order GMV without filtering by order fulfillment status, counting canceled transactions toward completed sales.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice cancelled orders with `status = 'cancelled'` are summed.
+1. Ingest orders with mixed status values (`completed`, `cancelled`).
+2. Execute `query.sql`.
+3. Compare the returned GMV against completed order totals.
+4. Observe that canceled order amounts contribute to the total.
 
-### Expected Behavior
-Only orders with `status = 'completed'` (or `status != 'cancelled'`) should be summed.
+### Expected Behaviour
+Calculate the total sum of `amount` as `completed_gmv` strictly for orders with status `'completed'`.
 
-### Actual Behavior
-Sums all rows in `orders` regardless of status.
+### Actual Behaviour
+All order records contribute to the revenue sum regardless of status.
 
-### Impact
-Management bases hiring decisions on inflated gross sales numbers.
+### Starter Files
+`query.sql` - Calculates executive Gross Merchandise Value (GMV) metrics.
+`schema.sql` - Order transaction tables and fulfillment statuses.
 
-### Requirements
-- Filter the total revenue query to include only fulfilled, completed orders.
-""",
+### Task
+Add status filtering in `query.sql` to restrict GMV calculation to completed orders.
+
+### Acceptance Criteria
+1. Projected column: `completed_gmv`.
+2. Canceled orders do not contribute to the sum.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Status filter is case-sensitive `'completed'`.
+- Output column alias: `completed_gmv`.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -528,11 +624,13 @@ INSERT INTO orders VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Total only includes completed orders', 'input': '', 'expected': 'Sum of GMV for completed orders only'}
+            {'id': 1, 'name': 'Total only includes completed orders', 'input': '', 'expected': 'Sum of GMV for completed orders only'}
         ],
         'bug_signature': 'SELECT SUM(amount) AS completed_gmv FROM orders;',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
+            'Financial metrics must filter on status attributes to exclude cancelled, refunded, or fraudulent transactions.',
+            'Notice that `query.sql` currently has no `WHERE` clause.',
             'Add `WHERE status = \'completed\'` to the query.'
         ],
         'topics': ['SQL', 'Filtering', 'Revenue'],
@@ -542,37 +640,48 @@ INSERT INTO orders VALUES
         'expected_query': "SELECT SUM(amount) AS completed_gmv FROM orders WHERE status = 'completed';"
     })
 
-    # 59. A query orders numeric values stored as text incorrectly
+    # 59. Emergency task dispatch ordering misplaces double-digit urgency levels
     challenges.append({
         'id': 59,
-        'title': '[SQL-E09] A Query Orders Numeric Values Stored as Text Incorrectly',
+        'title': 'Emergency Task Dispatch Ordering Misplaces Double-Digit Urgency Levels',
         'difficulty': 'Easy',
         'technology': 'SQL',
         'category': 'Sorting',
         'time_estimate': '10 mins',
         'points': 100,
-        'description': """### Company Scenario
-A priority dispatch queue sorts tasks by urgency score (`priority_level`), which is stored in a `VARCHAR` column in a legacy table.
+        'description': """### Incident Report
+"Hospital dispatch operators reported that urgent priority level 10 tasks were pushed to the bottom of the dispatch queue below low-priority level 2 tasks."
 
 ### Bug Report
-Tasks order as `'10', '100', '2', '20'` instead of `'2', '10', '20', '100'`!
+The task priority query sorts priority levels lexicographically as text strings, ordering priority 10 below priority 2 instead of by numerical urgency.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Observe alphabetical string sorting of numbers.
+1. Ingest tasks with priority levels stored as text (e.g. `'10'`, `'2'`, `'20'`, `'100'`).
+2. Execute `query.sql`.
+3. Inspect task ordering in the result set.
+4. Observe that sorting follows alphabetical character sequence rather than numerical value.
 
-### Expected Behavior
-Order rows by numerical value: `ORDER BY CAST(priority_level AS INTEGER) ASC`.
+### Expected Behaviour
+Sort tasks by `priority_level` evaluated as integers in ascending order: `ORDER BY CAST(priority_level AS INTEGER) ASC`.
 
-### Actual Behavior
-Orders by textual lexicographical ASCII value.
+### Actual Behaviour
+Text column sorting places `'10'` before `'2'` due to character code comparisons.
 
-### Impact
-Urgent priority 100 emergency repairs are placed after minor priority 2 maintenance requests.
+### Starter Files
+`query.sql` - Dispatches operational tasks ordered by urgency priority.
+`schema.sql` - Operational tasks and priority ratings.
 
-### Requirements
-- Cast `priority_level` to `INTEGER` in the `ORDER BY` clause.
-""",
+### Task
+Cast priority level to integer during sorting in `query.sql`.
+
+### Acceptance Criteria
+1. Projected columns: `id`, `name`, `priority_level`.
+2. Rows are ordered numerically by priority level ascending.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Numerical ordering must handle single and multi-digit levels correctly.
+- Output columns: `id`, `name`, `priority_level`.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -594,11 +703,13 @@ INSERT INTO tasks VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Tasks ordered by numerical priority level', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
+            {'id': 1, 'name': 'Tasks ordered by numerical priority level', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': 'ORDER BY priority_level ASC;',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
+            'String columns order alphabetically rather than numerically, placing \'10\' before \'2\'.',
+            'SQL allows casting column data types inside the ORDER BY clause.',
             'Use `CAST(priority_level AS INTEGER)` in the `ORDER BY` clause.'
         ],
         'topics': ['SQL', 'Sorting', 'Type Casting'],
@@ -608,38 +719,48 @@ INSERT INTO tasks VALUES
         'expected_query': 'SELECT id, name, priority_level FROM tasks ORDER BY CAST(priority_level AS INTEGER) ASC;'
     })
 
-    # 60. A query returns the wrong top-selling product because of incorrect sorting
+    # 60. Best-selling product card displays least-ordered inventory item
     challenges.append({
         'id': 60,
-        'title': '[SQL-E10] A Query Returns the Wrong Top-Selling Product Because of Incorrect Sorting',
+        'title': 'Best-Selling Product Card Displays Least-Ordered Inventory Item',
         'difficulty': 'Easy',
         'technology': 'SQL',
         'category': 'Sorting',
         'time_estimate': '10 mins',
         'points': 100,
-        'description': """### Company Scenario
-An inventory re-ordering dashboard highlights the #1 best-selling product of the week.
+        'description': """### Incident Report
+"Marketing noticed that the home page 'Best Seller' banner featured a niche clearance item that had only sold 1 unit all month."
 
 ### Bug Report
-The dashboard displays the least-sold item (1 unit sold) as the "Top Seller" instead of the actual best-selling item (500 units sold)!
+The best-selling product query sorts sales volume in ascending order, featuring the lowest-selling item rather than the top-performing product.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `ORDER BY total_sold ASC LIMIT 1`.
-3. Lowest seller is returned.
+1. Ingest product sales records with varying `total_sold` volumes.
+2. Execute `query.sql`.
+3. Inspect the returned product record.
+4. Observe that the product with the minimum sales count is returned.
 
-### Expected Behavior
-Order by `total_sold DESC LIMIT 1` to retrieve the highest seller.
+### Expected Behaviour
+Return the product record with the highest `total_sold` count using descending order and a limit of 1.
 
-### Actual Behavior
-Sorts `ASC` (ascending).
+### Actual Behaviour
+Ascending sort order returns the lowest-selling product.
 
-### Impact
-Factory re-orders large batches of unsold inventory while popular stock runs out.
+### Starter Files
+`query.sql` - Identifies the top-performing catalog product by sales volume.
+`schema.sql` - Product catalog sales history.
 
-### Requirements
-- Update sort direction to `DESC` to return top seller.
-""",
+### Task
+Invert the sort direction in `query.sql` to return the highest-selling product.
+
+### Acceptance Criteria
+1. Projected columns: `id`, `name`, `total_sold`.
+2. Returns the single top-selling product.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Output columns: `id`, `name`, `total_sold`.
+- Row limit: 1.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -660,12 +781,14 @@ INSERT INTO product_sales VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Returns top selling item with highest count', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
+            {'id': 1, 'name': 'Returns top selling item with highest count', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': 'ORDER BY total_sold ASC LIMIT 1;',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Check the sort direction: ascending order puts the lowest values first, while top sellers require descending order.'
+            'Ascending order (`ASC`) orders from lowest to highest, while finding top performers requires ordering highest to lowest.',
+            'Examine the sorting direction specified in `query.sql`.',
+            'Change `ORDER BY total_sold ASC` to `ORDER BY total_sold DESC`.'
         ],
         'topics': ['SQL', 'Sorting', 'LIMIT'],
         'skills_tested': ['SQL', 'Database'],

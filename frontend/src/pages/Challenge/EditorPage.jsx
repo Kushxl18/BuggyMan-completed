@@ -264,10 +264,8 @@ export default function EditorPage({ user, setUser, addToast, theme, toggleTheme
       const res = await challengeService.runChallenge(challenge.id, primaryFile?.content || '', syncedFiles);
       setLastRunResult({ ...res, isSubmit: false });
 
-      const returnedCases = res?.testCases || res?.test_cases || [];
-      if (returnedCases.length > 0) {
-        setChallenge((prev) => (prev ? { ...prev, testCases: returnedCases } : prev));
-      }
+      // Note: Do not overwrite authoritative challenge.testCases so problem statement examples remain intact.
+      // OutputPanel consumes lastRunResult directly for test run results.
 
       let consoleLogs = res?.stdout || '';
       if (res?.aiSummary) {

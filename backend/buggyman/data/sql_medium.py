@@ -5,39 +5,49 @@ SQL Lab: Medium Challenges (61 to 75)
 def get_sql_medium():
     challenges = []
 
-    # 61. A JOIN duplicates revenue because of multiple order items
+    # 61. Customer revenue report multiplied by order line items join
     challenges.append({
         'id': 61,
-        'title': '[SQL-M01] A JOIN Duplicates Revenue Because of Multiple Order Items',
+        'title': 'Customer Revenue Report Multiplied by Order Line Items Join',
         'difficulty': 'Medium',
         'technology': 'SQL',
         'category': 'Joins',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-An analytics query reports total customer spending by joining the `orders` table with the `order_items` table.
+        'description': """### Incident Report
+"A sales manager reported that top customer accounts showed inflated revenue totals that were multiples of actual customer invoice receipts."
 
 ### Bug Report
-An order of $100 containing 3 line items counts as $300 revenue, tripling customer spending metrics!
+Joining the orders table with order line items duplicates order records for each item row, multiplying order revenue sums during aggregation.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `orders` table has `total_amount = 100.00`.
-3. Joining with `order_items` replicates the order row for every item.
-4. `SUM(o.total_amount)` multiplies order totals.
+1. Populate orders where an order has multiple associated line items.
+2. Execute `query.sql`.
+3. Compare customer revenue against distinct order amounts.
+4. Observe that orders with multiple line items are summed multiple times.
 
-### Expected Behavior
-Sum `o.total_amount` directly from `orders` without joining `order_items`, OR sum `item_price * quantity` from `order_items`.
+### Expected Behaviour
+Calculate total customer revenue without multiplying order amounts: `SELECT o.customer_id, SUM(o.total_amount) AS revenue FROM orders o GROUP BY o.customer_id ORDER BY o.customer_id;`.
 
-### Actual Behavior
-Joins `order_items` and sums `orders.total_amount`.
+### Actual Behaviour
+Unnecessary joins against line items duplicate parent order rows prior to summing.
 
-### Impact
-Revenue reports inflated by up to 400%, misleading financial stakeholders.
+### Starter Files
+`query.sql` - Computes customer revenue summaries.
+`schema.sql` - Order headers and line-item details.
 
-### Requirements
-- Calculate true total revenue per customer from `orders` table directly, grouped by `customer_id`.
-""",
+### Task
+Refactor `query.sql` to aggregate customer revenue accurately without row multiplication.
+
+### Acceptance Criteria
+1. Projected columns: `customer_id`, `revenue`.
+2. Multi-item orders are counted exactly once per order.
+3. Rows are ordered by `customer_id` ascending.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Grouped by `customer_id`.
+- Result ordering by `customer_id` ascending.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -62,13 +72,14 @@ INSERT INTO order_items VALUES (1, 1, 'Book A'), (2, 1, 'Book B'), (3, 2, 'Pen')
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Accurate customer revenue without join duplication', 'input': '', 'expected': 'Aggregated revenue matching date/order criteria'}
+            {'id': 1, 'name': 'Accurate customer revenue without join duplication', 'input': '', 'expected': 'Aggregated revenue matching date/order criteria'}
         ],
         'bug_signature': 'JOIN order_items i ON o.id = i.order_id GROUP BY o.customer_id',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Do not join `order_items` if `orders` already contains `total_amount`.',
-            'Query `orders` directly: `SELECT customer_id, SUM(total_amount) AS revenue FROM orders GROUP BY customer_id ORDER BY customer_id;`.'
+            'Joining a one-to-many relationship multiplies rows in the parent table before aggregation occurs.',
+            'Examine whether `order_items` is actually needed if `orders` already contains `total_amount`.',
+            'Query `orders` directly without joining `order_items`: `SELECT customer_id, SUM(total_amount) AS revenue FROM orders GROUP BY customer_id ORDER BY customer_id;`.'
         ],
         'topics': ['SQL', 'Joins', 'Aggregation', 'Cartesian Product'],
         'skills_tested': ['SQL', 'Database'],
@@ -77,37 +88,49 @@ INSERT INTO order_items VALUES (1, 1, 'Book A'), (2, 1, 'Book B'), (3, 2, 'Pen')
         'expected_query': 'SELECT customer_id, SUM(total_amount) AS revenue FROM orders GROUP BY customer_id ORDER BY customer_id;'
     })
 
-    # 62. Customer lifetime value is inflated by an incorrect aggregation
+    # 62. Average order value metrics distorted by day-level aggregation
     challenges.append({
         'id': 62,
-        'title': '[SQL-M02] Customer Lifetime Value is Inflated by an Incorrect Aggregation',
+        'title': 'Average Order Value Metrics Distorted by Day-Level Aggregation',
         'difficulty': 'Medium',
         'technology': 'SQL',
         'category': 'Aggregation',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A customer intelligence report calculates average order value (AOV) per customer across multiple stores.
+        'description': """### Incident Report
+"Data analysts noticed that customer Average Order Value (AOV) metrics on the executive dashboard displayed astronomical figures that matched customer lifetime spend."
 
 ### Bug Report
-Customer average order value calculation averages the daily averages, which skews metrics toward low-volume days.
+The AOV query sums customer order amounts instead of calculating the arithmetic mean, misreporting total spend as average order value.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `AVG(order_amount)` over aggregated day totals rather than individual orders.
+1. Ingest customer order records with multiple transactions per customer.
+2. Execute `query.sql`.
+3. Compare the reported `aov` against actual average transaction size.
+4. Observe that `aov` equals total spend rather than average per order.
 
-### Expected Behavior
-Calculate true AOV as `SUM(amount) / COUNT(id)` directly across all individual orders.
+### Expected Behaviour
+Calculate average order value per customer: `SELECT customer_id, AVG(amount) AS aov FROM orders GROUP BY customer_id ORDER BY customer_id;`.
 
-### Actual Behavior
-Averages the pre-aggregated daily sums.
+### Actual Behaviour
+`SUM(amount)` is aliased as `aov`, conflating cumulative spend with average order size.
 
-### Impact
-Inaccurate lifetime value projections in VIP customer retention tiers.
+### Starter Files
+`query.sql` - Computes Average Order Value (AOV) per customer.
+`schema.sql` - Customer order transaction history.
 
-### Requirements
-- Compute true average order value: `ROUND(AVG(amount), 2)` grouped by `customer_id`.
-""",
+### Task
+Use the `AVG()` aggregate function in `query.sql` to compute average order values.
+
+### Acceptance Criteria
+1. Projected columns: `customer_id`, `aov`.
+2. Accurately calculates mean transaction amount per customer.
+3. Ordered by `customer_id` ascending.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Output column alias: `aov`.
+- Result sorted by `customer_id` ascending.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -129,12 +152,14 @@ INSERT INTO orders VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: True average order value per customer', 'input': '', 'expected': 'Average metric correctly computed per group'}
+            {'id': 1, 'name': 'True average order value per customer', 'input': '', 'expected': 'Average metric correctly computed per group'}
         ],
         'bug_signature': 'SELECT customer_id, SUM(amount) AS aov FROM orders',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Use `ROUND(AVG(amount), 2) AS aov` instead of `SUM(amount)`.'
+            'Average Order Value measures the mean transaction size per customer rather than cumulative total spend.',
+            'Check the aggregate function used in the SELECT clause of `query.sql`.',
+            'Replace `SUM(amount)` with `ROUND(AVG(amount), 2) AS aov`.'
         ],
         'topics': ['SQL', 'Aggregation', 'AVG'],
         'skills_tested': ['SQL', 'Database'],
@@ -143,38 +168,49 @@ INSERT INTO orders VALUES
         'expected_query': 'SELECT customer_id, ROUND(AVG(amount), 2) AS aov FROM orders GROUP BY customer_id ORDER BY customer_id;'
     })
 
-    # 63. Pagination skips or duplicates rows when ordering is not deterministic
+    # 63. Audit log pagination displays duplicate events across pages
     challenges.append({
         'id': 63,
-        'title': '[SQL-M03] Pagination Skips or Duplicates Rows When Ordering is Not Deterministic',
+        'title': 'Audit Log Pagination Displays Duplicate Events Across Pages',
         'difficulty': 'Medium',
         'technology': 'SQL',
         'category': 'Sorting',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-An audit log viewer paginates system events in chunks of 2 rows using `LIMIT 2 OFFSET n`.
+        'description': """### Incident Report
+"Compliance security officers inspecting audit trails reported that events displayed on page 1 were repeated on page 2 when events shared identical timestamps."
 
 ### Bug Report
-Events with identical timestamps randomly shift positions between queries, so Page 1 and Page 2 display duplicate rows.
+The audit log pagination query lacks a deterministic secondary tie-breaker, causing events with identical timestamps to shift unpredictably between paginated windows.
 
 ### Steps to Reproduce
-1. Query `LIMIT 2 OFFSET 0` ordered by `created_at DESC`.
-2. Query `LIMIT 2 OFFSET 2` ordered by `created_at DESC`.
-3. Records with identical `created_at` values appear on both pages.
+1. Ingest audit log events sharing identical timestamp values.
+2. Execute `query.sql` for page 1 (`LIMIT 2 OFFSET 0`).
+3. Inspect record ordering.
+4. Observe that ordering is non-deterministic for identical timestamps.
 
-### Expected Behavior
-Add `id ASC` as a secondary deterministic sort column to guarantee stable row order: `ORDER BY created_at DESC, id ASC`.
+### Expected Behaviour
+Order audit logs deterministically by `created_at ASC, id ASC LIMIT 2 OFFSET 0`.
 
-### Actual Behavior
-Sorts solely by `created_at DESC`.
+### Actual Behaviour
+Single-column sorting allows arbitrary order resolution among tied timestamps.
 
-### Impact
-Compliance auditors miss critical security events due to unstable pagination windows.
+### Starter Files
+`query.sql` - Paginates system security audit logs.
+`schema.sql` - System security audit trail events.
 
-### Requirements
-- Add secondary unique sort key `id ASC` to the `ORDER BY` clause.
-""",
+### Task
+Add `id ASC` as a secondary sorting tie-breaker in `query.sql`.
+
+### Acceptance Criteria
+1. Projected columns: `id`, `event`, `created_at`.
+2. Deterministically ordered by `created_at ASC, id ASC`.
+3. Returns first 2 paginated records.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Pagination parameters: `LIMIT 2 OFFSET 0`.
+- Deterministic tie-breaking by primary key.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -196,12 +232,14 @@ INSERT INTO audit_logs VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Deterministic sort with id tie-breaker', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
+            {'id': 1, 'name': 'Deterministic sort with id tie-breaker', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': 'ORDER BY created_at DESC LIMIT 2 OFFSET 0;',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Add `, id ASC` to `ORDER BY created_at DESC`.'
+            'Relational databases do not guarantee deterministic order for duplicate sort keys unless a unique column is included in the ORDER BY.',
+            'Examine the ORDER BY clause in `query.sql`.',
+            'Append `, id ASC` to `ORDER BY created_at DESC` to guarantee stable pagination.'
         ],
         'topics': ['SQL', 'Pagination', 'Deterministic Ordering'],
         'skills_tested': ['SQL', 'Database'],
@@ -210,38 +248,49 @@ INSERT INTO audit_logs VALUES
         'expected_query': 'SELECT id, event, created_at FROM audit_logs ORDER BY created_at DESC, id ASC LIMIT 2 OFFSET 0;'
     })
 
-    # 64. A window function uses the wrong partition
+    # 64. Regional sales leaderboard ranks executives across mixed regions
     challenges.append({
         'id': 64,
-        'title': '[SQL-M04] A Window Function Uses the Wrong Partition',
+        'title': 'Regional Sales Leaderboard Ranks Executives Across Mixed Regions',
         'difficulty': 'Medium',
         'technology': 'SQL',
         'category': 'Window Functions',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-An enterprise sales leaderboard ranks account executives by closed revenue within their respective global sales regions.
+        'description': """### Incident Report
+"European sales reps complained that their regional leaderboard ranked APAC executives above them instead of ranking representatives within each respective sales region."
 
 ### Bug Report
-Sales reps in the EMEA region are ranked against reps in APAC and Americas, rather than competing solely within their regional teams.
+The sales representative ranking query calculates global sales ranks across all regions combined rather than partitioning rankings per sales territory.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `RANK() OVER (ORDER BY revenue DESC)` lacks `PARTITION BY region`.
-3. Rankings are global instead of regional.
+1. Ingest sales reps across multiple regions (`EMEA`, `APAC`).
+2. Execute `query.sql`.
+3. Inspect regional rank numbers for each territory.
+4. Observe that rankings span across regions rather than restarting within each territory.
 
-### Expected Behavior
-Rank sales executives partitioned by regional division: `RANK() OVER (PARTITION BY region ORDER BY revenue DESC)`.
+### Expected Behaviour
+Calculate sales ranks partitioned by territory: `RANK() OVER (PARTITION BY region ORDER BY revenue DESC) AS regional_rank`.
 
-### Actual Behavior
-Omits `PARTITION BY region`.
+### Actual Behaviour
+The window function omits regional partitioning, producing a global leaderboard.
 
-### Impact
-Regional sales quarterly performance bonuses distributed to the wrong employees.
+### Starter Files
+`query.sql` - Ranks sales performance partitioned by region.
+`schema.sql` - Sales representatives and regional revenue.
 
-### Requirements
-- Add `PARTITION BY region` to the window ranking function.
-""",
+### Task
+Partition the window function in `query.sql` by `region`.
+
+### Acceptance Criteria
+1. Projected columns: `id`, `name`, `region`, `revenue`, `regional_rank`.
+2. Ranks reset to 1 within each distinct region.
+3. Ordered by `region`, `regional_rank`.
+
+### Constraints
+- Target Database: SQLite 3.35+ with Window Function support.
+- Partitioned by `region` and ordered by `revenue DESC`.
+- Output ordering: `region, regional_rank`.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -264,12 +313,14 @@ INSERT INTO sales_reps VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Regional partition ranks top rep in each region as #1', 'input': '', 'expected': 'Aggregated revenue matching date/order criteria'}
+            {'id': 1, 'name': 'Regional partition ranks top rep in each region as #1', 'input': '', 'expected': 'Aggregated revenue matching date/order criteria'}
         ],
         'bug_signature': 'RANK() OVER (ORDER BY revenue DESC) AS regional_rank',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Add `PARTITION BY region` inside the `OVER (...)` clause.'
+            'Window functions require a PARTITION BY clause to break down calculations into distinct subset groupings.',
+            'Look inside the `OVER (...)` clause in `query.sql`.',
+            'Insert `PARTITION BY region` before `ORDER BY revenue DESC`.'
         ],
         'topics': ['SQL', 'Window Functions', 'RANK', 'PARTITION BY'],
         'skills_tested': ['SQL', 'Database'],
@@ -278,37 +329,49 @@ INSERT INTO sales_reps VALUES
         'expected_query': 'SELECT id, name, region, revenue, RANK() OVER (PARTITION BY region ORDER BY revenue DESC) AS regional_rank FROM sales_reps ORDER BY region, regional_rank;'
     })
 
-    # 65. A monthly report mishandles timezone boundaries
+    # 65. Monthly payment grouping misattributes midnight UTC renewals
     challenges.append({
         'id': 65,
-        'title': '[SQL-M05] A Monthly Report Mishandles Timezone Boundaries',
+        'title': 'Monthly Payment Grouping Misattributes Midnight UTC Renewals',
         'difficulty': 'Medium',
         'technology': 'SQL',
         'category': 'Aggregation',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A subscription billing portal groups recurring payments by calendar month using UTC timestamps.
+        'description': """### Incident Report
+"A financial auditor noted that payments processed across different years were merged into identical monthly totals because aggregation extracted only calendar month digits."
 
 ### Bug Report
-Subscriptions renewed on September 1st at 00:30 UTC are placed into August because query attempts manual offset subtraction without boundary validation.
+The recurring revenue grouping extracts two-digit month strings (`MM`) without year context (`YYYY-MM`), conflating revenue across multiple calendar years into single buckets.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice manual string slicing cuts off date without `strftime('%Y-%m', payment_date)`.
+1. Ingest payment records spanning multiple calendar months.
+2. Execute `query.sql`.
+3. Inspect the `month` column output.
+4. Observe that month identifiers lack full year-month formatting.
 
-### Expected Behavior
-Extract standard year-month group key: `strftime('%Y-%m', payment_date)`.
+### Expected Behaviour
+Group payments by standardized year-month strings (`YYYY-MM`): `strftime('%Y-%m', payment_date) AS month`.
 
-### Actual Behavior
-Manual substring parsing shifts dates.
+### Actual Behaviour
+Substring extraction isolates month digits without year qualification.
 
-### Impact
-Revenue numbers misattributed between fiscal months.
+### Starter Files
+`query.sql` - Aggregates recurring payments by calendar month.
+`schema.sql` - Payment transactions and timestamps.
 
-### Requirements
-- Use `strftime('%Y-%m', payment_date) AS month` and group by month.
-""",
+### Task
+Update grouping in `query.sql` to aggregate by year and month (`YYYY-MM`).
+
+### Acceptance Criteria
+1. Projected columns: `month`, `total`.
+2. Formatted as `YYYY-MM`.
+3. Grouped and ordered by `month`.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Month format: `YYYY-MM`.
+- Output column aliases: `month`, `total`.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -329,12 +392,14 @@ INSERT INTO payments VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Grouped by YYYY-MM formatted month', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
+            {'id': 1, 'name': 'Grouped by YYYY-MM formatted month', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': 'substr(payment_date, 6, 2) AS month',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Use `strftime(\'%Y-%m\', payment_date) AS month`.'
+            'Deriving date buckets via manual string substrings breaks across year boundaries.',
+            'SQL includes built-in datetime formatting functions like `strftime` for extracting date components.',
+            'Use `strftime(\'%Y-%m\', payment_date) AS month` and group by month.'
         ],
         'topics': ['SQL', 'Dates', 'strftime'],
         'skills_tested': ['SQL', 'Database'],
@@ -343,38 +408,49 @@ INSERT INTO payments VALUES
         'expected_query': "SELECT strftime('%Y-%m', payment_date) AS month, SUM(amount) AS total FROM payments GROUP BY month ORDER BY month;"
     })
 
-    # 66. A LEFT JOIN becomes an accidental INNER JOIN
+    # 66. Free tier accounts filtered out of customer directory by WHERE clause
     challenges.append({
         'id': 66,
-        'title': '[SQL-M06] A LEFT JOIN Becomes an Accidental INNER JOIN',
+        'title': 'Free Tier Accounts Filtered Out of Customer Directory by WHERE Clause',
         'difficulty': 'Medium',
         'technology': 'SQL',
         'category': 'Joins',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A customer directory query displays user account profiles along with their most recent premium subscription plan. Users without premium plans must still be displayed.
+        'description': """### Incident Report
+"Customer success managers noticed that free-tier users without active subscriptions were completely missing from the user account directory."
 
 ### Bug Report
-Users with no subscription are excluded from the directory despite using a `LEFT JOIN`!
+Filtering subscriptions in the `WHERE` clause converts an outer join into an inner join, eliminating users who do not have an active subscription.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `WHERE s.status = 'active'`.
-3. Users with no subscription have `s.status = NULL`. The `WHERE` clause filters out `NULL`, converting the `LEFT JOIN` into an `INNER JOIN`!
+1. Populate users where some users hold active subscriptions and others hold no subscriptions.
+2. Execute `query.sql`.
+3. Inspect the returned user list.
+4. Observe that users without subscriptions are omitted from the results.
 
-### Expected Behavior
-Move the condition `s.status = 'active'` into the `ON` clause of the `LEFT JOIN`: `LEFT JOIN subscriptions s ON u.id = s.user_id AND s.status = 'active'`.
+### Expected Behaviour
+Retain all users, displaying their active subscription plan or `NULL` if not subscribed: `LEFT JOIN subscriptions s ON u.id = s.user_id AND s.status = 'active'`.
 
-### Actual Behavior
-Filters `s.status = 'active'` in the `WHERE` clause.
+### Actual Behaviour
+Post-join `WHERE s.status = 'active'` drops users whose left-join subscription columns are null.
 
-### Impact
-Free-tier users disappear from administrative moderation lists.
+### Starter Files
+`query.sql` - Generates user roster joined with active subscription details.
+`schema.sql` - User accounts and subscription plans.
 
-### Requirements
-- Move filter into `ON` clause so unmatched users remain with NULL subscription details.
-""",
+### Task
+Move subscription status filtering from the `WHERE` clause into the `LEFT JOIN` condition in `query.sql`.
+
+### Acceptance Criteria
+1. Projected columns: `u.id`, `u.name`, `s.plan_name`.
+2. Users without active plans show `NULL` for `plan_name`.
+3. Ordered by `u.id` ascending.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Preserves all registered users.
+- Ordered by `u.id`.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -399,11 +475,13 @@ INSERT INTO subscriptions VALUES (101, 1, 'Pro Plan', 'active');"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Preserves Bob with NULL plan_name', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
+            {'id': 1, 'name': 'Preserves Bob with NULL plan_name', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': "LEFT JOIN subscriptions s ON u.id = s.user_id WHERE s.status = 'active'",
         'suspected_component': 'query.sql',
         'ai_suggestions': [
+            'Placing a filter on the right table in a WHERE clause filters out NULL rows produced by a LEFT JOIN, turning it into an INNER JOIN.',
+            'Conditions placed in the ON clause dictate what rows are joined, whereas WHERE filters the entire combined result set.',
             'Move `AND s.status = \'active\'` into the `ON` clause and remove the `WHERE` clause.'
         ],
         'topics': ['SQL', 'Joins', 'LEFT JOIN', 'WHERE vs ON'],
@@ -413,38 +491,49 @@ INSERT INTO subscriptions VALUES (101, 1, 'Pro Plan', 'active');"""
         'expected_query': "SELECT u.id, u.name, s.plan_name FROM users u LEFT JOIN subscriptions s ON u.id = s.user_id AND s.status = 'active' ORDER BY u.id;"
     })
 
-    # 67. An inventory report calculates incorrect available stock
+    # 67. Unreserved warehouse inventory displays NULL availability
     challenges.append({
         'id': 67,
-        'title': '[SQL-M07] An Inventory Report Calculates Incorrect Available Stock',
+        'title': 'Unreserved Warehouse Inventory Displays NULL Availability',
         'difficulty': 'Medium',
         'technology': 'SQL',
         'category': 'Aggregation',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A warehouse management system computes available stock as `physical_stock - reserved_stock`.
+        'description': """### Incident Report
+"Warehouse pickers reported that stock availability screens displayed blank empty values for items that had zero active customer reservations."
 
 ### Bug Report
-Items with zero pending reservations (`reserved_stock = NULL`) show `available_stock = NULL` instead of their physical stock!
+Subtracting `NULL` reserved stock directly from physical inventory produces `NULL` availability rather than treating unset reservations as zero.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `physical_stock - reserved_stock`.
-3. In SQL arithmetic, `10 - NULL` evaluates to `NULL`.
+1. Inspect inventory items where `reserved_stock` is unpopulated (`NULL`).
+2. Execute `query.sql`.
+3. Inspect the computed `available_stock` column.
+4. Observe that availability displays as `NULL` instead of available physical inventory.
 
-### Expected Behavior
-Use `COALESCE(reserved_stock, 0)` so unreserved items subtract 0.
+### Expected Behaviour
+Coalesce unset reservations to zero during availability calculations: `(physical_stock - COALESCE(reserved_stock, 0)) AS available_stock`.
 
-### Actual Behavior
-Subtracts raw NULL, wiping out availability numbers.
+### Actual Behaviour
+Direct arithmetic with `NULL` propagates null values to the calculated balance.
 
-### Impact
-In-stock items show as unavailable in product catalog, halting sales.
+### Starter Files
+`query.sql` - Calculates net available warehouse stock.
+`schema.sql` - Warehouse inventory and reserved quantities.
 
-### Requirements
-- Compute available inventory by subtracting reserved stock from physical stock, handling unset reserved quantities as 0.
-""",
+### Task
+Add null coalescing to `reserved_stock` in `query.sql`.
+
+### Acceptance Criteria
+1. Projected columns: `id`, `name`, `available_stock`.
+2. Items with `NULL` reservations correctly report full physical stock.
+3. Ordered by `id` ascending.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Output column alias: `available_stock`.
+- Result sorted by `id` ascending.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -466,11 +555,13 @@ INSERT INTO inventory VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Keyboard shows available_stock = 25', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
+            {'id': 1, 'name': 'Keyboard shows available_stock = 25', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': '(physical_stock - reserved_stock) AS available_stock',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
+            'In SQL arithmetic expressions, any number operated on with NULL results in NULL (e.g. `25 - NULL = NULL`).',
+            'Use a null-coalescing function to substitute a default numerical value of zero.',
             'Wrap `reserved_stock` in `COALESCE(reserved_stock, 0)`.'
         ],
         'topics': ['SQL', 'NULL Handling', 'COALESCE'],
@@ -480,38 +571,48 @@ INSERT INTO inventory VALUES
         'expected_query': 'SELECT id, name, (physical_stock - COALESCE(reserved_stock, 0)) AS available_stock FROM inventory ORDER BY id;'
     })
 
-    # 68. A query incorrectly handles NULL values in conditional aggregation
+    # 68. Delivery success rate metric inflated by counting non-delivered rows
     challenges.append({
         'id': 68,
-        'title': '[SQL-M08] A Query Incorrectly Handles NULL Values in Conditional Aggregation',
+        'title': 'Delivery Success Rate Metric Inflated by Counting Non-Delivered Rows',
         'difficulty': 'Medium',
         'technology': 'SQL',
         'category': 'Aggregation',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A customer engagement dashboard counts how many orders were successfully delivered vs returned.
+        'description': """### Incident Report
+"Operations dashboards reported a 100% on-time delivery rate even when returned and failed delivery shipments occurred."
 
 ### Bug Report
-The delivered orders column count is inaccurate because `COUNT(CASE WHEN status = 'delivered' THEN 0 ELSE NULL END)` evaluates `0` as non-null!
+The delivery metric uses `COUNT(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END)`, which counts rows where the condition evaluates to `0` because `0` is non-NULL in SQL.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `COUNT(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END)`.
-3. `COUNT()` counts non-null values, including `0`, so returned orders are counted as delivered!
+1. Ingest shipments containing delivered and returned packages.
+2. Execute `query.sql`.
+3. Compare the reported `delivered_count` against actual delivered shipments.
+4. Observe that returned shipments are counted toward the delivery metric.
 
-### Expected Behavior
-Use `SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END)` OR `COUNT(CASE WHEN status = 'delivered' THEN 1 END)`.
+### Expected Behaviour
+Count only delivered shipments: `COUNT(CASE WHEN status = 'delivered' THEN 1 END) AS delivered_count`.
 
-### Actual Behavior
-Uses `COUNT()` with `ELSE 0`, counting all rows.
+### Actual Behaviour
+Returning `0` in the `ELSE` branch causes `COUNT()` to count all rows regardless of status.
 
-### Impact
-Executive dashboard shows a 100% delivery rate despite thousands of returned packages.
+### Starter Files
+`query.sql` - Tracks completed package deliveries.
+`schema.sql` - Package shipments and delivery statuses.
 
-### Requirements
-- Accurately calculate delivered order counts without miscounting non-delivered orders in the aggregate.
-""",
+### Task
+Modify `CASE` in `query.sql` so non-delivered statuses return `NULL` (or omit `ELSE`).
+
+### Acceptance Criteria
+1. Projected column: `delivered_count`.
+2. Only shipments with `status = 'delivered'` are counted.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Output column alias: `delivered_count`.
+- Correct aggregate counting of conditional subsets.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -531,12 +632,14 @@ INSERT INTO shipments VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: True delivered count is 2', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
+            {'id': 1, 'name': 'True delivered count is 2', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': "COUNT(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END)",
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'In SQL, COUNT(0) counts 0 as a valid non-null row; consider using SUM with 1 and 0, or COUNT without an ELSE clause.'
+            'In SQL, `COUNT(x)` counts every non-null value; numerical 0 is not null and is therefore counted.',
+            'Consider whether `SUM()` with 1 and 0, or `COUNT()` with NULL as the fallback, is the appropriate aggregation function.',
+            'Change `COUNT(...)` to `SUM(CASE WHEN status = \'delivered\' THEN 1 ELSE 0 END)`.'
         ],
         'topics': ['SQL', 'Conditional Aggregation', 'CASE WHEN'],
         'skills_tested': ['SQL', 'Database'],
@@ -545,38 +648,49 @@ INSERT INTO shipments VALUES
         'expected_query': "SELECT SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS delivered_count FROM shipments;"
     })
 
-    # 69. A CTE filters records before aggregation when filtering should occur afterward
+    # 69. High-value customer loyalty tier excludes frequent repeat buyers
     challenges.append({
         'id': 69,
-        'title': '[SQL-M09] A CTE Filters Records Before Aggregation When Filtering Should Occur Afterward',
+        'title': 'High-Value Customer Loyalty Tier Excludes Frequent Repeat Buyers',
         'difficulty': 'Medium',
         'technology': 'SQL',
         'category': 'CTE',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A customer loyalty tier report identifies high-value accounts whose total annual spending exceeds $500.
+        'description': """### Incident Report
+"Marketing noticed loyal customers who placed multiple $300 orders were excluded from the $500 VIP loyalty program, while single-order customers were admitted."
 
 ### Bug Report
-The report filters out individual purchases under $500 in the CTE before summing, omitting loyal customers who made ten $60 purchases!
+The loyalty qualification query filters individual transaction amounts before aggregation rather than filtering on cumulative customer spend.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `WITH large_orders AS (SELECT * FROM orders WHERE amount >= 500)`.
-3. Customers with multiple smaller orders totalling > $500 are omitted.
+1. Ingest customer orders where a customer has multiple transactions totaling over $500.
+2. Execute `query.sql`.
+3. Inspect the returned high-value customer list.
+4. Observe that repeat buyers whose individual orders are under $500 are excluded.
 
-### Expected Behavior
-Sum all orders first per customer in the CTE, then filter `WHERE total_spent >= 500`.
+### Expected Behaviour
+Aggregate customer orders first, then filter customers whose total spend meets or exceeds 500: `HAVING SUM(amount) >= 500`.
 
-### Actual Behavior
-Filters individual transaction amounts in the initial CTE.
+### Actual Behaviour
+Transaction filtering prior to aggregation eliminates customers with frequent moderate orders.
 
-### Impact
-High-value repeat customers excluded from VIP perks and loyalty reward distributions.
+### Starter Files
+`query.sql` - Identifies high-value customers qualifying for loyalty tiers.
+`schema.sql` - Customer order transaction history.
 
-### Requirements
-- Aggregate total spending per customer across all orders first in the CTE, then filter for qualifying high-value clients in the outer query.
-""",
+### Task
+Replace pre-aggregation filtering with a `HAVING` clause in `query.sql`.
+
+### Acceptance Criteria
+1. Projected columns: `customer_id`, `total_spent`.
+2. Customers with cumulative spend >= 500 are included.
+3. Ordered by `customer_id` ascending.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Column aliases: `customer_id`, `total_spent`.
+- Evaluation of cumulative thresholds via `HAVING`.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -601,13 +715,14 @@ SELECT customer_id, SUM(amount) AS total_spent FROM large_orders GROUP BY custom
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Customers 101 and 102 both have total >= 500', 'input': '', 'expected': 'High-value customers whose total spend meets or exceeds 500'}
+            {'id': 1, 'name': 'Customers 101 and 102 both have total >= 500', 'input': '', 'expected': 'High-value customers whose total spend meets or exceeds 500'}
         ],
         'bug_signature': 'SELECT customer_id, amount FROM orders WHERE amount >= 500',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Sum in the CTE first: `SELECT customer_id, SUM(amount) AS total_spent FROM orders GROUP BY customer_id`.',
-            'Filter in the outer query: `WHERE total_spent >= 500`.'
+            'Filtering row values before aggregation prevents calculating the total sum across multiple smaller events.',
+            'Compute `SUM(amount) AS total_spent` grouped by `customer_id` inside the CTE first.',
+            'Filter `WHERE total_spent >= 500` in the outer query.'
         ],
         'topics': ['SQL', 'CTE', 'HAVING vs WHERE'],
         'skills_tested': ['SQL', 'Database'],
@@ -619,38 +734,49 @@ SELECT customer_id, SUM(amount) AS total_spent FROM large_orders GROUP BY custom
 SELECT customer_id, total_spent FROM customer_totals WHERE total_spent >= 500 ORDER BY customer_id;"""
     })
 
-    # 70. A duplicate-detection query flags valid records
+    # 70. Multi-account fraud filter groups legitimate users with missing phones
     challenges.append({
         'id': 70,
-        'title': '[SQL-M10] A Duplicate-Detection Query Flags Valid Records',
+        'title': 'Multi-Account Fraud Filter Groups Legitimate Users With Missing Phones',
         'difficulty': 'Medium',
         'technology': 'SQL',
         'category': 'Aggregation',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A fraud-detection system flags accounts suspected of multi-accounting by matching identical telephone numbers.
+        'description': """### Incident Report
+"Security monitors locked thousands of genuine user accounts because an automated fraud detection query flagged all users with missing phone numbers as a shared phone ring."
 
 ### Bug Report
-Over 15,000 legitimate users who have empty or unset phone numbers (`phone IS NULL`) are all grouped together and flagged as a fraudulent syndicate!
+The duplicate phone detection query groups by phone without filtering out `NULL` values, clustering all users with missing phone numbers into a single fraudulent group.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `GROUP BY phone HAVING COUNT(*) > 1`.
-3. `NULL` phone values group together into a single cluster.
+1. Ingest user records where multiple accounts have unrecorded (`NULL`) phone numbers.
+2. Execute `query.sql`.
+3. Inspect the duplicate phone numbers report.
+4. Observe that `NULL` appears as a duplicate phone group with a high account count.
 
-### Expected Behavior
-Exclude `NULL` and empty phone strings from the duplicate scan: `WHERE phone IS NOT NULL AND phone != ''`.
+### Expected Behaviour
+Exclude `NULL` phone numbers prior to grouping: `WHERE phone IS NOT NULL GROUP BY phone HAVING COUNT(*) > 1`.
 
-### Actual Behavior
-Groups all NULL records into a single false-positive duplicate cluster.
+### Actual Behaviour
+Grouping collects `NULL` entries into a single aggregate group, misinterpreting unset fields as duplicates.
 
-### Impact
-Thousands of legitimate user accounts locked by automated security filters.
+### Starter Files
+`query.sql` - Detects shared phone numbers indicative of multi-account abuse.
+`schema.sql` - User accounts and phone records.
 
-### Requirements
-- Exclude missing, null, and empty phone values before evaluating duplicate phone counts.
-""",
+### Task
+Filter out null phone records before grouping in `query.sql`.
+
+### Acceptance Criteria
+1. Projected columns: `phone`, `count`.
+2. Only non-null duplicate phone numbers are reported.
+3. Ordered by `phone` ascending.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- `phone IS NOT NULL` must be enforced before grouping.
+- Ordered by `phone` ascending.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -672,11 +798,13 @@ INSERT INTO users VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Only non-null duplicate phone 555-0100 returned', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
+            {'id': 1, 'name': 'Only non-null duplicate phone 555-0100 returned', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': 'SELECT phone, COUNT(*) AS count FROM users GROUP BY phone',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
+            'In SQL GROUP BY operations, NULL values are treated as matching each other and form a single combined group.',
+            'Filter out missing records before grouping to avoid false duplicate matches.',
             'Add `WHERE phone IS NOT NULL AND phone != \'\'` before the `GROUP BY phone` clause.'
         ],
         'topics': ['SQL', 'Duplicates', 'NULL Handling'],
@@ -686,38 +814,49 @@ INSERT INTO users VALUES
         'expected_query': "SELECT phone, COUNT(*) AS count FROM users WHERE phone IS NOT NULL AND phone != '' GROUP BY phone HAVING COUNT(*) > 1 ORDER BY phone;"
     })
 
-    # 71. A ranking query assigns incorrect positions to tied values
+    # 71. Competition leaderboard skips placing positions after tied scores
     challenges.append({
         'id': 71,
-        'title': '[SQL-M11] A Ranking Query Assigns Incorrect Positions to Tied Values',
+        'title': 'Competition Leaderboard Skips Placing Positions After Tied Scores',
         'difficulty': 'Medium',
         'technology': 'SQL',
         'category': 'Window Functions',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A hackathon scoring platform displays leaderboard ranks based on judge scores.
+        'description': """### Incident Report
+"Hackathon judges reported leaderboard placement anomalies where a participant who scored lower than two tied 1st-place finishers was displayed as 2nd place instead of 3rd place."
 
 ### Bug Report
-Two competitors tied for 1st place with 95 points. The next participant with 90 points is displayed as 2nd place instead of 3rd place!
+The leaderboard ranking function assigns dense ranks without rank gaps for ties, contradicting competition ranking rules that require standard competitive ranking.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `DENSE_RANK() OVER (ORDER BY score DESC)`.
-3. Scores 95, 95, 90 receive ranks 1, 1, 2 (dense rank does not skip ranks).
+1. Ingest scores where two participants tie for 1st place (score 95) and a third participant scores 90.
+2. Execute `query.sql`.
+3. Inspect the rank assigned to the third participant.
+4. Observe that rank 2 is assigned instead of rank 3.
 
-### Expected Behavior
-Standard competition ranking must skip ranks after ties: 1, 1, 3. Use `RANK()`.
+### Expected Behaviour
+Use competitive ranking where ties produce subsequent rank gaps: `RANK() OVER (ORDER BY score DESC) AS rank`.
 
-### Actual Behavior
-Uses `DENSE_RANK()`.
+### Actual Behaviour
+Dense ranking increments consecutively after ties without leaving ranking gaps.
 
-### Impact
-Award ceremony medals and prize distributions given to wrong placement tiers.
+### Starter Files
+`query.sql` - Produces competitive participant score leaderboards.
+`schema.sql` - Contest participants and scored submissions.
 
-### Requirements
-- Review the difference between RANK() and DENSE_RANK(): RANK leaves gaps after tied positions, whereas DENSE_RANK does not.
-""",
+### Task
+Replace `DENSE_RANK()` with `RANK()` in `query.sql`.
+
+### Acceptance Criteria
+1. Projected columns: `id`, `name`, `score`, `rank`.
+2. Subsequent ranks skip positions proportional to tied competitors.
+3. Ordered by `rank, id`.
+
+### Constraints
+- Target Database: SQLite 3.35+ with Window Function support.
+- Standard competition ranking rules apply.
+- Result ordering: `rank, id`.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -738,12 +877,14 @@ INSERT INTO scores VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Competition rank assigns Charlie rank 3', 'input': '', 'expected': 'Ranked records with correct tie-breaker ordering'}
+            {'id': 1, 'name': 'Competition rank assigns Charlie rank 3', 'input': '', 'expected': 'Ranked records with correct tie-breaker ordering'}
         ],
         'bug_signature': 'DENSE_RANK() OVER (ORDER BY score DESC) AS rank',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Review the difference between RANK() and DENSE_RANK(): RANK leaves gaps after tied positions, whereas DENSE_RANK does not.'
+            'DENSE_RANK leaves no gaps after ties, whereas standard competition ranking (RANK) skips ranks corresponding to tied entries.',
+            'Examine the window function name used in `query.sql`.',
+            'Replace `DENSE_RANK()` with `RANK()`.'
         ],
         'topics': ['SQL', 'Window Functions', 'RANK vs DENSE_RANK'],
         'skills_tested': ['SQL', 'Database'],
@@ -752,38 +893,48 @@ INSERT INTO scores VALUES
         'expected_query': 'SELECT id, name, score, RANK() OVER (ORDER BY score DESC) AS rank FROM scores ORDER BY rank, id;'
     })
 
-    # 72. A subquery returns multiple rows unexpectedly
+    # 72. Product catalog crashes when category discounts return multiple rows
     challenges.append({
         'id': 72,
-        'title': '[SQL-M12] A Subquery Returns Multiple Rows Unexpectedly',
+        'title': 'Product Catalog Crashes When Category Discounts Return Multiple Rows',
         'difficulty': 'Medium',
         'technology': 'SQL',
         'category': 'Subqueries',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A product pricing query applies store discounts by matching eligible category promotions.
+        'description': """### Incident Report
+"Storefront API monitors raised 500 errors on catalog pages whenever merchandising configured more than one promotional discount for a product category."
 
 ### Bug Report
-The product API crashes with `OperationalError: subquery returns more than 1 row` whenever a category has multiple active discount coupons.
+The product discount subquery uses scalar equality comparison against a subquery that returns multiple rows, causing subquery evaluation crashes.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice scalar comparison `WHERE discount_id = (SELECT id FROM discounts WHERE category = 'tech')`.
-3. When multiple discounts exist, scalar equality `=` throws a database error.
+1. Configure multiple active discount records for category `'tech'`.
+2. Execute `query.sql`.
+3. Observe that the database engine raises a subquery scalar evaluation error.
 
-### Expected Behavior
-Use `IN` instead of `=` for multi-row subqueries: `WHERE discount_id IN (SELECT id FROM discounts WHERE category = 'tech')`.
+### Expected Behaviour
+Support set membership matching using `IN`: `WHERE discount_id IN (SELECT id FROM discounts WHERE category = 'tech')`.
 
-### Actual Behavior
-Uses scalar `=` operator against a multi-row subquery.
+### Actual Behaviour
+The `=` operator expects a single scalar value and fails when the subquery yields multiple rows.
 
-### Impact
-Product catalog crashes across major retail categories.
+### Starter Files
+`query.sql` - Matches category promotional discounts against merchandise items.
+`schema.sql` - Product categories and promotion discount schedules.
 
-### Requirements
-- Use a set-membership operator rather than scalar equality to safely handle subqueries that return multiple matching discount records.
-""",
+### Task
+Update scalar comparison to set-based `IN` comparison in `query.sql`.
+
+### Acceptance Criteria
+1. Projected columns: `id`, `name`, `discount_id`.
+2. Products matching any active category discount are returned.
+3. Ordered by `id` ascending.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Set-based subquery evaluation via `IN`.
+- Ordered by `id` ascending.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -808,12 +959,14 @@ INSERT INTO products VALUES (101, 'Mouse', 1), (102, 'Keyboard', 2), (103, 'Shir
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: IN operator matches all eligible products', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
+            {'id': 1, 'name': 'IN operator matches all eligible products', 'input': '', 'expected': 'Accurate tabular result set satisfying problem criteria'}
         ],
         'bug_signature': 'WHERE discount_id = (SELECT id FROM discounts',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'When a subquery returns more than a single scalar value, use set-membership predicates such as IN instead of equality.'
+            'Comparing a scalar column to a subquery using `=` fails whenever the subquery returns more than one row.',
+            'Consider which SQL operator evaluates membership within a set of values returned by a subquery.',
+            'Change `=` to `IN`: `WHERE discount_id IN (SELECT id FROM discounts WHERE category = \'tech\')`.'
         ],
         'topics': ['SQL', 'Subqueries', 'IN vs EQUALS'],
         'skills_tested': ['SQL', 'Database'],
@@ -822,37 +975,49 @@ INSERT INTO products VALUES (101, 'Mouse', 1), (102, 'Keyboard', 2), (103, 'Shir
         'expected_query': "SELECT id, name, discount_id FROM products WHERE discount_id IN (SELECT id FROM discounts WHERE category = 'tech') ORDER BY id;"
     })
 
-    # 73. A report combines historical and current prices incorrectly
+    # 73. Historical revenue audit distorted by modern catalog price updates
     challenges.append({
         'id': 73,
-        'title': '[SQL-M13] A Report Combines Historical and Current Prices Incorrectly',
+        'title': 'Historical Revenue Audit Distorted by Modern Catalog Price Updates',
         'difficulty': 'Medium',
         'technology': 'SQL',
         'category': 'Joins',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-An order line item audit checks sales totals. Prices change over time, so past orders must multiply by historical unit price, not the current catalog price.
+        'description': """### Incident Report
+"Financial auditors discovered that audited fiscal revenue from previous years shifted whenever current catalog product prices were updated in the merchandising system."
 
 ### Bug Report
-A customer bought an item in 2025 for $50. In 2026, the price was raised to $80. The 2025 sales report recalculates the past order at $80, distorting historical revenue!
+The historical revenue audit joins against current product prices rather than multiplying order quantities by the historical unit price recorded at time of purchase.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice query joins `products` table and uses `p.current_price` instead of historical `oi.price_at_purchase`.
+1. Ingest an order item purchased in 2025 at $50.00 where modern catalog price was updated to $80.00.
+2. Execute `query.sql`.
+3. Compare computed revenue against the purchase transaction receipt.
+4. Observe that historical revenue is recalculated using current catalog rates.
 
-### Expected Behavior
-Use `oi.price_at_purchase * oi.quantity` recorded at the time of purchase.
+### Expected Behaviour
+Calculate revenue using transaction purchase prices: `SUM(oi.quantity * oi.price_at_purchase) AS total_revenue`.
 
-### Actual Behavior
-Multiplies by `p.current_price`.
+### Actual Behaviour
+Multiplying by current catalog price overwrites historical accounting data.
 
-### Impact
-Audited historical balance sheets are altered every time modern catalog prices change.
+### Starter Files
+`query.sql` - Audits historical order revenue per product.
+`schema.sql` - Historical orders and modern catalog items.
 
-### Requirements
-- Multiply quantity by historical price: `SUM(oi.quantity * oi.price_at_purchase) AS total_revenue`.
-""",
+### Task
+Reference `price_at_purchase` from `order_items` in `query.sql`.
+
+### Acceptance Criteria
+1. Projected columns: `oi.product_id`, `total_revenue`.
+2. Revenue reflects historical price at purchase.
+3. Grouped by `oi.product_id`.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Output column aliases: `product_id`, `total_revenue`.
+- Historical integrity preservation.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -878,12 +1043,14 @@ INSERT INTO order_items VALUES (101, 1, 2, 50.00);"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Total reflects historical purchase price (2 * 50 = 100)', 'input': '', 'expected': 'Aggregated revenue matching date/order criteria'}
+            {'id': 1, 'name': 'Total reflects historical purchase price (2 * 50 = 100)', 'input': '', 'expected': 'Aggregated revenue matching date/order criteria'}
         ],
         'bug_signature': 'SUM(oi.quantity * p.current_price) AS total_revenue',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Use `price_at_purchase`: `SELECT product_id, SUM(quantity * price_at_purchase) AS total_revenue FROM order_items GROUP BY product_id;`.'
+            'Historical financial metrics must rely on immutable snapshot values captured at transaction time rather than mutable master records.',
+            'Check which price column is referenced in the arithmetic multiplication in `query.sql`.',
+            'Compute `SUM(quantity * price_at_purchase) AS total_revenue` from `order_items` directly.'
         ],
         'topics': ['SQL', 'Historical Data', 'Data Integrity'],
         'skills_tested': ['SQL', 'Database'],
@@ -892,38 +1059,48 @@ INSERT INTO order_items VALUES (101, 1, 2, 50.00);"""
         'expected_query': 'SELECT product_id, SUM(quantity * price_at_purchase) AS total_revenue FROM order_items GROUP BY product_id;'
     })
 
-    # 74. A query counts orders instead of distinct customers
+    # 74. Unique active customer metric multiplies repeat order buyers
     challenges.append({
         'id': 74,
-        'title': '[SQL-M14] A Query Counts Orders Instead of Distinct Customers',
+        'title': 'Unique Active Customer Metric Multiplies Repeat Order Buyers',
         'difficulty': 'Medium',
         'technology': 'SQL',
         'category': 'Aggregation',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-An executive KPI dashboard reports monthly active unique purchasing customers.
+        'description': """### Incident Report
+"An investor metrics report showed 10,000 active monthly purchasers, but analytics found only 3,000 unique individuals because repeat buyers were counted on every purchase."
 
 ### Bug Report
-If 1 customer places 10 orders in a day, the dashboard reports 10 active customers instead of 1!
+The unique active customer aggregation counts total order records without deduplicating customer IDs, overstating active customer reach.
 
 ### Steps to Reproduce
-1. Execute query in `query.sql`.
-2. Notice `COUNT(customer_id)`.
-3. Multiple orders by the same customer are counted repeatedly.
+1. Ingest multiple orders placed by the same repeat customer.
+2. Execute `query.sql`.
+3. Inspect the returned `unique_customers` count.
+4. Observe that repeat customer orders are counted multiple times.
 
-### Expected Behavior
-Count distinct customers: `COUNT(DISTINCT customer_id) AS unique_customers`.
+### Expected Behaviour
+Deduplicate customer IDs during aggregation: `SELECT COUNT(DISTINCT customer_id) AS unique_customers FROM orders;`.
 
-### Actual Behavior
-Uses `COUNT(customer_id)` without `DISTINCT`.
+### Actual Behaviour
+`COUNT(customer_id)` counts all order rows without distinct qualification.
 
-### Impact
-Customer base size inflated by 300% on investor quarterly reports.
+### Starter Files
+`query.sql` - Calculates unique purchasing customer reach metrics.
+`schema.sql` - Order transaction records and customer identifiers.
 
-### Requirements
-- Use `COUNT(DISTINCT customer_id) AS unique_customers`.
-""",
+### Task
+Add `DISTINCT` to `COUNT()` in `query.sql` to calculate unique purchasers.
+
+### Acceptance Criteria
+1. Projected column: `unique_customers`.
+2. Each purchaser is counted exactly once regardless of order volume.
+
+### Constraints
+- Target Database: SQLite 3.35+ / ANSI SQL standard compliant.
+- Output column alias: `unique_customers`.
+- Deduplicated count metric.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -944,12 +1121,14 @@ INSERT INTO orders VALUES
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Distinct customers count is 2', 'input': '', 'expected': 'Deduplicated groups satisfying having condition'}
+            {'id': 1, 'name': 'Distinct customers count is 2', 'input': '', 'expected': 'Deduplicated groups satisfying having condition'}
         ],
         'bug_signature': 'SELECT COUNT(customer_id) AS unique_customers FROM orders;',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            'Add `DISTINCT`: `SELECT COUNT(DISTINCT customer_id) AS unique_customers FROM orders;`.'
+            '`COUNT(column)` tallies the total number of non-null rows, whereas measuring user populations requires counting distinct IDs.',
+            'Examine the aggregation function in `query.sql`.',
+            'Insert the `DISTINCT` keyword inside the count function: `COUNT(DISTINCT customer_id) AS unique_customers`.'
         ],
         'topics': ['SQL', 'COUNT DISTINCT', 'Metrics'],
         'skills_tested': ['SQL', 'Database'],
@@ -958,38 +1137,49 @@ INSERT INTO orders VALUES
         'expected_query': 'SELECT COUNT(DISTINCT customer_id) AS unique_customers FROM orders;'
     })
 
-    # 75. A recursive query omits part of an organizational hierarchy
+    # 75. Organizational hierarchy chart cuts off sub-team employee reports
     challenges.append({
         'id': 75,
-        'title': '[SQL-M15] A Recursive Query Omits Part of an Organizational Hierarchy',
+        'title': 'Organizational Hierarchy Chart Cuts Off Sub-Team Employee Reports',
         'difficulty': 'Medium',
         'technology': 'SQL',
         'category': 'CTE',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-An HR organizational chart application displays all employees reporting under the CEO (including indirect reports).
+        'description': """### Incident Report
+"HR reported that company org charts cut off after direct reports to the CEO, completely omitting sub-team managers and individual contributors."
 
 ### Bug Report
-Only direct reports to the CEO appear; second-level managers and individual contributors are omitted!
+The recursive common table expression joins subsequent employee rows against parent manager IDs rather than parent employee IDs, terminating recursive traversal prematurely.
 
 ### Steps to Reproduce
-1. Execute recursive query in `query.sql`.
-2. Notice recursive term joins `WHERE e.manager_id = org.manager_id` instead of `WHERE e.manager_id = org.id`.
-3. Hierarchy stops descending after level 1.
+1. Ingest a multi-tier reporting chain (CEO -> VP -> Lead -> Junior).
+2. Execute `query.sql`.
+3. Inspect the returned organizational hierarchy.
+4. Observe that reports below level 2 are missing from the chart.
 
-### Expected Behavior
-The recursive join must match employee `manager_id` with parent `org.id`.
+### Expected Behaviour
+Join child employee `manager_id` with parent CTE `id`: `FROM employees e JOIN org_tree org ON e.manager_id = org.id`.
 
-### Actual Behavior
-Joins on identical manager_id, failing to recurse down the tree.
+### Actual Behaviour
+Joining on `org.manager_id` prevents downward recursive traversal past initial direct reports.
 
-### Impact
-Department heads cannot view full staffing headcount across sub-teams.
+### Starter Files
+`query.sql` - Builds corporate reporting hierarchy via recursive CTE.
+`schema.sql` - Employee organizational reporting tree.
 
-### Requirements
-- Correct the recursive join condition so employee manager relationships properly link to the ancestor node's primary key.
-""",
+### Task
+Correct the recursive join condition in `org_tree` in `query.sql`.
+
+### Acceptance Criteria
+1. Projected columns: `id`, `name`, `level`.
+2. Traverses all reporting tiers from top executive to individual contributors.
+3. Ordered by `level, id`.
+
+### Constraints
+- Target Database: SQLite 3.35+ with Recursive CTE support.
+- Traverses full parent-child hierarchy.
+- Result ordering: `level, id`.""",
         'files': [
             {
                 'name': 'schema.sql',
@@ -1017,12 +1207,14 @@ SELECT id, name, level FROM org_tree ORDER BY level, id;"""
             }
         ],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Full 4-level tree generated', 'input': '', 'expected': 'Complete hierarchical reporting structure'}
+            {'id': 1, 'name': 'Full 4-level tree generated', 'input': '', 'expected': 'Complete hierarchical reporting structure'}
         ],
         'bug_signature': 'ON e.manager_id = org.manager_id',
         'suspected_component': 'query.sql',
         'ai_suggestions': [
-            "Check the recursive join condition: an employee's manager_id should match the ancestor's primary key id."
+            'In a recursive tree CTE, the recursive step must link child foreign keys to the parent primary key produced by the previous iteration.',
+            'Check the join condition linking `employees e` with `org_tree org` in `query.sql`.',
+            'Change `ON e.manager_id = org.manager_id` to `ON e.manager_id = org.id`.'
         ],
         'topics': ['SQL', 'Recursive CTE', 'Hierarchies'],
         'skills_tested': ['SQL', 'Database'],

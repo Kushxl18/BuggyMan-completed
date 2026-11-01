@@ -14,29 +14,40 @@ def get_code_medium():
         'category': 'API & Web',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A billing microservice sends charge requests to Stripe. To prevent duplicate charges upon network drops, each payment must carry a stable idempotency key.
+        'description': """### Incident Report
+"A customer reported being charged twice on their credit card statement after seeing a temporary network timeout alert during checkout for order ORD-1."
 
 ### Bug Report
-When network packets drop and the client retries the charge, customers are charged twice on their credit cards!
+When network retries occur during checkout payment requests, distinct transaction tokens are sent to the payment gateway across attempts, resulting in duplicate financial charges.
 
 ### Steps to Reproduce
-1. Execute `charge_with_retry(order_id="ord_100", amount=50, max_retries=2)`.
-2. Observe that each retry loop iteration generates a brand new `uuid4()` idempotency key.
-3. The payment processor treats each attempt as a distinct transaction.
+1. Call `charge_with_retry(gateway, order_id="ORD-1", amount=50, max_attempts=3)`.
+2. Simulate a transient network error on the initial attempt.
+3. Inspect the idempotency keys submitted to the payment gateway across retries.
+4. Observe that the retry attempts do not preserve the same idempotency key.
 
-### Expected Behavior
-The idempotency key must be generated once before the retry loop and reused across all retry attempts.
+### Expected Behaviour
+All retry attempts for the same logical payment transaction must reuse the same invariant idempotency key.
 
-### Actual Behavior
-`idempotency_key = str(uuid.uuid4())` is inside the loop body, generating new keys for each retry.
+### Actual Behaviour
+A new idempotency token is regenerated on each retry iteration, causing the gateway to treat each attempt as an independent transaction.
 
-### Impact
-Double billing of customers, surge in chargeback fees, and payment merchant disputes.
+### Starter Files
+`payment_client.py` - Manages payment gateway transactions and retry policies.
 
-### Requirements
-- Generate or derive the idempotency key once outside the retry loop so all attempts for the order share the identical key.
-""",
+### Task
+Refactor `charge_with_retry` in `payment_client.py` so the idempotency key is created once prior to entering the retry loop.
+
+### Acceptance Criteria
+1. `charge_with_retry(mock_gw, "ORD-1", 50)` produces exactly 1 unique idempotency key across failed and successful attempts.
+2. `charge_with_retry(mock_gw, "ORD-2", 25)["status"]` returns `'paid'`.
+
+### Constraints
+- `order_id` is a non-empty string.
+- `amount` is a positive number.
+- `max_attempts` is an integer `>= 1`.
+- Re-raises the last exception if all retry attempts fail.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'payment_client.py',
             'content': '''import uuid
@@ -67,7 +78,7 @@ res["keys"][0] == res["keys"][1]''', 'expected': 'True', 'hidden': False},
     def charge(self, oid, amt, key): return {"status": "paid", "key": key}
 charge_with_retry(MockGateway(), "ORD-2", 25)["status"]''', 'expected': 'paid', 'hidden': False}
         ],
-        'bug_signature': 'idempotency_key = f"idem_{uuid.uuid4().hex[:8]}"',
+        'bug_signature': 'attempts += 1\n        idempotency_key = f"idem_{uuid.uuid4().hex[:8]}"',
         'suspected_component': 'payment_client.py',
         'ai_suggestions': [
             'Notice that `idempotency_key` is created inside `while attempts < max_attempts:`.',
@@ -88,29 +99,37 @@ charge_with_retry(MockGateway(), "ORD-2", 25)["status"]''', 'expected': 'paid', 
         'category': 'Caching',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A flash-sale retail store caches individual product details as well as category catalog summaries.
+        'description': """### Incident Report
+"Our merchandising team marked down the summer apparel collection from $100 to $60. When clicking an individual product link the price shows $60, but when browsing the category grid, the old $100 price is still shown."
 
 ### Bug Report
-When an administrator edits a product price from $100 down to $60, the category browse page still shows the old $100 price for hours.
+When updating an item's price, the cache invalidation service fails to invalidate related category aggregate caches, resulting in stale catalog listings.
 
 ### Steps to Reproduce
-1. Update product price via `update_product_price(product_id, new_price, category_id)`.
-2. Notice `cache.delete(f"product:{product_id}")` is called.
-3. Category listing cache `f"category:{category_id}"` is never invalidated!
+1. Update a product price via `update_product_price(db, cache, "P10", "CAT2", 60)`.
+2. Inspect the keys purged from the cache layer.
+3. Observe that category collection cache entries remain untouched.
 
-### Expected Behavior
-Both the item cache and the parent category catalog cache must be invalidated when a product price changes.
+### Expected Behaviour
+Price updates must invalidate both the individual product cache key (`product:{product_id}`) and the associated category listing cache key (`category:{category_id}`).
 
-### Actual Behavior
-Only the specific product cache key is deleted.
+### Actual Behaviour
+Only the single product cache entry is invalidated, leaving collection views serving stale prices.
 
-### Impact
-Customers see contradictory pricing between catalog search and checkout, causing cart abandonment.
+### Starter Files
+`pricing_service.py` - Handles price updates and cache invalidation.
 
-### Requirements
-- Invalidate both `f"product:{product_id}"` and `f"category:{category_id}"` in cache.
-""",
+### Task
+Modify `update_product_price` in `pricing_service.py` to invalidate both the product key and its parent category key.
+
+### Acceptance Criteria
+1. `update_product_price({}, cache, "P10", "CAT2", 60)` invalidates both `'product:P10'` and `'category:CAT2'`.
+
+### Constraints
+- `product_id` and `category_id` are alphanumeric strings.
+- `new_price` is a positive numeric value.
+- Both cache entries must be purged in the cache layer.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'pricing_service.py',
             'content': '''def update_product_price(db, cache, product_id, category_id, new_price):
@@ -148,28 +167,39 @@ update_product_price({}, c, "P10", "CAT2", 60)
         'category': 'Data & Processing',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A community feed ranks posts by upvote counts. Multiple posts frequently have identical upvote numbers.
+        'description': """### Incident Report
+"Users browsing the trending feed reported that certain posts appeared on page 1 and then appeared again at the top of page 2, while other posts were skipped entirely."
 
 ### Bug Report
-When users scroll through the feed, the same post appears on both Page 1 and Page 2!
+When multiple posts share the same upvote count, pagination ordering is non-deterministic, causing posts to shift positions and duplicate across pagination windows.
 
 ### Steps to Reproduce
-1. Feed has 10 posts, all with 5 upvotes.
-2. Slicing with non-deterministic ordering shifts identical elements between pages.
+1. Query page 1 with `page_size=2` for a list of posts with tied upvote counts.
+2. Query page 2 with `page_size=2`.
+3. Compare the post IDs across both pages.
+4. Observe that duplicate IDs appear across consecutive pages.
 
-### Expected Behavior
-Sorting must have a secondary deterministic tie-breaker: sort primarily by `upvotes` descending, then secondarily by `id` ascending.
+### Expected Behaviour
+Posts must be deterministically sorted with highest upvotes first, using post `id` as an ascending tie-breaker for identical upvote counts.
 
-### Actual Behavior
-Sorts only by `post["upvotes"]` without a tie-breaker.
+### Actual Behaviour
+Sorting relies solely on the upvotes metric without a unique secondary tie-breaker, resulting in unstable page windows.
 
-### Impact
-Users see duplicate posts in feeds and review lists.
+### Starter Files
+`paginator.py` - Sorts and chunks social feed items into paginated slices.
 
-### Requirements
-- Update sort key to `(-post["upvotes"], post["id"])`.
-""",
+### Task
+Update `sort_and_paginate_posts` in `paginator.py` to introduce post `id` as a secondary sorting criterion.
+
+### Acceptance Criteria
+1. `[p["id"] for p in sort_and_paginate_posts(posts, page=1, page_size=2)]` returns `[1, 4]`.
+2. `[p["id"] for p in sort_and_paginate_posts(posts, page=2, page_size=2)]` returns `[2, 3]`.
+
+### Constraints
+- `posts` is a list of dictionaries with `'id'` (int) and `'upvotes'` (int).
+- Primary sort is descending by `upvotes`; secondary sort is ascending by `id`.
+- `page >= 1` and `page_size >= 1`.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'paginator.py',
             'content': '''def sort_and_paginate_posts(posts, page=1, page_size=2):
@@ -209,29 +239,38 @@ p2 = sort_and_paginate_posts(posts, page=2, page_size=2)
         'category': 'API & Web',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A payment webhook consumer processes `payment.succeeded` events sent by Stripe.
+        'description': """### Incident Report
+"Warehouse operators reported duplicate dispatch labels printed for identical orders whenever the payment provider resent webhook delivery events."
 
 ### Bug Report
-Stripe retries webhook delivery if an ACK is delayed. The handler processes the duplicate event and ships the order twice!
+The webhook handler processes events unconditionally without idempotency tracking, resulting in duplicate fulfillment actions when external providers retry webhook delivery.
 
 ### Steps to Reproduce
-1. Deliver event `{"id": "evt_001", "type": "payment.succeeded"}` twice.
-2. Handler executes side effect both times.
+1. Call `handle_webhook_event({"id": "evt_1", "order_id": "101"}, processed, actions)`.
+2. Call `handle_webhook_event` again with the identical event payload.
+3. Inspect the `actions` log.
+4. Observe duplicate fulfillment actions recorded for the same event ID.
 
-### Expected Behavior
-The handler must check if `event_id` was already processed, record it in processed set/DB, and skip duplicate processing.
+### Expected Behaviour
+When an event ID has already been recorded in `processed_events`, the handler must return `'ALREADY_PROCESSED'` and take no fulfillment actions.
 
-### Actual Behavior
-The handler executes side effects unconditionally without checking or recording `processed_event_ids`.
+### Actual Behaviour
+Every incoming webhook event is processed and added to `order_actions` regardless of whether it was already processed.
 
-### Impact
-Duplicate physical orders shipped to customers for a single payment.
+### Starter Files
+`webhook_dispatcher.py` - Ingests external webhook events and triggers downstream order fulfillment.
 
-### Requirements
-- Check `if event_id in processed_events: return "ALREADY_PROCESSED"`.
-- Otherwise add `event_id` to `processed_events` and proceed with processing.
-""",
+### Task
+Add an idempotency check in `handle_webhook_event` using `processed_events` to ignore duplicate deliveries.
+
+### Acceptance Criteria
+1. Processing a new event returns `'PROCESSED'` and records the fulfillment action.
+2. Processing a duplicate event returns `'ALREADY_PROCESSED'` and does not re-add to `order_actions`.
+
+### Constraints
+- `event` is a dictionary containing `'id'` and `'order_id'`.
+- `processed_events` is a `set` of event ID strings.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'webhook_dispatcher.py',
             'content': '''def handle_webhook_event(event, processed_events, order_actions):
@@ -267,30 +306,38 @@ r2 = handle_webhook_event({"id": "evt_1", "order_id": "101"}, processed, actions
         'category': 'Concurrency',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-Users update notification preferences from mobile devices and desktop browsers simultaneously.
+        'description': """### Incident Report
+"A user reported that changing their dark mode setting reverted their newly updated notification email address because an older browser tab saved right after."
 
 ### Bug Report
-A user toggles dark mode at 10:00:05. A delayed sync request sent at 10:00:01 arrives late and overwrites the newer preference!
+The preference service lacks optimistic concurrency control, allowing stale client updates with lower version numbers to overwrite more recent database changes.
 
 ### Steps to Reproduce
-1. Current profile has `version=3, updated_at=100`.
-2. Stale request arrives with `version=2, updated_at=90`.
-3. Handler accepts the stale request and overwrites current profile.
+1. Initialize a record with `version: 5`.
+2. Attempt an update with a payload carrying `version: 3`.
+3. Inspect the result and the record's current state.
+4. Observe that the stale payload overwrote the newer record.
 
-### Expected Behavior
-Reject or ignore incoming updates if `incoming["version"] <= current["version"]`.
+### Expected Behaviour
+Updates must only be applied if `incoming_update['version'] > current_record['version']`, returning `True`; otherwise return `False` and leave the record unmutated.
 
-### Actual Behavior
-Unconditional overwrite: `current.update(incoming)`.
+### Actual Behaviour
+Incoming payloads overwrite the current record unconditionally, disregarding version numbers.
 
-### Impact
-User changes are lost and overwritten by delayed background sync packets.
+### Starter Files
+`preference_manager.py` - Updates user account preferences with optimistic concurrency control.
 
-### Requirements
-- Implement optimistic concurrency version check: only update if `incoming["version"] > current["version"]`.
-- Return `True` if applied, `False` if rejected due to stale version.
-""",
+### Task
+Implement optimistic concurrency version checks in `update_user_preferences`.
+
+### Acceptance Criteria
+1. `update_user_preferences({"theme": "dark", "version": 5}, {"theme": "light", "version": 3})` returns `False`.
+2. `update_user_preferences({"theme": "dark", "version": 5}, {"theme": "solarized", "version": 6})` returns `True`.
+
+### Constraints
+- `current_record` and `incoming_update` contain an integer `'version'` field.
+- Updates must only apply when incoming version is strictly greater than current version.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'preference_manager.py',
             'content': '''def update_user_preferences(current_record, incoming_update):
@@ -328,30 +375,39 @@ applied = update_user_preferences(current, newer)
         'category': 'Data & Processing',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A medical reminder app sends SMS notifications at 08:00 AM local patient time.
+        'description': """### Incident Report
+"Automated database maintenance notifications scheduled for 8:00 AM New York time (UTC-5) were dispatched at 3:00 AM instead of 1:00 PM UTC."
 
 ### Bug Report
-Patients in New York (UTC-5) receive medication alerts at 03:00 AM in the middle of the night!
+The timezone converter adds the local UTC offset to the target hour instead of subtracting it, shifting scheduled jobs in the reverse direction.
 
 ### Steps to Reproduce
-1. Schedule alert for 08:00 AM in timezone `UTC-5`.
-2. Convert to UTC timestamp.
-3. System subtracts 5 hours instead of adding 5 hours to reach UTC.
+1. Call `convert_local_to_utc_hour(8, -5)`.
+2. Inspect the converted UTC hour.
+3. Observe that the calculation produces an hour that moves earlier instead of later.
 
-### Expected Behavior
-Local time 08:00 at UTC-5 equals 13:00 UTC (8 - (-5) = 13).
+### Expected Behaviour
+Converting local hour to UTC requires subtracting the UTC offset: `(local_hour - utc_offset_hours) % 24`.
 
-### Actual Behavior
-Code applies offset in reverse direction: `local_hour - offset` -> `8 - 5 = 3` AM UTC.
+### Actual Behaviour
+The formula adds the offset, causing negative offsets (Western Hemisphere) to shift earlier instead of later.
 
-### Impact
-Patients woken up by late-night alerts, resulting in compliance complaints and unsubscribes.
+### Starter Files
+`scheduler.py` - Converts localized job schedules into standardized UTC hours.
 
-### Requirements
-- Correctly convert scheduled local notification hours into a 24-hour UTC format.
-- Ensure positive and negative timezone offsets shift hours properly across day boundaries.
-""",
+### Task
+Fix the hour conversion formula in `scheduler.py` to correctly calculate UTC hours.
+
+### Acceptance Criteria
+1. `convert_local_to_utc_hour(8, -5)` returns `13`.
+2. `convert_local_to_utc_hour(8, 9)` returns `23`.
+3. `convert_local_to_utc_hour(8, 0)` returns `8`.
+
+### Constraints
+- `local_hour` is an integer `0 <= local_hour <= 23`.
+- `utc_offset_hours` is an integer between `-12` and `14`.
+- Returned value is an integer `0 <= hour <= 23`.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'scheduler.py',
             'content': '''def convert_local_to_utc_hour(local_hour, utc_offset_hours):
@@ -384,28 +440,38 @@ Patients woken up by late-night alerts, resulting in compliance complaints and u
         'category': 'API & Web',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-An algorithmic trading service fetches market depth feeds from a third-party crypto exchange API.
+        'description': """### Incident Report
+"The market ingestion daemon crashed during peak trading hours when a partner API returned HTTP 429 without the optional Retry-After response header."
 
 ### Bug Report
-When exchange returns HTTP 429 Too Many Requests with header `Retry-After: 5`, client crashes with `ValueError: could not convert string to float` when header is missing or non-numeric, or immediately hammers server with 0 delay.
+The rate limit delay parser accesses headers via direct key indexing, crashing with a KeyError when upstream servers omit the Retry-After header.
 
 ### Steps to Reproduce
-1. Simulate 429 response without `Retry-After` header.
-2. Client throws `KeyError` or crashes.
+1. Call `parse_rate_limit_delay({}, attempt=1)` with empty headers.
+2. Observe that an unhandled KeyError crashes the parser.
 
-### Expected Behavior
-Parse `Retry-After` safely as integer seconds; if missing or invalid, default to a safe exponential backoff (e.g. `default_backoff = 2 ** attempt`).
+### Expected Behaviour
+If `Retry-After` is missing or invalid, fall back to exponential backoff `min(2 ** attempt, 30)` seconds.
 
-### Actual Behavior
-Unsafe dictionary lookup and lack of default fallback.
+### Actual Behaviour
+Direct dictionary lookup raises an unhandled KeyError when the header is absent.
 
-### Impact
-Trading bot crashes during high market volatility.
+### Starter Files
+`http_client.py` - Handles upstream rate limit response headers and backoff calculations.
 
-### Requirements
-- Safely extract `Retry-After` header. If missing or non-digit, return `min(60, 2 ** attempt)`.
-""",
+### Task
+Update `parse_rate_limit_delay` in `http_client.py` to read `Retry-After` safely and apply exponential backoff fallback.
+
+### Acceptance Criteria
+1. `parse_rate_limit_delay({"Retry-After": "5"}, 1)` returns `5`.
+2. `parse_rate_limit_delay({}, 1)` returns `2`.
+3. `parse_rate_limit_delay({}, 5)` returns `30`.
+
+### Constraints
+- `response_headers` is a dictionary of string header pairs.
+- `attempt` is a positive integer.
+- Fallback delay is capped at `30` seconds.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'http_client.py',
             'content': '''def parse_rate_limit_delay(response_headers, attempt=1):
@@ -438,30 +504,38 @@ Trading bot crashes during high market volatility.
         'category': 'Data & Processing',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A payroll pipeline imports weekly employee timesheets from CSV rows.
+        'description': """### Incident Report
+"A payroll specialist discovered that 45 contractor timesheets vanished from the weekly payroll reconciliation report with zero error logs."
 
 ### Bug Report
-When an employee enters their hours as `"forty"` instead of `40`, their entire timesheet is silently deleted without notifying HR!
+The timesheet ingestion pipeline uses a bare exception catch block that discards malformed records silently without appending them to the quarantine buffer.
 
 ### Steps to Reproduce
-1. Ingest row `{"emp_id": "E100", "hours": "forty"}`.
-2. Broad `except: pass` silently discards the row.
-3. Employee receives a $0 paycheck on Friday.
+1. Submit a batch containing valid records and one record with invalid hours (e.g. `{"emp_id": "E2", "hours": "forty"}`).
+2. Call `process_timesheets(rows)`.
+3. Inspect `res["quarantined"]`.
+4. Observe that the quarantine collection is empty despite the malformed record.
 
-### Expected Behavior
-Capture errors in a quarantine list: `{"emp_id": emp_id, "error": str(err)}` so HR is alerted to fix the row.
+### Expected Behaviour
+Records with invalid numeric hours must be captured in `quarantined` with the original record and error message.
 
-### Actual Behavior
-Bare `except: pass` suppresses the exception and drops the record from both successful and error outputs.
+### Actual Behaviour
+Malformed records are silently swallowed by an empty `except` block, losing data silently.
 
-### Impact
-Employees underpaid, triggering wage compliance law penalties.
+### Starter Files
+`pipeline.py` - Ingests timesheet data, validating numeric hours and separating invalid records.
 
-### Requirements
-- Valid records added to `valid_records`.
-- Invalid records captured in `quarantined_records` with `{"record": r, "error": str(e)}`.
-""",
+### Task
+Modify `process_timesheets` in `pipeline.py` to route invalid records to `quarantined`.
+
+### Acceptance Criteria
+1. Batches with invalid hours route malformed entries to `quarantined`.
+2. Valid entries have hours converted to float in `valid`.
+
+### Constraints
+- `rows` is a list of dictionaries with `'emp_id'` and `'hours'`.
+- Quarantined items must contain `record` and `error` keys.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'pipeline.py',
             'content': '''def process_timesheets(rows):
@@ -499,31 +573,37 @@ Employees underpaid, triggering wage compliance law penalties.
         'category': 'Backend',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-An order processing background queue executes customer notification and inventory reservation tasks.
+        'description': """### Incident Report
+"Customer order notification emails were permanently lost during a database outage because background jobs were acknowledged from the queue before execution finished."
 
 ### Bug Report
-When an unhandled database lock error occurs during job execution, the job vanishes forever instead of being sent to the Dead-Letter Queue (DLQ).
+The background worker acknowledges jobs immediately upon receipt before executing the job handler, preventing retries or dead-letter queue routing if execution fails.
 
 ### Steps to Reproduce
-1. Dequeue job.
-2. Worker marks job as "COMPLETED" before executing.
-3. Job crashes, leaving it marked finished.
+1. Call `execute_job(queue, {"id": "JOB-1"}, fail_fn)` with a function that raises an exception.
+2. Inspect queue acknowledgments and dead-letter queue.
+3. Observe that the failed job was acknowledged before execution and not routed to the DLQ.
 
-### Expected Behavior
-Acknowledge completion only after successful execution. If execution raises, route job to DLQ.
+### Expected Behaviour
+Acknowledge the job only after successful execution; if an exception occurs, route the job to `send_to_dlq(job, error)`.
 
-### Actual Behavior
-Early acknowledgment removes the job from recovery mechanisms.
+### Actual Behaviour
+Pre-acknowledging jobs removes them from queue visibility prior to processing.
 
-### Impact
-Orders remain in pending state indefinitely with no retry attempt.
+### Starter Files
+`worker_queue.py` - Manages task execution lifecycle, acknowledgments, and dead-letter queues.
 
-### Requirements
-- Execute job in try block.
-- On success: `queue.ack(job["id"])`.
-- On exception: `queue.send_to_dlq(job, str(e))`.
-""",
+### Task
+Refactor `execute_job` in `worker_queue.py` to acknowledge only upon success and forward failures to the dead-letter queue.
+
+### Acceptance Criteria
+1. Failed jobs are forwarded to `send_to_dlq`.
+2. Succeeded jobs are acknowledged via `ack`.
+
+### Constraints
+- `queue` implements `ack(job_id)` and `send_to_dlq(job, error)`.
+- Returns `True` on success, `False` on failure.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'worker_queue.py',
             'content': '''def execute_job(queue, job, job_fn):
@@ -563,31 +643,39 @@ execute_job(q, {"id": "JOB-1"}, fail_fn)
         'category': 'Transactions',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A banking service transfers money between customer balances.
+        'description': """### Incident Report
+"A user attempted to transfer $100 to a mistyped account number. Their balance was deducted immediately, but the funds vanished because the destination account did not exist."
 
 ### Bug Report
-$100 is deducted from Sender account, but a database constraint error occurs when crediting Receiver account. The transaction does not rollback, and $100 simply disappears into thin air!
+The fund transfer function mutates the sender account balance before verifying that the recipient account exists in the ledger, causing ledger imbalance.
 
 ### Steps to Reproduce
-1. Execute `transfer_funds(db, sender_id, receiver_id, amount)`.
-2. Step 1 deducts from sender.
-3. Step 2 raises exception.
-4. Sender balance remains deducted without receiver receiving funds.
+1. Initialize accounts `{"ACC_A": 500}`.
+2. Call `transfer_funds(accounts, "ACC_A", "ACC_NONEXISTENT", 100)`.
+3. Inspect `accounts["ACC_A"]`.
+4. Observe that the sender account balance was decremented even though the destination was invalid.
 
-### Expected Behavior
-Both debit and credit must be atomic. If either fails, sender balance must be restored to its original value.
+### Expected Behaviour
+Validate that both sender and recipient accounts exist and sender has sufficient balance before modifying any account balances.
 
-### Actual Behavior
-Lack of rollback restores sender balance.
+### Actual Behaviour
+Funds are deducted from the sender prior to recipient validation, corrupting ledger integrity on invalid targets.
 
-### Impact
-Account balance discrepancies and regulatory auditing non-compliance.
+### Starter Files
+`account_transfer.py` - Processes atomic ledger fund transfers between accounts.
 
-### Requirements
-- Save initial balance snapshot.
-- If receiver credit fails, rollback sender balance to initial value and re-raise.
-""",
+### Task
+Modify `transfer_funds` in `account_transfer.py` to validate all conditions before mutating balances.
+
+### Acceptance Criteria
+1. Transferring to a non-existent recipient returns `False` and leaves sender balance unchanged.
+2. Transferring more than available balance returns `False`.
+3. Valid transfers update both accounts and return `True`.
+
+### Constraints
+- `accounts` is a dictionary mapping account IDs to numeric balances.
+- All balance operations must be atomic (either both update or neither).
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'account_transfer.py',
             'content': '''def transfer_funds(balances, sender, receiver, amount):
@@ -632,30 +720,39 @@ transfer_funds(balances, "Alice", "Bob", 50)
         'category': 'Concurrency',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-An async search suggestion service dispatches backend lookups as the user types queries into a search bar.
+        'description': """### Incident Report
+"Users typing fast in the document search box noticed that query results frequently reverted back to older search terms after the user had already typed a new query."
 
 ### Bug Report
-User quickly types "react", then deletes and types "python". The slower "react" request completes after "python", overwriting the search results with "react"!
+Out-of-order network responses overwrite newer query results with stale data due to missing sequence verification in the client response store.
 
 ### Steps to Reproduce
-1. Issue Request 1 for "react" (takes 200ms).
-2. Issue Request 2 for "python" (takes 50ms).
-3. Request 1 finishes last and overwrites the state.
+1. Call `apply_response(1, "stale_react")`.
+2. Call `apply_response(2, "fresh_python")`.
+3. Call delayed response `apply_response(1, "late_stale_react")`.
+4. Inspect `current_result`.
+5. Observe that the stale response overwrote the newer response.
 
-### Expected Behavior
-Only apply the response if the request sequence ID matches or exceeds the latest issued sequence ID.
+### Expected Behaviour
+Responses with sequence IDs strictly less than `self.latest_issued_seq` must be discarded without mutating `current_result`.
 
-### Actual Behavior
-Every response writes to `state["result"]` regardless of sequence order.
+### Actual Behaviour
+Every incoming response overwrites `current_result` in network arrival order.
 
-### Impact
-Users see search results for previous queries they already deleted.
+### Starter Files
+`data_fetcher.py` - Stores and resolves asynchronous search result payloads.
 
-### Requirements
-- Track `latest_seq_id`.
-- Ignore responses where `response_seq_id < latest_seq_id`.
-""",
+### Task
+Implement sequence checks in `AsyncResultStore.apply_response` in `data_fetcher.py` to discard out-of-order responses.
+
+### Acceptance Criteria
+1. Responses with sequence IDs `>= latest_issued_seq` update `current_result` and advance the sequence.
+2. Stale responses with older sequence IDs return `False` and do not alter `current_result`.
+
+### Constraints
+- `response_seq_id` is a monotonically increasing integer.
+- Ignore responses where `response_seq_id < latest_issued_seq`.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'data_fetcher.py',
             'content': '''class AsyncResultStore:
@@ -675,7 +772,7 @@ store.apply_response(2, "fresh_python")
 store.apply_response(1, "late_stale_react")
 store.current_result == "fresh_python"''', 'expected': 'True', 'hidden': False}
         ],
-        'bug_signature': 'self.current_result = data\n        return True',
+        'bug_signature': 'def apply_response(self, response_seq_id, data):\n        self.current_result = data\n        return True',
         'suspected_component': 'data_fetcher.py',
         'ai_suggestions': [
             'Add `if response_seq_id < self.latest_issued_seq: return False` before updating `self.current_result`.'
@@ -695,28 +792,38 @@ store.current_result == "fresh_python"''', 'expected': 'True', 'hidden': False}
         'category': 'Authentication',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-An OAuth client issues refresh token requests when access tokens expire.
+        'description': """### Incident Report
+"Our identity provider rate-limited our production backend after 1,000 concurrent API requests simultaneously triggered 1,000 independent OAuth token refresh calls."
 
 ### Bug Report
-When 5 API calls return 401 at the same millisecond, 5 separate refresh requests are launched concurrently. The authorization server detects reuse of the same refresh token and revokes user access entirely!
+The token manager requests a new authorization token from the auth provider on every request without caching valid tokens until expiration.
 
 ### Steps to Reproduce
-1. Call `get_active_token` concurrently from multiple threads.
-2. Observe 5 separate refresh calls executed.
+1. Initialize `mgr = TokenManager(mock_refresh)`.
+2. Call `mgr.get_token()` twice in immediate succession.
+3. Check the invocation count of `mock_refresh`.
+4. Observe that the refresh function was invoked on each call.
 
-### Expected Behavior
-A single refresh request must be shared (single-flight / mutex) across all concurrent callers.
+### Expected Behaviour
+When a valid cached token exists and has not expired, return the cached token without invoking `refresh_fn`.
 
-### Actual Behavior
-No synchronization lock, triggering multiple duplicate refresh token calls.
+### Actual Behaviour
+A new token is fetched unconditionally on every `get_token` call.
 
-### Impact
-Legitimate users logged out and account sessions invalidated.
+### Starter Files
+`token_refresh.py` - Manages OAuth access tokens and token renewal caching.
 
-### Requirements
-- Use a flag / in-flight token check to ensure only one refresh runs, and subsequent calls reuse the refreshed token.
-""",
+### Task
+Implement token caching with expiration tracking in `token_refresh.py`.
+
+### Acceptance Criteria
+1. Repeated calls to `get_token()` within token TTL reuse the cached token.
+2. Refresh is invoked only when no token is cached or the token has expired.
+
+### Constraints
+- Cache TTL is 300 seconds.
+- Return the cached token string.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'token_refresh.py',
             'content': '''class TokenManager:
@@ -762,29 +869,40 @@ t2 = mgr.get_token()
         'category': 'Data & Processing',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A Kubernetes operator merges user-provided Helm chart override values with default cluster configurations.
+        'description': """### Incident Report
+"Deploying to staging caused service startup failures because staging environment overrides for `db.port` completely erased the default `db.host` setting."
 
 ### Bug Report
-User supplies `{"database": {"port": 5433}}`. The merged config completely deletes `{"database": {"host": "localhost", "name": "prod"}}`!
+The configuration loader performs shallow dictionary merging, replacing entire nested configuration sections when overriding individual nested properties.
 
 ### Steps to Reproduce
-1. Default: `{"db": {"host": "localhost", "port": 5432}}`.
-2. Override: `{"db": {"port": 5433}}`.
-3. Output: `{"db": {"port": 5433}}` (host is missing!).
+1. Define base config `{"db": {"host": "localhost", "port": 5432}}`.
+2. Override with `{"db": {"port": 5433}}`.
+3. Call `deep_merge(base, override)`.
+4. Inspect `res["db"]`.
+5. Observe that `host` was erased and only `port` remains.
 
-### Expected Behavior
-Deeply merge nested dictionaries so non-conflicting sibling keys are preserved.
+### Expected Behaviour
+Nested dictionary keys must be recursively merged so sibling properties in nested objects are retained.
 
-### Actual Behavior
-Shallow `dict.update()` replaces the entire nested `db` dictionary.
+### Actual Behaviour
+Shallow dictionary updates overwrite entire sub-dictionaries when keys collide.
 
-### Impact
-Production clusters fail to start because database hosts and connection settings are wiped.
+### Starter Files
+`config_merger.py` - Merges layered application configurations across environments.
 
-### Requirements
-- Implement recursive deep merge of nested dictionaries.
-""",
+### Task
+Implement recursive dictionary merging in `deep_merge` in `config_merger.py`.
+
+### Acceptance Criteria
+1. `deep_merge(base, override)["db"]["port"]` returns `5433`.
+2. `deep_merge(base, override)["db"]["host"]` returns `'localhost'`.
+
+### Constraints
+- `base` and `override` are dictionaries with arbitrary nesting.
+- Non-conflicting keys must be preserved.
+- Sibling nested dictionary values must not be lost.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'config_merger.py',
             'content': '''def deep_merge(base, override):
@@ -819,29 +937,38 @@ res = deep_merge(base, override)
         'category': 'Backend',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-An order checkout processor decrements warehouse stock when an order is placed.
+        'description': """### Incident Report
+"During a Black Friday flash sale, our fulfillment team noticed an item had an inventory level of -14, resulting in 14 orders that could not be fulfilled."
 
 ### Bug Report
-When available stock is 2 and customer orders 5, stock becomes `-3`, allowing customer to buy non-existent goods.
+The inventory decrement routine performs unconditional subtraction without validating stock availability, allowing stock balances to drop below zero.
 
 ### Steps to Reproduce
-1. Stock is 2.
-2. Call `decrement_stock(item_id, requested_qty=5)`.
-3. Stock decremented to -3 without raising error.
+1. Initialize stock `{"SKU1": 2}`.
+2. Attempt to decrement 5 units via `decrement_stock(inv, "SKU1", 5)`.
+3. Observe that stock goes negative instead of raising a ValueError.
 
-### Expected Behavior
-If `requested_qty > available_qty`, raise `ValueError("Insufficient stock")` and do not alter stock.
+### Expected Behaviour
+If requested quantity exceeds available stock, raise a `ValueError("Insufficient stock")` and do not mutate stock.
 
-### Actual Behavior
-Blind subtraction without verifying availability.
+### Actual Behaviour
+The function subtracts the requested quantity unconditionally, creating negative stock balances.
 
-### Impact
-Overselling physical stock resulting in unfulfillable orders and customer refunds.
+### Starter Files
+`inventory_service.py` - Decrements warehouse inventory on purchase orders.
 
-### Requirements
-- Check `if current_stock < qty: raise ValueError("Insufficient stock")`.
-""",
+### Task
+Add inventory validation in `decrement_stock` to reject overdrawn orders.
+
+### Acceptance Criteria
+1. Decrementing within available quantity returns the updated stock level.
+2. Decrementing more than available stock raises `ValueError`.
+
+### Constraints
+- `inventory` is a dictionary of string item IDs to integer stock counts.
+- `qty` is a positive integer.
+- Stock must never become negative.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'inventory_service.py',
             'content': '''def decrement_stock(inventory, item_id, qty):
@@ -879,28 +1006,38 @@ decrement_stock(inv, "SKU1", 3) == 7''', 'expected': 'True', 'hidden': False}
         'category': 'Data & Processing',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-An admin panel exports user support feedback comments to CSV for analytical reporting in Excel.
+        'description': """### Incident Report
+"A financial analyst reported that customer reports failed to import into Excel because customer addresses containing commas shifted data into the wrong columns."
 
 ### Bug Report
-When user feedback contains commas or line breaks (e.g., `"Great service,\nfast delivery"`), the exported CSV breaks across lines and shifts columns in Excel.
+The CSV export module concatenates strings with raw commas rather than using standard CSV quoting, corrupting rows containing commas or special characters.
 
 ### Steps to Reproduce
-1. Export row with comment `"Great service,\nfast delivery"`.
-2. Raw string join produces broken unquoted text.
+1. Call `export_to_csv_row(["Alice", "Hello, World", 100])`.
+2. Inspect the resulting CSV row.
+3. Observe that the string containing a comma is not enclosed in quotes, splitting it into two columns.
 
-### Expected Behavior
-Fields with commas, quotes, or newlines must be enclosed in quotes according to RFC 4180.
+### Expected Behaviour
+Fields containing commas or special characters must be properly escaped and quoted according to RFC 4180 standard.
 
-### Actual Behavior
-Naive string join `",".join(row)`.
+### Actual Behaviour
+Raw string concatenation produces unquoted delimiters, corrupting tabular data.
 
-### Impact
-Corrupted spreadsheets in corporate accounting and analytics teams.
+### Starter Files
+`csv_exporter.py` - Exports data records into CSV formatted rows.
 
-### Requirements
-- Use Python standard library `csv.writer` and `io.StringIO` to format CSV rows properly.
-""",
+### Task
+Use Python's `csv` module in `csv_exporter.py` to format CSV rows with standard escaping.
+
+### Acceptance Criteria
+1. Fields with embedded commas are properly quoted: `Alice,"Hello, World",100`.
+2. Standard fields without commas are formatted cleanly.
+
+### Constraints
+- `fields` is a list of strings, integers, or floats.
+- Returns a string ending with a newline `\n`.
+- RFC 4180 compliant CSV formatting.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'csv_exporter.py',
             'content': '''def export_to_csv_row(fields):
@@ -931,28 +1068,38 @@ Corrupted spreadsheets in corporate accounting and analytics teams.
         'category': 'Backend',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A bulk notification engine delivers SMS messages in batches of 100 recipients.
+        'description': """### Incident Report
+"A marketing blast to 500 customers stopped after only 12 emails were sent because one invalid email address caused the batch worker to crash."
 
 ### Bug Report
-If recipient #42 has an invalid phone number, the entire batch aborts, and recipients 43-100 never receive their alerts!
+The batch notification processor lacks isolated error handling per item, causing the entire batch to abort when any single recipient fails.
 
 ### Steps to Reproduce
-1. Send batch with 5 items where item 3 throws an error.
-2. Whole function throws, aborting remaining items.
+1. Provide a batch of 3 items where item 2 raises an exception in `send_fn`.
+2. Call `process_batch(items, mock_send)`.
+3. Observe that item 3 is never processed and the function crashes.
 
-### Expected Behavior
-Catch individual item exceptions, collect success and failed items separately, and continue processing the rest of the batch.
+### Expected Behaviour
+Individual item failures must be caught, logging the failed ID into `failed` and allowing the remaining items to process into `succeeded`.
 
-### Actual Behavior
-Uncaught exception aborts the loop.
+### Actual Behaviour
+An unhandled exception on an invalid item terminates batch execution prematurely.
 
-### Impact
-Single invalid user input disrupts alerts for thousands of unaffected users.
+### Starter Files
+`batch_processor.py` - Processes batch notifications and isolates item-level failures.
 
-### Requirements
-- Return `{"succeeded": [...], "failed": [{"id": ..., "error": ...}]}`.
-""",
+### Task
+Wrap per-item processing in `batch_processor.py` with exception handling to isolate errors.
+
+### Acceptance Criteria
+1. Valid items are recorded in `res["succeeded"]`.
+2. Failed items are recorded in `res["failed"]` without aborting remaining items.
+
+### Constraints
+- `items` is a list of dictionaries with an `'id'` field.
+- Returns `{"succeeded": [...], "failed": [...]}`.
+- All items in the batch must be evaluated.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'batch_processor.py',
             'content': '''def process_batch(items, send_fn):
@@ -990,29 +1137,38 @@ res = process_batch([{"id": 1}, {"id": 2}, {"id": 3}], mock_send)
         'category': 'API & Web',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-A data sync crawler fetches external CRM records page-by-page until no more records remain.
+        'description': """### Incident Report
+"API monitoring alerted on an external partner making millions of consecutive pagination requests overnight because our API kept returning a next-page cursor after the last record."
 
 ### Bug Report
-The sync crawler runs for 24 hours in an infinite loop, continuously requesting the same empty page millions of times.
+The pagination response builder generates a next-page cursor token even when the current page contains fewer records than the requested page size, trapping clients in an infinite loop.
 
 ### Steps to Reproduce
-1. Fetch final page (returns 0 items).
-2. API response continues to return `next_cursor="cur_end"` instead of `None`.
-3. Client continues requesting `next_cursor` endlessly.
+1. Call `build_page_response(records=[{"id": 1}], page_size=10, last_id=1)` with fewer records than `page_size`.
+2. Inspect `res["next_cursor"]`.
+3. Observe that a next-page cursor is returned instead of signaling dataset exhaustion with `None`.
 
-### Expected Behavior
-When returned items count is 0 or less than `page_size`, `next_cursor` must be `None`.
+### Expected Behaviour
+When `len(records) < page_size`, the dataset is complete and `next_cursor` must be `None`.
 
-### Actual Behavior
-Always returns a non-null `next_cursor`.
+### Actual Behaviour
+An opaque next cursor is returned unconditionally regardless of whether the page is full.
 
-### Impact
-Server CPU exhaustion, API rate-limit exhaustion, and runaway cloud infrastructure costs.
+### Starter Files
+`cursor_paginator.py` - Formats paginated API responses and cursor tokens.
 
-### Requirements
-- If fewer records than page_size are returned, terminate pagination by setting the next cursor to None.
-""",
+### Task
+Update `build_page_response` in `cursor_paginator.py` to set `next_cursor = None` when records are exhausted.
+
+### Acceptance Criteria
+1. Slices with `len(records) < page_size` return `next_cursor: None`.
+2. Full slices with `len(records) == page_size` return `next_cursor: "cur_<id>"`.
+
+### Constraints
+- `records` is a list of items.
+- `page_size` is a positive integer.
+- `last_id` is an integer or string identifier.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'cursor_paginator.py',
             'content': '''def build_page_response(records, page_size, last_id):
@@ -1025,7 +1181,7 @@ res["next_cursor"] is None''', 'expected': 'True', 'hidden': False},
             {'id': 2, 'name': 'Visible: Full page generates next cursor', 'input': '''res = build_page_response(list(range(10)), page_size=10, last_id=10)
 res["next_cursor"] == "cur_10"''', 'expected': 'True', 'hidden': False}
         ],
-        'bug_signature': 'next_cursor = f"cur_{last_id}"\n    return',
+        'bug_signature': 'def build_page_response(records, page_size, last_id):\n    next_cursor = f"cur_{last_id}"\n    return',
         'suspected_component': 'cursor_paginator.py',
         'ai_suggestions': [
             'Check: `next_cursor = f"cur_{last_id}" if len(records) == page_size else None`.'
@@ -1045,29 +1201,36 @@ res["next_cursor"] == "cur_10"''', 'expected': 'True', 'hidden': False}
         'category': 'Data & Processing',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-An address formatting service processes user profile forms to produce postal labels.
+        'description': """### Incident Report
+"New users were unable to view their profile dashboard because accounts created via social login without an address triggered a 500 error."
 
 ### Bug Report
-When a user profile has no secondary address (`address["secondary"]` is `None` or omitted), formatting throws `TypeError: 'NoneType' object is not subscriptable`.
+The address formatting routine performs nested attribute lookups on optional address objects without null checks, raising unhandled TypeErrors.
 
 ### Steps to Reproduce
-1. Pass profile `{"name": "Alice", "address": None}`.
-2. Call `format_postal_address`.
-3. Crash on `profile["address"]["city"]`.
+1. Call `format_postal_address({"name": "Alice", "address": None})`.
+2. Observe that an unhandled TypeError crashes the formatter.
 
-### Expected Behavior
-Safely handle missing or None address fields, defaulting city to `"Unknown City"`.
+### Expected Behaviour
+If `address` is missing or `None`, format the output with `'Unknown City'`: `f"{profile['name']}, Unknown City"`.
 
-### Actual Behavior
-Direct nested indexing without null safety.
+### Actual Behaviour
+The function directly accesses `profile["address"]["city"]`, crashing when `address` is `None`.
 
-### Impact
-Users without full address details cannot access checkout screens.
+### Starter Files
+`transformer.py` - Enriches and formats user profile addresses.
 
-### Requirements
-- Safely extract nested properties using `.get()` with dictionary default: `(profile.get("address") or {}).get("city", "Unknown City")`.
-""",
+### Task
+Add defensive null checking for the `address` dictionary in `transformer.py`.
+
+### Acceptance Criteria
+1. Profiles with `address: None` return `'Alice, Unknown City'`.
+2. Profiles with valid address dictionaries return `'Bob, Boston'`.
+
+### Constraints
+- `profile` is a dictionary containing `'name'` and optional `'address'`.
+- Missing address or city defaults safely to `'Unknown City'`.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'transformer.py',
             'content': '''def format_postal_address(profile):
@@ -1099,30 +1262,38 @@ Users without full address details cannot access checkout screens.
         'category': 'Rate Limiting',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-An API gateway limits free-tier API clients to 100 requests per minute to protect upstream services from DDoS traffic.
+        'description': """### Incident Report
+"API clients reported that their accounts were permanently locked out with HTTP 429 errors even after waiting hours between requests."
 
 ### Bug Report
-A client sends 100 requests at 12:00:59, and another 100 requests at 12:01:01. The server receives 200 requests within a 2-second window without rate limiting!
+The sliding window rate limiter counts all historical request timestamps without pruning expired timestamps outside the rolling window, permanently blocking clients once the limit is reached.
 
 ### Steps to Reproduce
-1. Fix-window counter resets exactly at the minute mark.
-2. Burst across the minute boundary allows 2x limit.
+1. Initialize `limiter = SlidingWindowLimiter(max_requests=2, window_size=60)`.
+2. Submit requests at `t=10` and `t=20`.
+3. Submit a request at `t=80` (where `t=10` is older than the 60-second window: 80 - 10 = 70 > 60).
+4. Observe that the request at `t=80` is rejected because old timestamps were not evicted.
 
-### Expected Behavior
-A sliding-window rate limiter must purge timestamps older than `now - 60` and check if remaining requests exceed limit.
+### Expected Behaviour
+Requests older than `current_time - self.window_size` must be evicted from history before checking if current count is within limit.
 
-### Actual Behavior
-Fixed-window resets counter to 0 on every minute rollover.
+### Actual Behaviour
+The limiter accumulates timestamps indefinitely, locking out clients permanently.
 
-### Impact
-API servers overwhelmed by boundary burst attacks.
+### Starter Files
+`rate_limiter.py` - Enforces rolling window request limits for API consumers.
 
-### Requirements
-- Prune timestamps older than `current_time - window_size`.
-- If `len(timestamps) >= max_requests`, return `False` (rate limited).
-- Otherwise append `current_time` and return `True`.
-""",
+### Task
+Prune expired timestamps in `allow_request` in `rate_limiter.py`.
+
+### Acceptance Criteria
+1. Requests within a sliding window are limited to `max_requests`.
+2. Expired timestamps are removed, allowing new requests once older requests age out.
+
+### Constraints
+- `max_requests` and `window_size` are positive integers.
+- `current_time` is a monotonically non-decreasing timestamp.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'rate_limiter.py',
             'content': '''class SlidingWindowLimiter:
@@ -1168,29 +1339,37 @@ limiter.allow_request(30)''', 'expected': 'False', 'hidden': False}
         'category': 'Error Handling',
         'time_estimate': '15 mins',
         'points': 150,
-        'description': """### Company Scenario
-An authentication service queries an external LDAP server for corporate credentials.
+        'description': """### Incident Report
+"Operations spent two days investigating an apparent user login failure storm, only to discover that our LDAP authentication server had been offline and errors were masked as bad passwords."
 
 ### Bug Report
-When LDAP server credentials expire, the service catches `Exception` and returns `{"authenticated": False, "reason": "Bad credentials"}`. Administrators spend days resetting user passwords when LDAP service was actually unreachable.
+The authentication wrapper catches generic exceptions indiscriminately, hiding critical network connection failures and misreporting infrastructure outages as invalid user credentials.
 
 ### Steps to Reproduce
-1. LDAP server raises `ConnectionRefusedError`.
-2. Generic handler masks the server error as user password failure.
+1. Call `verify_credentials(mock_auth, "alice", "secret")` where `mock_auth` raises `ConnectionError("LDAP timeout")`.
+2. Inspect the returned result.
+3. Observe that the network failure was caught and concealed as `{"authenticated": False, "error": "Invalid credentials"}`.
 
-### Expected Behavior
-Differentiate operational errors (`ConnectionError`) from authentication errors (`AuthenticationError`), re-raising operational errors.
+### Expected Behaviour
+Network failures such as `ConnectionError` must be allowed to propagate to trigger infrastructure alerts; only authentication validation failures should return unauthenticated status.
 
-### Actual Behavior
-Catches broad `Exception` and treats system failure as user error.
+### Actual Behaviour
+Catching generic `Exception` suppresses low-level connection errors and masks them as bad credentials.
 
-### Impact
-Misdiagnosis of production infrastructure outages as end-user mistakes.
+### Starter Files
+`service_client.py` - Wraps external authentication calls with error classification.
 
-### Requirements
-- Re-raise `ConnectionError` or infrastructure exceptions.
-- Only return `{"authenticated": False}` for expected `ValueError` / invalid password.
-""",
+### Task
+Refactor exception handling in `verify_credentials` in `service_client.py` to allow `ConnectionError` to re-raise.
+
+### Acceptance Criteria
+1. `ConnectionError` is raised out of the function during network failure.
+2. Expected credential validation errors return `{"authenticated": False, "error": "Invalid credentials"}`.
+
+### Constraints
+- `auth_fn` is a callable accepting `(username, password)`.
+- Infrastructure exceptions like `ConnectionError` must propagate unswallowed.
+- Execution Timeout: 5.0 seconds | Memory Limit: 128 MB.""",
         'files': [{
             'name': 'service_client.py',
             'content': '''def verify_credentials(auth_fn, username, password):

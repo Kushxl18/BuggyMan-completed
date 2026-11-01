@@ -16,7 +16,12 @@ class AIHintService:
         Generates progressive debugging hint (Level 1, 2, or 3) via Groq API.
         """
         api_key = get_groq_api_key()
+        suggestions = getattr(challenge, 'ai_suggestions', []) or []
+        fallback_hint = suggestions[level - 1] if len(suggestions) >= level and suggestions[level - 1] else None
+
         if not api_key:
+            if fallback_hint:
+                return {'success': True, 'hint': fallback_hint}
             return {
                 'success': False,
                 'error': 'AI assistance is temporarily unavailable (Groq API key not configured). Your BugBytes were not deducted.'
@@ -127,12 +132,16 @@ class AIHintService:
                     'hint': hint_text
                 }
 
-        except urllib.error.HTTPError as he:
+        except urllib.error.HTTPError:
+            if fallback_hint:
+                return {'success': True, 'hint': fallback_hint}
             return {
                 'success': False,
                 'error': 'AI assistance is temporarily unavailable. Your BugBytes were not deducted.'
             }
-        except Exception as ex:
+        except Exception:
+            if fallback_hint:
+                return {'success': True, 'hint': fallback_hint}
             return {
                 'success': False,
                 'error': 'AI assistance is temporarily unavailable. Your BugBytes were not deducted.'

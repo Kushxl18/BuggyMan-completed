@@ -185,7 +185,7 @@ class Challenge(models.Model):
                     break
 
         # Sanitize test cases for client delivery:
-        # Completely exclude hidden tests and remove internal assertions/solution conditions
+        # Exclude hidden tests while preserving meaningful names and actual expected values
         client_test_cases = []
         raw_cases = self.test_cases or []
         for idx, tc in enumerate(raw_cases):
@@ -193,21 +193,44 @@ class Challenge(models.Model):
             if is_hidden:
                 continue
 
+            test_name = tc.get('name') or f"Example {len(client_test_cases) + 1}"
+            clean_name = re.sub(r'^(Visible|Hidden):\s*', '', test_name, flags=re.IGNORECASE)
+            expected_val = str(tc.get('expected', '')).strip() if tc.get('expected') is not None else ''
+            raw_input = (tc.get('input') or '').strip()
+
+            if not raw_input:
+                if arena_key == 'sql':
+                    raw_input = 'Execute query.sql against schema tables'
+                elif arena_key == 'frontend':
+                    raw_input = 'Render component and execute interaction'
+                else:
+                    raw_input = 'Function execution with sample arguments'
+
+            # For frontend internal code signatures, display human-readable state description
+            if arena_key == 'frontend' and any(k in expected_val for k in ['!', '>', '<', '=', '*', '/', '+', '-']):
+                display_expected = f"Verified: {clean_name}"
+            else:
+                display_expected = expected_val or 'Expected functional output'
+
             client_test_cases.append({
                 'id': idx + 1,
-                'name': f"Sample Case {len(client_test_cases) + 1}",
-                'input': tc.get('input', ''),
-                'expected': "Validates core functional behavior and expected output structure.",
+                'name': clean_name,
+                'input': raw_input,
+                'expected': display_expected,
                 'hidden': False
             })
 
         if not client_test_cases and raw_cases:
             first_tc = raw_cases[0]
+            first_name = first_tc.get('name') or "Example 1"
+            first_name = re.sub(r'^(Visible|Hidden):\s*', '', first_name, flags=re.IGNORECASE)
+            first_expected = str(first_tc.get('expected', '')).strip() if first_tc.get('expected') is not None else ''
+            first_input = (first_tc.get('input') or '').strip() or 'Default input'
             client_test_cases.append({
                 'id': 1,
-                'name': "Sample Case 1",
-                'input': first_tc.get('input', ''),
-                'expected': "Validates core functional behavior and expected output structure.",
+                'name': first_name,
+                'input': first_input,
+                'expected': first_expected or 'Expected functional output',
                 'hidden': False
             })
 

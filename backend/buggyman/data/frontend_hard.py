@@ -1,5 +1,6 @@
 """
 Frontend Studio: Hard Challenges (111 to 120)
+Standardized into realistic production incident debugging tickets.
 """
 
 def get_frontend_hard():
@@ -8,34 +9,46 @@ def get_frontend_hard():
     # 111. Concurrent frontend requests create inconsistent checkout state
     challenges.append({
         'id': 111,
-        'title': '[FE-H01] Concurrent Frontend Requests Create Inconsistent Checkout State',
+        'title': 'Concert Ticket Checkout Permits Overlapping Order Submissions',
         'difficulty': 'Hard',
         'technology': 'React',
         'category': 'Concurrency',
         'time_estimate': '20 mins',
         'points': 300,
-        'description': """### Company Scenario
-A high-volume ticket sales portal allows users to purchase concert tickets.
+        'description': """### Incident Report
+During a high-demand concert ticket release, customer support and accounting were flooded with duplicate ticket purchases and split-billing disputes. Frustrated fans experiencing brief checkout latency clicked the "Confirm Checkout" button multiple times, causing two separate order creation requests to hit the payment gateway in parallel.
 
 ### Bug Report
-During flash sales, customers click "Checkout" while background cart inventory verification is still in flight. Because there is no atomic state lock or mutex, two concurrent checkout requests are dispatched with the same cart items, creating duplicate bookings and split billing charges.
+In `CheckoutFlow.jsx`, `handleCheckout` initiates an order request without checking if an authorization request is already pending. Furthermore, the button's disabled condition only checks `status === 'completed'`, leaving the action fully clickable while `status === 'processing'`.
 
 ### Steps to Reproduce
-1. In `CheckoutFlow.jsx`, click Checkout.
-2. Trigger a second checkout action before the first returns.
-3. Both proceed because state transition is not locked atomically.
+1. In `CheckoutFlow.jsx`, trigger `handleCheckout`.
+2. Before the asynchronous network call resolves, invoke `handleCheckout` a second time.
+3. Observe that both requests dispatch concurrently to the order creation endpoint.
 
-### Expected Behavior
-A checkout mutex/lock (`isProcessing` state or ref) must prevent any subsequent checkout attempt until the current one finishes or fails.
+### Expected Behaviour
+The checkout action must be protected by an execution lock (such as checking `if (status === 'processing') return;`) and disabling the submit button whenever `status === 'processing'`.
 
-### Actual Behavior
-Component allows overlapping checkout invocations, creating duplicate transactions.
+### Actual Behaviour
+The component allows overlapping order submissions, leading to duplicate transactions and inventory over-allocation.
 
-### Impact
-Overbooking of allocated seats and severe financial reconciliation overhead.
+### Starter Files
+- `CheckoutFlow.jsx`: Order authorization component lacking concurrency locks and pending state guards.
 
-### Requirements
-- Implement an execution guard or atomic lock to block concurrent overlapping checkout requests.
+### Task
+Update `CheckoutFlow.jsx` to guard against concurrent requests: check `if (status === 'processing') return;` at the beginning of `handleCheckout`, and disable the button while `status === 'processing'` or `status === 'completed'`.
+
+### Acceptance Criteria
+1. `handleCheckout` aborts immediately if `status === 'processing'`.
+2. The `<button>` is disabled when `status === 'processing'`.
+3. Overlapping checkout clicks dispatch exactly one authorization request.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
 """,
         'files': [{
             'name': 'CheckoutFlow.jsx',
@@ -72,12 +85,14 @@ export default function CheckoutFlow({ cart, api }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Guards against concurrent checkout with processing lock', 'input': '', 'expected': "status === 'processing'"}
+            {'id': 1, 'name': 'Guards against concurrent checkout with processing lock', 'input': '', 'expected': "status === 'processing'"}
         ],
         'bug_signature': 'const handleCheckout = async () => {\n    setStatus(\'processing\');',
         'suspected_component': 'CheckoutFlow.jsx',
         'ai_suggestions': [
-            'Add `if (status === "processing") return;` or use a ref lock at the top of `handleCheckout` and disable the button while processing.'
+            'Financial workflows must enforce an atomic mutex or lock preventing concurrent requests on user-facing controls.',
+            'Inspect the entry point of `handleCheckout` and the button `disabled` condition.',
+            'Add `if (status === "processing") return;` at the start of `handleCheckout` and disable the button when `status === "processing"`.'
         ],
         'topics': ['React', 'Concurrency', 'State Machine', 'E-commerce'],
         'skills_tested': ['React', 'Frontend'],
@@ -88,34 +103,46 @@ export default function CheckoutFlow({ cart, api }) {
     # 112. Memory leak develops after repeated mount/unmount cycles
     challenges.append({
         'id': 112,
-        'title': '[FE-H02] Memory Leak Develops After Repeated Mount/Unmount Cycles',
+        'title': 'Trading Dashboard Ticker Retains Zombie Listeners on Tab Switch',
         'difficulty': 'Hard',
         'technology': 'React',
         'category': 'Memory Management',
         'time_estimate': '20 mins',
         'points': 300,
-        'description': """### Company Scenario
-A financial trading platform streams real-time cryptocurrency price updates into dashboard widgets.
+        'description': """### Incident Report
+Day traders using the cryptocurrency charting platform reported that after several hours of monitoring market movements and switching between different currency tabs, browser tabs became increasingly unresponsive and ultimately crashed with an "Out of Memory" error. Console logs showed continuous React warnings: `"Can't perform a React state update on an unmounted component"`.
 
 ### Bug Report
-When users switch between different coin tabs, browser memory continuously increases until the tab crashes with an "Out of Memory" error. The React DevTools console also outputs warnings: `"Can't perform a React state update on an unmounted component"`.
+In `SubscriptionWidget.jsx`, `eventBus.subscribe(symbol, handleTick)` is called inside `useEffect`. When the user navigates away or switches tabs, the component unmounts without calling `unsubscribe`. The singleton event bus retains a reference to `handleTick`, keeping the entire unmounted component tree alive in memory.
 
 ### Steps to Reproduce
-1. In `SubscriptionWidget.jsx`, `eventBus.subscribe(symbol, handleTick)` is called in `useEffect`.
-2. When the user navigates away, the component unmounts.
-3. No unsubscribe callback is registered. The event bus keeps a reference to `handleTick`, retaining the unmounted component in memory indefinitely.
+1. Mount `SubscriptionWidget.jsx` with a coin symbol.
+2. Unmount the widget by switching tabs or un-rendering it.
+3. Observe that the event bus still invokes `handleTick`, attempting state updates on the unmounted instance.
 
-### Expected Behavior
-The `useEffect` hook must return a cleanup function: `return () => eventBus.unsubscribe(symbol, handleTick);`.
+### Expected Behaviour
+The `useEffect` hook must return a cleanup callback that invokes `eventBus.unsubscribe(symbol, handleTick)` when the component unmounts or when dependencies change.
 
-### Actual Behavior
-Omits the unsubscribe call, creating a permanent memory leak and zombie callback listeners.
+### Actual Behaviour
+The effect omits the cleanup callback, leaving zombie callbacks permanently registered.
 
-### Impact
-Browser tab crashes on prolonged usage; multiple zombie listeners fire simultaneously.
+### Starter Files
+- `SubscriptionWidget.jsx`: Streaming price ticker component without event unsubscription logic.
 
-### Requirements
-- Return a cleanup function from `useEffect` invoking `eventBus.unsubscribe(symbol, handleTick)`.
+### Task
+Update `SubscriptionWidget.jsx` to unsubscribe from live market data streams when the component unmounts.
+
+### Acceptance Criteria
+1. The event listener subscription is cancelled upon component unmount.
+2. Background ticker feeds stop delivering updates to detached components.
+3. Memory overhead remains stable across component lifecycles.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
 """,
         'files': [{
             'name': 'SubscriptionWidget.jsx',
@@ -141,12 +168,14 @@ export default function SubscriptionWidget({ symbol, eventBus }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Cleans up subscription on unmount', 'input': '', 'expected': 'eventBus.unsubscribe'}
+            {'id': 1, 'name': 'Cleans up subscription on unmount', 'input': '', 'expected': 'eventBus.unsubscribe'}
         ],
         'bug_signature': 'eventBus.subscribe(symbol, handleTick);\n  }, [symbol, eventBus]);',
         'suspected_component': 'SubscriptionWidget.jsx',
         'ai_suggestions': [
-            'Return a cleanup function from `useEffect`: `return () => eventBus.unsubscribe(symbol, handleTick);`.'
+            'Components subscribing to global publish/subscribe buses must unsubscribe when unmounting to prevent memory leaks.',
+            'React effects can return a cleanup function that runs before re-running the effect and when the component unmounts.',
+            'Return `() => { eventBus.unsubscribe(symbol, handleTick); };` from the `useEffect` body.'
         ],
         'topics': ['React', 'Memory Leaks', 'useEffect Cleanup', 'Event Bus'],
         'skills_tested': ['React', 'Frontend'],
@@ -157,34 +186,46 @@ export default function SubscriptionWidget({ symbol, eventBus }) {
     # 113. Shared client-side cache exposes data between authenticated sessions
     challenges.append({
         'id': 113,
-        'title': '[FE-H03] Shared Client-Side Cache Exposes Data Between Sessions',
+        'title': 'Shared Kiosk Client Cache Exposes Preceding Patient Records',
         'difficulty': 'Hard',
         'technology': 'JavaScript',
         'category': 'Security',
         'time_estimate': '20 mins',
         'points': 300,
-        'description': """### Company Scenario
-A hospital kiosk workstation allows doctors and nurses to access confidential patient health records.
+        'description': """### Incident Report
+A critical HIPAA data breach incident was reported at a shared hospital ward kiosk. A nurse logged out of the terminal after charting patient vitals. When a doctor subsequently signed into the terminal to examine an unrelated patient, the application pulled cached diagnostic records from memory, displaying the previous patient's confidential health data under the doctor's session.
 
 ### Bug Report
-Nurse Sarah logs into the kiosk, reviews Patient X's records, and clicks "Log Out". When Doctor Robert logs in next on the same workstation, the app reads from the client-side session cache before network validation completes, displaying Patient X's confidential records under Doctor Robert's session!
+In `SessionCache.jsx`, the exported `sessionCache` map holds sensitive user-scoped records in memory. In `logoutUser`, the handler clears `localStorage` tokens and notifies the backend, but fails to purge `sessionCache`. Subsequent logins on the same client workstation read cached records left by the previous session.
 
 ### Steps to Reproduce
-1. In `SessionCache.jsx`, inspect the `logoutUser` implementation.
-2. `logoutUser` calls `authApi.logout()` and clears local tokens, but fails to invoke `sessionCache.clear()`.
-3. Subsequent logins reuse cached records belonging to the prior user.
+1. Populate `sessionCache` with patient records during user session 1.
+2. Call `logoutUser(authApi, onLoggedOut)`.
+3. Inspect `sessionCache.size`: observe that entries remain in memory.
 
-### Expected Behavior
-`logoutUser` must purge the client-side `sessionCache` completely (`sessionCache.clear()`) to prevent data leakage across sessions.
+### Expected Behaviour
+`logoutUser` must invalidate and purge all entries from `sessionCache` via `sessionCache.clear()` prior to concluding the sign-out flow.
 
-### Actual Behavior
-Cached data remains in memory across different user sessions.
+### Actual Behaviour
+The in-memory cache persists across logout transitions, causing cross-tenant data leakage.
 
-### Impact
-Critical HIPAA / privacy violation exposing patient medical data across user boundaries.
+### Starter Files
+- `SessionCache.jsx`: Client authentication and caching utility failing to clear in-memory cache on sign-out.
 
-### Requirements
-- Call `sessionCache.clear()` inside `logoutUser`.
+### Task
+Update user sign-out in `SessionCache.jsx` to purge cached in-memory user data upon logging out.
+
+### Acceptance Criteria
+1. In-memory session caches are emptied when the user logs out.
+2. Sensitive customer data is not retained across user sessions.
+3. Subsequent logins begin with a fresh, unpolluted cache.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
 """,
         'files': [{
             'name': 'SessionCache.jsx',
@@ -216,12 +257,14 @@ export default function SessionCacheView({ currentUser, onLogout, authApi }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Clears sessionCache on logout', 'input': '', 'expected': 'sessionCache.clear()'}
+            {'id': 1, 'name': 'Clears sessionCache on logout', 'input': '', 'expected': 'sessionCache.clear()'}
         ],
-        'bug_signature': 'localStorage.removeItem(\'authToken\');\n    // BUG: Leaves sensitive records in sessionCache across user logout',
+        'bug_signature': 'localStorage.removeItem(\'authToken\');\n  } finally {',
         'suspected_component': 'SessionCache.jsx',
         'ai_suggestions': [
-            'Add `sessionCache.clear();` inside `logoutUser`.'
+            'Client session caches storing personal or confidential data must be purged on user logout to prevent session crossover.',
+            'Look at `logoutUser`: it removes auth tokens from localStorage but does not clear `sessionCache`.',
+            'Add `sessionCache.clear();` inside `logoutUser` alongside `localStorage.removeItem(\'authToken\');`.'
         ],
         'topics': ['React', 'Security', 'Caching', 'Authentication'],
         'skills_tested': ['React', 'Frontend'],
@@ -232,34 +275,46 @@ export default function SessionCacheView({ currentUser, onLogout, authApi }) {
     # 114. Optimistic UI update corrupts state after overlapping failed requests
     challenges.append({
         'id': 114,
-        'title': '[FE-H04] Optimistic UI Update Corrupts State After Failed Requests',
+        'title': 'Optimistic Feed Like Counter Decrements Below Zero on Network Drop',
         'difficulty': 'Hard',
         'technology': 'React',
         'category': 'Optimistic UI',
         'time_estimate': '20 mins',
         'points': 300,
-        'description': """### Company Scenario
-A social media platform uses optimistic UI updates to instantly toggle "Like" counts.
+        'description': """### Incident Report
+Social feed users browsing in areas with intermittent connectivity noticed post like counters turning negative (`-1 Likes`). When users tapped like while walking through cellular dead zones, the network call failed, but the UI rollback logic subtracted from a mutated count, corrupting the feed statistics.
 
 ### Bug Report
-A user clicks "Like" twice quickly under poor network conditions. The first request fails on the server. The rollback logic blindly subtracts 1 from the *current* count, but because the user had already clicked again, the like count drops below zero (`likes: -1`), permanently corrupting the counter.
+In `OptimisticFeed.jsx`, `handleToggleLike` optimistically applies `setLikes(likes + 1)`. If the network request fails, the catch block blindly executes `setLikes(likes - 1)`. If the user tapped the button again or if `likes` changed in the interim, subtracting 1 from the stale or altered count drives the metric below zero.
 
 ### Steps to Reproduce
-1. In `OptimisticFeed.jsx`, click like.
-2. State is optimistically incremented: `setLikes(likes + 1)`.
-3. Server returns an error. The catch block blindly calls `setLikes(likes - 1)` or decrements from stale closure, corrupting the counter.
+1. Render `OptimisticFeed.jsx` with `initialLikes = 0`.
+2. Click the like button.
+3. Simulate an API rejection in `api.likePost()`.
+4. Observe that the rollback math calculates `0 - 1 = -1` or desynchronizes state.
 
-### Expected Behavior
-Capture a snapshot of the previous state before the optimistic mutation, and revert to that exact snapshot if the request fails.
+### Expected Behaviour
+Before applying an optimistic state mutation, capture exact snapshots of the current state (`previousLikes = likes`, `previousIsLiked = isLiked`), and revert strictly to those snapshots if the API fails.
 
-### Actual Behavior
-Reverts by subtracting from a stale or mutated counter value.
+### Actual Behaviour
+The error handler relies on blind arithmetic rollback (`likes - 1`), causing desynchronized state.
 
-### Impact
-Incorrect like counters and desynchronized like states across users.
+### Starter Files
+- `OptimisticFeed.jsx`: Like toggle component with brittle arithmetic rollback.
 
-### Requirements
-- Snapshot previous state prior to optimistic updates and revert accurately to the snapshot if the network request fails.
+### Task
+Update `handleToggleLike` in `OptimisticFeed.jsx` to capture snapshot variables (`previousLikes` and `previousIsLiked`) before the optimistic update, and restore those snapshot values in the `catch` block.
+
+### Acceptance Criteria
+1. Snapshots of `likes` and `isLiked` are stored before the state update.
+2. On API error, `setLikes(previousLikes)` and `setIsLiked(previousIsLiked)` are invoked.
+3. The counter never drops below the baseline state on failed requests.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- State transitions must be strictly immutable; array mutations and in-place object property assignments are prohibited.
+- Rendered list items must use stable entity identifiers as keys rather than transient array indices.
+- Dependent state values must remain synchronized without stale closures or intermediate rendering lag.
 """,
         'files': [{
             'name': 'OptimisticFeed.jsx',
@@ -295,13 +350,14 @@ export default function OptimisticFeed({ initialLikes = 10, api }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Captures previousLikes snapshot and restores on error', 'input': '', 'expected': 'previousLikes'}
+            {'id': 1, 'name': 'Captures previousLikes snapshot and restores on error', 'input': '', 'expected': 'previousLikes'}
         ],
-        'bug_signature': 'setLikes(likes + 1);\n    setIsLiked(true);\n\n    try {\n      await api.likePost();\n    } catch (err) {\n      setLikes(likes - 1);',
+        'bug_signature': '// Reverting with stale value creates negative or out-of-sync counts\n      setLikes(likes - 1);',
         'suspected_component': 'OptimisticFeed.jsx',
         'ai_suggestions': [
-            'Store `const previousLikes = likes;` and `const previousIsLiked = isLiked;` before the async call.',
-            'In the catch block, restore `setLikes(previousLikes); setIsLiked(previousIsLiked);`.'
+            'Optimistic mutations should save an immutable snapshot of state before changing it, rather than computing inverse arithmetic.',
+            'Store `const previousLikes = likes;` and `const previousIsLiked = isLiked;` prior to the optimistic update.',
+            'In the `catch` block, revert with `setLikes(previousLikes); setIsLiked(previousIsLiked);`.'
         ],
         'topics': ['React', 'Optimistic UI', 'State Snapshots'],
         'skills_tested': ['React', 'Frontend'],
@@ -312,34 +368,45 @@ export default function OptimisticFeed({ initialLikes = 10, api }) {
     # 115. Complex dashboard produces inconsistent derived state
     challenges.append({
         'id': 115,
-        'title': '[FE-H05] Complex Dashboard Produces Inconsistent Derived State',
+        'title': 'Executive KPI Summary Freezes on Outdated Monthly Revenue Filter',
         'difficulty': 'Hard',
         'technology': 'React',
         'category': 'Performance & Memoization',
         'time_estimate': '20 mins',
         'points': 300,
-        'description': """### Company Scenario
-An executive KPI dashboard computes Monthly Recurring Revenue (MRR) and Average Revenue Per User (ARPU) based on transactions and active tier filter.
+        'description': """### Incident Report
+C-suite executives reviewing company revenue performance reported a discrepancies bug in their quarterly KPI portal. When switching tier filters from "Enterprise" to "Starter", the underlying transaction table updated, but the main Monthly Recurring Revenue (MRR) headline metrics remained frozen on the Enterprise numbers, leading to skewed financial analyses.
 
 ### Bug Report
-When an executive switches the tier filter from "Enterprise" to "Starter", the transaction table updates, but the KPI Summary cards continue to display Enterprise MRR! Profiling shows `useMemo` closed over an empty dependency array `[]`.
+In `AnalyticsHub.jsx`, the `metrics` calculation is wrapped in `useMemo`. However, its dependency array is declared as `[]` (empty). As a result, the memoized metrics are computed only once during initial mount and never recompute when `tierFilter` or `transactions` change.
 
 ### Steps to Reproduce
-1. In `AnalyticsHub.jsx`, view the `mrr` computation.
-2. `useMemo` is declared with `[]` instead of `[transactions, tierFilter]`.
-3. Changing filters does not recalculate the summary metrics.
+1. Render `AnalyticsHub.jsx` with transactions spanning multiple tiers.
+2. Select a different tier from the dropdown (e.g. "Enterprise").
+3. Observe that Total MRR and Transaction count remain unchanged from the initial view.
 
-### Expected Behavior
-`useMemo` must include `[transactions, tierFilter]` in its dependencies so derived metrics update when data or filters change.
+### Expected Behaviour
+The `useMemo` hook must declare `[transactions, tierFilter]` in its dependencies, recalculating metrics whenever transactions or active filters change.
 
-### Actual Behavior
-Derived metrics stay frozen on initial calculation due to missing dependencies.
+### Actual Behaviour
+The empty dependency array prevents memoization recalculation, presenting stale metrics.
 
-### Impact
-Executives make strategic pricing decisions based on incorrect and outdated metrics.
+### Starter Files
+- `AnalyticsHub.jsx`: Analytics summary component with missing memoization dependencies.
 
-### Requirements
-- Add `[transactions, tierFilter]` to the `useMemo` dependency array.
+### Task
+Update the memoized calculation in `AnalyticsHub.jsx` so that metrics recompute whenever transaction lists or filter criteria change.
+
+### Acceptance Criteria
+1. Analytics metrics recompute automatically when filter criteria change.
+2. Updated transaction data triggers fresh metric aggregation.
+3. Summary values accurately reflect the selected tier filter.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Form submissions containing empty or whitespace-only inputs must be rejected with appropriate field errors.
+- In-flight submissions must lock the submission trigger to prevent duplicate submissions.
+- Inputs must maintain controlled component state across multi-step flows.
 """,
         'files': [{
             'name': 'AnalyticsHub.jsx',
@@ -374,12 +441,14 @@ export default function AnalyticsHub({ transactions = [] }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Includes transactions and tierFilter in useMemo dependencies', 'input': '', 'expected': '[transactions, tierFilter]'}
+            {'id': 1, 'name': 'Includes transactions and tierFilter in useMemo dependencies', 'input': '', 'expected': '[transactions, tierFilter]'}
         ],
         'bug_signature': 'return { totalMRR, avgMRR, count: filtered.length };\n  }, []);',
         'suspected_component': 'AnalyticsHub.jsx',
         'ai_suggestions': [
-            'Update the dependency array of `useMemo` from `[]` to `[transactions, tierFilter]`.'
+            'Values computed with `useMemo` must specify all outer variables referenced inside the calculation function in their dependency array.',
+            'Inspect the dependencies of `useMemo`: the empty array `[]` tells React never to recompute the value after initial render.',
+            'Change `useMemo(..., [])` to `useMemo(..., [transactions, tierFilter])`.'
         ],
         'topics': ['React', 'useMemo', 'Derived State', 'Performance'],
         'skills_tested': ['React', 'Frontend'],
@@ -390,34 +459,46 @@ export default function AnalyticsHub({ transactions = [] }) {
     # 116. Frontend authentication flow mishandles token expiration & concurrent refreshes
     challenges.append({
         'id': 116,
-        'title': '[FE-H06] Concurrent API Calls Trigger Multiple Token Refreshes',
+        'title': 'Concurrent Dashboard Requests Trigger Replay-Flagged Token Rotation',
         'difficulty': 'Hard',
         'technology': 'JavaScript',
         'category': 'Authentication Architecture',
         'time_estimate': '20 mins',
         'points': 300,
-        'description': """### Company Scenario
-A Single Page Application initiates multiple parallel API calls when loading the dashboard (user profile, notifications, metrics, and alerts).
+        'description': """### Incident Report
+Users logging into the cloud dashboard were unexpectedly logged out within minutes. Security logs revealed that when access tokens expired, the client dashboard fired multiple simultaneous API requests (user profile, notifications, billing status). Each request received an HTTP 401 and independently initiated a refresh token exchange. Because the backend enforces refresh token rotation (one-time use), subsequent parallel requests sent invalidated refresh tokens, triggering security alarms and terminating the session.
 
 ### Bug Report
-When the user's access token expires, all 4 concurrent requests return 401 Unauthorized simultaneously. Each response interceptor independently calls `refreshTokenApi()`. The backend implements refresh token rotation (one-time use per refresh token). The first refresh succeeds, but the subsequent 3 requests arrive with the now-invalidated old refresh token, causing the backend to flag a replay attack and terminate the user's session!
+In `AuthManager.jsx`, `requestWithAuth` handles 401 errors by directly awaiting `refreshApi()`. It does not coordinate concurrent requests using a shared `refreshPromise`. When four requests fail simultaneously with 401, four separate token refreshes are executed in parallel.
 
 ### Steps to Reproduce
-1. In `AuthManager.jsx`, four concurrent requests fail with 401.
-2. `refreshToken()` is executed 4 separate times instead of reusing a single in-flight refresh promise.
-3. User gets abruptly logged out.
+1. Execute multiple concurrent calls to `requestWithAuth` with an expired token.
+2. Observe that each 401 handler calls `refreshApi()` independently.
+3. The multiple refresh attempts trigger backend replay detection.
 
-### Expected Behavior
-Implement refresh token deduplication: if a refresh is already in flight, all subsequent 401 interceptors must await the same shared promise (`refreshPromise`).
+### Expected Behaviour
+If a token refresh is already in progress, subsequent 401 requests must await the existing shared `refreshPromise` rather than creating new ones.
 
-### Actual Behavior
-Fires uncoordinated parallel refresh requests.
+### Actual Behaviour
+Every 401 response executes an uncoordinated token refresh call.
 
-### Impact
-Users get randomly logged out whenever tokens expire during dashboard navigation.
+### Starter Files
+- `AuthManager.jsx`: HTTP client interceptor lacking refresh request deduplication.
 
-### Requirements
-- Share an in-flight token refresh promise across concurrent requests to avoid duplicate refresh calls.
+### Task
+Refactor token refresh in `AuthManager.jsx` so that concurrent requests share a single in-flight refresh promise rather than initiating duplicate refresh calls.
+
+### Acceptance Criteria
+1. Concurrent 401 responses share a single in-flight `refreshPromise`.
+2. When the refresh completes, all pending requests use the new access token.
+3. `refreshPromise` is cleared upon completion.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
 """,
         'files': [{
             'name': 'AuthManager.jsx',
@@ -438,12 +519,14 @@ export async function requestWithAuth(url, fetchApi, refreshApi) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Shares single in-flight refreshPromise across calls', 'input': '', 'expected': 'refreshPromise'}
+            {'id': 1, 'name': 'Shares single in-flight refreshPromise across calls', 'input': '', 'expected': 'refreshPromise'}
         ],
         'bug_signature': 'if (err.status === 401) {\n      const newTokens = await refreshApi();',
         'suspected_component': 'AuthManager.jsx',
         'ai_suggestions': [
-            'Check `if (!refreshPromise) { refreshPromise = refreshApi().finally(() => { refreshPromise = null; }); }` and `await refreshPromise;`.'
+            'Token refresh calls must be deduplicated across concurrent HTTP interceptors to support refresh token rotation.',
+            'Check if a module-level `refreshPromise` already exists before starting a new refresh request.',
+            'Assign `refreshPromise = refreshApi().finally(() => { refreshPromise = null; });` if null, then `await refreshPromise`.'
         ],
         'topics': ['JavaScript', 'Authentication', 'Token Refresh', 'Concurrency'],
         'skills_tested': ['JavaScript', 'Frontend Architecture'],
@@ -454,34 +537,46 @@ export async function requestWithAuth(url, fetchApi, refreshApi) {
     # 117. Virtualized list renders incorrect items after filtering and reordering
     challenges.append({
         'id': 117,
-        'title': '[FE-H07] Virtualized List Renders Incorrect Items After Filtering',
+        'title': 'Virtualized Log Viewer Reassigns Log Messages on Severity Filter',
         'difficulty': 'Hard',
         'technology': 'React',
         'category': 'Virtualization',
         'time_estimate': '20 mins',
         'points': 300,
-        'description': """### Company Scenario
-A server log monitoring tool uses a virtualized list to render 50,000 log lines with high performance.
+        'description': """### Incident Report
+DevOps engineers investigating a critical production incident were misled by the server log viewer. When filtering from "ALL" logs to "ERROR" logs, the virtualized list retained cached DOM nodes with old warning messages or assigned wrong log timestamps to error traces, wasting hours of debugging time.
 
 ### Bug Report
-When filtering logs from "ALL" to "ERROR", log messages from other levels stay visible in the viewport or jump to wrong rows. Inspecting the DOM reveals the virtual list mapped array index `index` as the React `key`, confusing React's reconciliation engine.
+In `VirtualList.jsx`, the virtual slice maps visible items using `key={startIndex + index}`. Because keys represent the window offset index rather than the identity of the log entity, filtering or reordering logs causes React to reuse old DOM nodes and their internal state for entirely different log records.
 
 ### Steps to Reproduce
-1. In `VirtualList.jsx`, inspect the rendered rows.
-2. The virtual slice maps items using `key={startIndex + index}` instead of unique entity id `item.id`.
-3. Filter or reorder items; DOM node recycling displays incorrect contents.
+1. Render `VirtualList.jsx` with a list of log items containing unique `id` properties.
+2. Filter the items list.
+3. Observe that React's virtual DOM reconciliation reuses previous element nodes because keys correspond to array offsets rather than entity IDs.
 
-### Expected Behavior
-Rows must be keyed by stable unique entity identifier: `key={item.id}`.
+### Expected Behaviour
+Virtualized list items must use stable, unique entity identifiers (`key={item.id}`) to guarantee that elements are correctly mapped during filtering, sorting, and dynamic slicing.
 
-### Actual Behavior
-Uses calculated row index as key.
+### Actual Behaviour
+The list uses computed window row indices as keys (`startIndex + index`), causing reconciliation mismatches.
 
-### Impact
-Engineers read wrong error timestamps and corrupted stack traces during production outages.
+### Starter Files
+- `VirtualList.jsx`: Virtualized list component using index-based window keys.
 
-### Requirements
-- Ensure virtualized list items use unique stable entity keys rather than computed window offsets.
+### Task
+Update the virtualization list in `VirtualList.jsx` to assign persistent unique item identifiers to rendered list rows rather than virtual index offsets.
+
+### Acceptance Criteria
+1. Virtualized list elements use stable item identifiers for element keys.
+2. Scrolling and filtering operations maintain correct element-to-data mapping.
+3. Visual jumpiness and mismatched row attributes are resolved.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
 """,
         'files': [{
             'name': 'VirtualList.jsx',
@@ -521,12 +616,14 @@ export default function VirtualList({ items = [], rowHeight = 35, viewportHeight
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Uses stable item.id for virtualized row key', 'input': '', 'expected': 'key={item.id}'}
+            {'id': 1, 'name': 'Uses stable item.id for virtualized row key', 'input': '', 'expected': 'key={item.id}'}
         ],
         'bug_signature': 'key={startIndex + index}',
         'suspected_component': 'VirtualList.jsx',
         'ai_suggestions': [
-            'Ensure virtualized list items use unique stable entity keys rather than computed window offsets.'
+            'In virtualized lists, using computed index offsets as keys leads to rendering glitches when the underlying data is filtered or sorted.',
+            'React keys must identify the underlying entity, not its temporary position inside the viewport window.',
+            'Replace `key={startIndex + index}` with `key={item.id}` on the rendered row container.'
         ],
         'topics': ['React', 'Virtualization', 'Keys', 'Reconciliation'],
         'skills_tested': ['React', 'Frontend'],
@@ -537,35 +634,46 @@ export default function VirtualList({ items = [], rowHeight = 35, viewportHeight
     # 118. Multi-step checkout loses consistency when requests fail partway through
     challenges.append({
         'id': 118,
-        'title': '[FE-H08] Multi-Step Checkout Loses Consistency on Partial Failure',
+        'title': 'Flight Reservation Abort Leaves Locked Seats Unreleased',
         'difficulty': 'Hard',
         'technology': 'React',
         'category': 'Compensating Transactions',
         'time_estimate': '20 mins',
         'points': 300,
-        'description': """### Company Scenario
-An airline ticket booking engine executes two sequential transactions:
-1. `reserveSeat(flightId, seatNumber)` - holds seat for 10 minutes.
-2. `processPayment(paymentDetails)` - charges credit card.
+        'description': """### Incident Report
+An airline reservation platform experienced a surge in abandoned seats and customer complaints. Passengers whose credit cards were declined during checkout discovered that the system kept their selected seat locked for fifteen minutes, preventing them from immediately retrying with an alternate payment card and blocking other flyers from booking the seat.
 
 ### Bug Report
-If the credit card fails (e.g. insufficient funds), the checkout displays an error, but never releases the held seat (`releaseSeat(reservationId)`). The seat remains locked for 10 minutes, preventing the passenger from retrying with another card and blocking other customers from booking that seat.
+In `MultiStepCheckout.jsx`, the booking sequence first calls `api.reserveSeat(flightId, seatNumber)` and then `api.processPayment(...)`. If payment processing fails, the catch block sets the error message but never initiates a compensating transaction to release the seat reservation (`api.releaseSeat(reservation.id)`).
 
 ### Steps to Reproduce
-1. In `MultiStepCheckout.jsx`, simulate payment failure after seat reservation succeeds.
-2. In the catch block, error message is set, but no compensating rollback request is sent to release the reserved seat.
+1. In `MultiStepCheckout.jsx`, simulate a successful seat reservation followed by a rejected payment.
+2. Observe that `api.releaseSeat` is never invoked in the error handler.
+3. The reserved seat remains held on the backend inventory.
 
-### Expected Behavior
-If step 2 fails, invoke compensating rollback `await api.releaseSeat(reservation.id)` before showing the error.
+### Expected Behaviour
+If payment fails after a reservation has been successfully acquired, the catch handler must invoke a compensating action: `await api.releaseSeat(reservation.id)` before presenting the error.
 
-### Actual Behavior
-Leaves reserved inventory orphaned and locked in the backend.
+### Actual Behaviour
+The seat remains held in pending state without cancellation.
 
-### Impact
-Lost flight bookings and stranded seat reservations.
+### Starter Files
+- `MultiStepCheckout.jsx`: Multi-phase transaction component lacking compensating rollback logic.
 
-### Requirements
-- Call `await api.releaseSeat(reservation.id)` in the catch block if `reservation` exists.
+### Task
+Update `handleBook` in `MultiStepCheckout.jsx` to verify if `reservation` exists inside the `catch` block and invoke `await api.releaseSeat(reservation.id)`.
+
+### Acceptance Criteria
+1. The catch handler checks `if (reservation)`.
+2. When present, `await api.releaseSeat(reservation.id)` is executed.
+3. The user is informed of the payment failure and the seat is released for re-selection.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
 """,
         'files': [{
             'name': 'MultiStepCheckout.jsx',
@@ -606,12 +714,14 @@ export default function MultiStepCheckout({ flightId, seatNumber, api }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Releases reserved seat on payment failure', 'input': '', 'expected': 'api.releaseSeat'}
+            {'id': 1, 'name': 'Releases reserved seat on payment failure', 'input': '', 'expected': 'api.releaseSeat'}
         ],
         'bug_signature': '} catch (err) {\n      setError(err.message || \'Payment failed\');',
         'suspected_component': 'MultiStepCheckout.jsx',
         'ai_suggestions': [
-            'Inside `catch (err)`, check `if (reservation) { await api.releaseSeat(reservation.id); }` before setting error.'
+            'Multi-step workflows that acquire distributed resources must execute compensating actions if downstream steps fail.',
+            'Check whether `reservation` was successfully established prior to the payment exception.',
+            'Inside `catch (err)`, add `if (reservation) { await api.releaseSeat(reservation.id); }` before setting error state.'
         ],
         'topics': ['React', 'Compensating Transactions', 'Error Recovery'],
         'skills_tested': ['React', 'Frontend'],
@@ -622,34 +732,45 @@ export default function MultiStepCheckout({ flightId, seatNumber, api }) {
     # 119. Real-time interface applies out-of-order events and displays stale state
     challenges.append({
         'id': 119,
-        'title': '[FE-H09] Real-Time Interface Applies Out-Of-Order Events',
+        'title': 'Collaborative Document Buffer Reverts Recent Edits on Out-Of-Order Packets',
         'difficulty': 'Hard',
         'technology': 'React',
         'category': 'Real-Time State',
         'time_estimate': '20 mins',
         'points': 300,
-        'description': """### Company Scenario
-A collaborative live document editor receives character edit events over WebSockets from multiple peers.
+        'description': """### Incident Report
+Content editors working together in the real-time collaborative workspace reported erratic cursor jumps and disappearing paragraphs. When editing over cellular or high-jitter network connections, older text revisions frequently overwrote newer sentences, causing content loss and confusion among collaborating writers.
 
 ### Bug Report
-Under spotty cellular network connections, packets arrive out of sequence. An older event packet with `seq: 14` arrives after a newer packet with `seq: 15`. The editor blindly sets document content from the arriving payload, reverting recent changes and causing text to jump backwards.
+In `RealtimeChat.jsx`, the WebSocket listener `handleIncomingMessage` updates document content with `setContent(event.text)` for every packet received. Because UDP/network jitter can deliver packets out of order, an older packet with sequence number 14 arriving after packet 15 overwrites the latest state.
 
 ### Steps to Reproduce
-1. In `RealtimeChat.jsx`, notice `handleIncomingMessage(event)`.
-2. Component receives `event = { seq: 15, text: "Hello World" }`, then later receives delayed `event = { seq: 14, text: "Hello" }`.
-3. The editor renders "Hello", overwriting newer text.
+1. In `RealtimeChat.jsx`, dispatch event `{ seq: 15, text: 'Final Title' }`.
+2. Dispatch a delayed event `{ seq: 14, text: 'Draft Title' }`.
+3. Notice that the editor displays `'Draft Title'`, discarding the newer edit.
 
-### Expected Behavior
-Maintain a sequence tracker (`lastSeqRef.current`). Ignore any incoming event where `event.seq <= lastSeqRef.current`.
+### Expected Behaviour
+The component must track the highest sequence number processed (`lastSeq.current`). If an incoming event has `event.seq <= lastSeq.current`, it must be ignored.
 
-### Actual Behavior
-Applies all incoming events regardless of sequence numbers.
+### Actual Behaviour
+Every incoming event is applied unconditionally without sequence validation.
 
-### Impact
-Content loss and confusing cursor jumping during collaborative editing sessions.
+### Starter Files
+- `RealtimeChat.jsx`: Real-time text component applying events without monotonic sequence verification.
 
-### Requirements
-- Track `lastSeqRef` and discard packets if `event.seq <= lastSeqRef.current`.
+### Task
+Update `handleIncomingMessage` in `RealtimeChat.jsx` to discard events if `event.seq <= lastSeq.current` before updating state and updating `lastSeq.current`.
+
+### Acceptance Criteria
+1. The message handler checks `if (event.seq <= lastSeq.current) return;`.
+2. Out-of-order delayed packets are rejected.
+3. The editor strictly maintains monotonically increasing sequence state.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- State transitions must be strictly immutable; array mutations and in-place object property assignments are prohibited.
+- Rendered list items must use stable entity identifiers as keys rather than transient array indices.
+- Dependent state values must remain synchronized without stale closures or intermediate rendering lag.
 """,
         'files': [{
             'name': 'RealtimeChat.jsx',
@@ -678,12 +799,14 @@ export default function RealtimeChat({ socket }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Rejects out-of-order events using sequence comparison', 'input': '', 'expected': 'event.seq <'}
+            {'id': 1, 'name': 'Rejects out-of-order events using sequence comparison', 'input': '', 'expected': 'event.seq <'}
         ],
         'bug_signature': 'const handleIncomingMessage = (event) => {\n      setContent(event.text);',
         'suspected_component': 'RealtimeChat.jsx',
         'ai_suggestions': [
-            'Add check `if (event.seq <= lastSeq.current) return;` before updating content.'
+            'Real-time streaming event handlers must enforce sequence ordering to prevent late-arriving packets from overwriting newer state.',
+            'Examine `handleIncomingMessage`: it immediately updates `content` without comparing `event.seq` against `lastSeq.current`.',
+            'Add `if (event.seq <= lastSeq.current) return;` before calling `setContent(event.text)`.'
         ],
         'topics': ['React', 'WebSockets', 'Sequence Numbers', 'Event Ordering'],
         'skills_tested': ['React', 'Frontend'],
@@ -694,34 +817,46 @@ export default function RealtimeChat({ socket }) {
     # 120. Frontend permission check hides a control but fails on unauthorized responses
     challenges.append({
         'id': 120,
-        'title': '[FE-H10] Frontend Fails to Gracefully Handle 403 Forbidden Responses',
+        'title': 'Revoked Admin Session Triggers White-Screen Crash on Account Action',
         'difficulty': 'Hard',
         'technology': 'React',
         'category': 'Security & Error Handling',
         'time_estimate': '20 mins',
         'points': 300,
-        'description': """### Company Scenario
-A multi-tenant enterprise administration dashboard manages user permissions.
+        'description': """### Incident Report
+An enterprise IT administrator logged into a management portal had their elevated privileges revoked by an organization owner in a different browser tab. When the administrator attempted to click "Delete Account", the backend responded with HTTP 403 Forbidden. Instead of displaying a polite "Access Denied" notice, the entire frontend crashed into a blank white screen due to an uncaught promise rejection.
 
 ### Bug Report
-If an organization's billing plan expires or an admin's session permissions are revoked in another tab, clicking "Delete Account" returns HTTP 403 Forbidden. Because `handleDelete` lacks a catch handler for 403, an uncaught rejection bubbles up, triggering React's unhandled rejection boundary and crashing the entire application into a blank white screen!
+In `AdminPanel.jsx`, `handleDelete` calls `await api.deleteAccount(user.id)` without a `try/catch` wrapper. When the API returns a 403 error, the unhandled rejection bubbles to the root React error boundary, tearing down the UI.
 
 ### Steps to Reproduce
-1. In `AdminPanel.jsx`, trigger `handleDelete`.
-2. Mock an HTTP 403 response (`{ status: 403, message: "Forbidden" }`).
-3. Application crashes with unhandled promise error instead of showing an access-denied toast.
+1. In `AdminPanel.jsx`, invoke `handleDelete` while mocking an HTTP 403 response.
+2. Observe that the uncaught rejection causes a complete application crash.
+3. No user-friendly error message is displayed.
 
-### Expected Behavior
-Catch the error, check `err.status === 403`, and set `setErrorMessage("Access Denied: You do not have permission to perform this action.")` while keeping the interface intact.
+### Expected Behaviour
+The API call must be wrapped in `try/catch`. On an HTTP 403 error, set `setErrorMessage('Access Denied: You do not have permission to perform this action.')` while keeping the interface intact.
 
-### Actual Behavior
-Unhandled error crashes the page.
+### Actual Behaviour
+The API call runs unguarded, crashing the application on unauthorized access.
 
-### Impact
-Total UI crash forcing users to perform a hard refresh and lose unsaved workspace data.
+### Starter Files
+- `AdminPanel.jsx`: Administration panel component lacking exception handling for unauthorized actions.
 
-### Requirements
-- Wrap `api.deleteAccount()` in `try/catch` and gracefully handle 403 status with appropriate user feedback.
+### Task
+Wrap the `api.deleteAccount` call in `AdminPanel.jsx` in a `try/catch` block, setting `errorMessage` and resetting `isDeleting` gracefully.
+
+### Acceptance Criteria
+1. `api.deleteAccount` is enclosed in a `try/catch` statement.
+2. In the catch block, an informative error message is stored in state.
+3. `isDeleting` is reset to `false` and the UI remains responsive without crashing.
+
+### Constraints
+- Framework: React 18 / Tailwind CSS.
+- Asynchronous responses arriving out of order must not overwrite fresher active search results.
+- Partial API endpoint rejections must be handled gracefully without collapsing sibling operational widgets.
+- Shared token refresh promises and user logout session caches must prevent cross-tenant credential leakage.
+- Optimistic updates must restore the pre-action state snapshot accurately upon server rejection.
 """,
         'files': [{
             'name': 'AdminPanel.jsx',
@@ -754,13 +889,14 @@ export default function AdminPanel({ user, api, onAccessDenied }) {
 }'''
         }],
         'test_cases': [
-            {'id': 1, 'name': 'Visible: Handles 403 Forbidden with try/catch and error message', 'input': '', 'expected': 'try {'}
+            {'id': 1, 'name': 'Handles 403 Forbidden with try/catch and error message', 'input': '', 'expected': 'try {'}
         ],
         'bug_signature': 'const handleDelete = async () => {\n    setIsDeleting(true);\n    setErrorMessage(\'\');\n    await api.deleteAccount(user.id);\n    setIsDeleting(false);\n  };',
         'suspected_component': 'AdminPanel.jsx',
         'ai_suggestions': [
-            'Wrap `await api.deleteAccount(user.id)` in a `try...catch` block.',
-            'In the `catch (err)`, check `if (err.status === 403) setErrorMessage("Access Denied");`.'
+            'Privileged UI actions must anticipate HTTP 403 authorization failures gracefully rather than letting unhandled rejections crash the view.',
+            'Enclose the asynchronous `api.deleteAccount(user.id)` call within a `try/catch` structure.',
+            'Inside `catch (err)`, update `setErrorMessage(err.message || "Access Denied")` and reset `setIsDeleting(false)`.'
         ],
         'topics': ['React', 'Security', 'Error Boundaries', 'HTTP 403'],
         'skills_tested': ['React', 'Frontend'],
