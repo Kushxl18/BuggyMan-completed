@@ -390,13 +390,7 @@ export default function Signup({ setUser, addToast }) {
                         required
                       />
                     </div>
-                    <p className="text-[11px] text-cyan-400/80 mt-1.5 flex items-center gap-1 font-medium">
-                      <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-                      A 6-digit security code will be sent to this email on the next step.
-                    </p>
                   </div>
-
-
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
@@ -408,7 +402,7 @@ export default function Signup({ setUser, addToast }) {
                           placeholder="••••••••"
                           value={account.password}
                           onChange={(e) => setAccount((prev) => ({ ...prev, password: e.target.value }))}
-                          className="w-full rounded-md border border-slate-800 bg-slate-950 py-3 pl-10 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                          className="w-full rounded-md border border-slate-800 bg-slate-950 py-3 pl-10 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-400 placeholder:text-slate-600 placeholder:opacity-40"
                           required
                         />
                         <button
@@ -430,7 +424,7 @@ export default function Signup({ setUser, addToast }) {
                           placeholder="••••••••"
                           value={account.confirmPassword}
                           onChange={(e) => setAccount((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                          className="w-full rounded-md border border-slate-800 bg-slate-950 py-3 pl-10 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-400"
+                          className="w-full rounded-md border border-slate-800 bg-slate-950 py-3 pl-10 pr-10 text-sm text-slate-100 outline-none focus:border-cyan-400 placeholder:text-slate-600 placeholder:opacity-40"
                           required
                         />
                         <button

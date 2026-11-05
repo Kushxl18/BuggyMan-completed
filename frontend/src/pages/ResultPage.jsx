@@ -415,20 +415,6 @@ export default function ResultPage() {
         </div>
       </div>
 
-      {/* AI Evaluation Review Card */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-          <Sparkles className="w-16 h-16 text-brand-violet" />
-        </div>
-        <div className="flex items-center gap-2 text-xs font-bold text-brand-violet uppercase tracking-wider font-heading">
-          <Sparkles className="w-4.5 h-4.5 text-brand-violet animate-pulse-glow" />
-          <span>AI Feedback Evaluation</span>
-        </div>
-        <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-mono bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800/80 p-4 rounded-xl">
-          {aiSummary}
-        </p>
-      </div>
-
       {/* Navigation Triggers */}
       <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
         <Link 
